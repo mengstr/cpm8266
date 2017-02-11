@@ -1,0 +1,36 @@
+https://github.com/espressif/esptool
+https://github.com/pfalcon/esp-open-sdk
+
+https://github.com/pfalcon/esp-open-sdk
+BLUE 67x 4Mhz Z80 speed
+
+https://github.com/pfalcon/esp-open-sdk/issues/226
+http://www.cpm.z80.de/develop.htm
+http://forgetfullbrain.blogspot.my/search/label/ESP%20Native%20SDK%20Programming
+http://forgetfullbrain.blogspot.my/2015/08/dissecting-blinky-program.html
+http://forgetfullbrain.blogspot.my/2015/08/let-get-connected-esp-as-tcp-server.html
+https://github.com/anotherlin/z80emu
+http://www.tramm.li/i8080/
+http://cpuville.com/cpm_on_new_computer.html
+http://www.autometer.de/unix4fun/z80pack/ftp/z80pack-1.32.tgz
+http://techtinkering.com/2008/10/17/setting-up-z80pack-to-create-an-emulated-cpm-system/
+
+http://www.classiccmp.org/dunfield/img/index.htm
+http://www.gaby.de/sysdisk.htm
+00000000 Code
+00040000 DriveA
+00080000 DriveB
+000C0000 DriveC
+00100000 DriveD
+00140000 DriveE
+00180000 DriveF
+001C0000 DriveG
+00200000 DriveH
+00240000 DriveI
+00280000 DriveJ
+002C0000 DriveK
+00300000 DriveL
+00340000 DriveM
+00380000 DriveN
+003C0000 DriveO
+

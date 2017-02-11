@@ -1,0 +1,3703 @@
+# 1 "z80emu.c"
+# 1 "<built-in>"
+# 1 "<command-line>"
+# 31 "<command-line>"
+# 1 "/usr/include/stdc-predef.h" 1 3 4
+# 32 "<command-line>" 2
+# 1 "z80emu.c"
+# 19 "z80emu.c"
+# 1 "z80emu.h" 1
+# 17 "z80emu.h"
+# 1 "z80config.h" 1
+# 18 "z80emu.h" 2
+
+
+
+
+
+
+enum {
+
+ Z80_STATUS_HALT = 1,
+ Z80_STATUS_DI,
+ Z80_STATUS_EI,
+ Z80_STATUS_RETI,
+ Z80_STATUS_RETN,
+ Z80_STATUS_ED_UNDEFINED,
+ Z80_STATUS_PREFIX
+
+};
+# 113 "z80emu.h"
+enum {
+
+        Z80_INTERRUPT_MODE_0,
+        Z80_INTERRUPT_MODE_1,
+        Z80_INTERRUPT_MODE_2
+
+};
+
+
+
+
+
+
+typedef struct Z80_STATE {
+
+        int status;
+
+        union {
+
+                unsigned char byte[14];
+                unsigned short word[7];
+
+        } registers;
+
+        unsigned short alternates[4];
+
+        int i, r, pc, iff1, iff2, im;
+
+
+
+        void *register_table[16],
+                        *dd_register_table[16],
+                        *fd_register_table[16];
+
+} Z80_STATE;
+
+
+
+extern void Z80Reset (Z80_STATE *state);
+
+
+
+
+
+
+
+extern int Z80Interrupt (Z80_STATE *state,
+   int data_on_bus,
+   void *context);
+
+
+
+
+
+extern int ICACHE_FLASH_ATTR Z80NonMaskableInterrupt (Z80_STATE *state, void *context);
+
+
+
+
+
+
+
+extern int ICACHE_FLASH_ATTR Z80Emulate (Z80_STATE *state,
+   int number_cycles,
+   void *context);
+# 20 "z80emu.c" 2
+# 1 "z80user.h" 1
+# 89 "z80user.h"
+typedef struct MACHINE {
+  Z80_STATE state;
+  unsigned char memory[64*1024];
+  int is_done;
+} MACHINE;
+# 21 "z80emu.c" 2
+# 1 "instructions.h" 1
+# 36 "instructions.h"
+enum {
+
+
+
+        LD_R_R,
+        LD_R_N,
+
+        LD_R_INDIRECT_HL,
+        LD_INDIRECT_HL_R,
+        LD_INDIRECT_HL_N,
+
+        LD_A_INDIRECT_BC,
+        LD_A_INDIRECT_DE,
+        LD_A_INDIRECT_NN,
+        LD_INDIRECT_BC_A,
+        LD_INDIRECT_DE_A,
+        LD_INDIRECT_NN_A,
+
+        LD_A_I_LD_A_R,
+        LD_I_A_LD_R_A,
+
+
+
+        LD_RR_NN,
+
+        LD_HL_INDIRECT_NN,
+        LD_RR_INDIRECT_NN,
+        LD_INDIRECT_NN_HL,
+        LD_INDIRECT_NN_RR,
+
+        LD_SP_HL,
+
+        PUSH_SS,
+        POP_SS,
+
+
+
+        EX_DE_HL,
+        EX_AF_AF_PRIME,
+        EXX,
+        EX_INDIRECT_SP_HL,
+
+        LDI_LDD,
+        LDIR_LDDR,
+
+        CPI_CPD,
+        CPIR_CPDR,
+
+
+
+        ADD_R,
+        ADD_N,
+        ADD_INDIRECT_HL,
+
+        ADC_R,
+        ADC_N,
+        ADC_INDIRECT_HL,
+
+        SUB_R,
+        SUB_N,
+        SUB_INDIRECT_HL,
+
+        SBC_R,
+        SBC_N,
+        SBC_INDIRECT_HL,
+
+        AND_R,
+        AND_N,
+        AND_INDIRECT_HL,
+
+        XOR_R,
+        XOR_N,
+        XOR_INDIRECT_HL,
+
+        OR_R,
+        OR_N,
+        OR_INDIRECT_HL,
+
+        CP_R,
+        CP_N,
+        CP_INDIRECT_HL,
+
+        INC_R,
+        INC_INDIRECT_HL,
+        DEC_R,
+        DEC_INDIRECT_HL,
+
+
+
+        ADD_HL_RR,
+
+        ADC_HL_RR,
+        SBC_HL_RR,
+
+        INC_RR,
+        DEC_RR,
+
+
+
+        DAA,
+
+        CPL,
+        NEG,
+
+        CCF,
+        SCF,
+
+        NOP,
+        HALT,
+
+        DI,
+        EI,
+
+        IM_N,
+
+
+
+        RLCA,
+        RLA,
+        RRCA,
+        RRA,
+
+        RLC_R,
+        RLC_INDIRECT_HL,
+        RL_R,
+        RL_INDIRECT_HL,
+        RRC_R,
+        RRC_INDIRECT_HL,
+        RR_R,
+        RR_INDIRECT_HL,
+        SLA_R,
+        SLA_INDIRECT_HL,
+        SLL_R,
+        SLL_INDIRECT_HL,
+        SRA_R,
+        SRA_INDIRECT_HL,
+        SRL_R,
+        SRL_INDIRECT_HL,
+
+        RLD_RRD,
+
+
+
+        BIT_B_R,
+        BIT_B_INDIRECT_HL,
+        SET_B_R,
+        SET_B_INDIRECT_HL,
+        RES_B_R,
+        RES_B_INDIRECT_HL,
+
+
+
+        JP_NN,
+        JP_CC_NN,
+        JR_E,
+        JR_DD_E,
+        JP_HL,
+        DJNZ_E,
+
+
+
+        CALL_NN,
+        CALL_CC_NN,
+        RET,
+        RET_CC,
+
+        RETI_RETN,
+
+        RST_P,
+
+
+
+        IN_A_N,
+        IN_R_C,
+
+
+
+        INI_IND,
+        INIR_INDR,
+
+        OUT_N_A,
+        OUT_C_R,
+
+
+
+        OUTI_OUTD,
+        OTIR_OTDR,
+
+
+
+        CB_PREFIX,
+        DD_PREFIX,
+        FD_PREFIX,
+        ED_PREFIX,
+
+
+
+        ED_UNDEFINED
+
+
+
+};
+# 22 "z80emu.c" 2
+# 1 "macros.h" 1
+# 23 "z80emu.c" 2
+# 1 "tables.h" 1
+
+
+static const unsigned char INSTRUCTION_TABLE[256] = {
+
+ NOP,
+ LD_RR_NN,
+ LD_INDIRECT_BC_A,
+ INC_RR,
+ INC_R,
+ DEC_R,
+ LD_R_N,
+ RLCA,
+
+ EX_AF_AF_PRIME,
+ ADD_HL_RR,
+ LD_A_INDIRECT_BC,
+ DEC_RR,
+ INC_R,
+ DEC_R,
+ LD_R_N,
+ RRCA,
+
+ DJNZ_E,
+ LD_RR_NN,
+ LD_INDIRECT_DE_A,
+ INC_RR,
+ INC_R,
+ DEC_R,
+ LD_R_N,
+ RLA,
+
+ JR_E,
+ ADD_HL_RR,
+ LD_A_INDIRECT_DE,
+ DEC_RR,
+ INC_R,
+ DEC_R,
+ LD_R_N,
+ RRA,
+
+ JR_DD_E,
+ LD_RR_NN,
+ LD_INDIRECT_NN_HL,
+ INC_RR,
+ INC_R,
+ DEC_R,
+ LD_R_N,
+ DAA,
+
+ JR_DD_E,
+ ADD_HL_RR,
+ LD_HL_INDIRECT_NN,
+ DEC_RR,
+ INC_R,
+ DEC_R,
+ LD_R_N,
+ CPL,
+
+ JR_DD_E,
+ LD_RR_NN,
+ LD_INDIRECT_NN_A,
+ INC_RR,
+ INC_INDIRECT_HL,
+ DEC_INDIRECT_HL,
+ LD_INDIRECT_HL_N,
+ SCF,
+
+ JR_DD_E,
+ ADD_HL_RR,
+ LD_A_INDIRECT_NN,
+ DEC_RR,
+ INC_R,
+ DEC_R,
+ LD_R_N,
+ CCF,
+
+ NOP,
+ LD_R_R,
+ LD_R_R,
+ LD_R_R,
+ LD_R_R,
+ LD_R_R,
+ LD_R_INDIRECT_HL,
+ LD_R_R,
+
+ LD_R_R,
+ NOP,
+ LD_R_R,
+ LD_R_R,
+ LD_R_R,
+ LD_R_R,
+ LD_R_INDIRECT_HL,
+ LD_R_R,
+
+ LD_R_R,
+ LD_R_R,
+ NOP,
+ LD_R_R,
+ LD_R_R,
+ LD_R_R,
+ LD_R_INDIRECT_HL,
+ LD_R_R,
+
+ LD_R_R,
+ LD_R_R,
+ LD_R_R,
+ NOP,
+ LD_R_R,
+ LD_R_R,
+ LD_R_INDIRECT_HL,
+ LD_R_R,
+
+ LD_R_R,
+ LD_R_R,
+ LD_R_R,
+ LD_R_R,
+ NOP,
+ LD_R_R,
+ LD_R_INDIRECT_HL,
+ LD_R_R,
+
+ LD_R_R,
+ LD_R_R,
+ LD_R_R,
+ LD_R_R,
+ LD_R_R,
+ NOP,
+ LD_R_INDIRECT_HL,
+ LD_R_R,
+
+ LD_INDIRECT_HL_R,
+ LD_INDIRECT_HL_R,
+ LD_INDIRECT_HL_R,
+ LD_INDIRECT_HL_R,
+ LD_INDIRECT_HL_R,
+ LD_INDIRECT_HL_R,
+ HALT,
+ LD_INDIRECT_HL_R,
+
+ LD_R_R,
+ LD_R_R,
+ LD_R_R,
+ LD_R_R,
+ LD_R_R,
+ LD_R_R,
+ LD_R_INDIRECT_HL,
+ NOP,
+
+ ADD_R,
+ ADD_R,
+ ADD_R,
+ ADD_R,
+ ADD_R,
+ ADD_R,
+ ADD_INDIRECT_HL,
+ ADD_R,
+
+ ADC_R,
+ ADC_R,
+ ADC_R,
+ ADC_R,
+ ADC_R,
+ ADC_R,
+ ADC_INDIRECT_HL,
+ ADC_R,
+
+ SUB_R,
+ SUB_R,
+ SUB_R,
+ SUB_R,
+ SUB_R,
+ SUB_R,
+ SUB_INDIRECT_HL,
+ SUB_R,
+
+ SBC_R,
+ SBC_R,
+ SBC_R,
+ SBC_R,
+ SBC_R,
+ SBC_R,
+ SBC_INDIRECT_HL,
+ SBC_R,
+
+ AND_R,
+ AND_R,
+ AND_R,
+ AND_R,
+ AND_R,
+ AND_R,
+ AND_INDIRECT_HL,
+ AND_R,
+
+ XOR_R,
+ XOR_R,
+ XOR_R,
+ XOR_R,
+ XOR_R,
+ XOR_R,
+ XOR_INDIRECT_HL,
+ XOR_R,
+
+ OR_R,
+ OR_R,
+ OR_R,
+ OR_R,
+ OR_R,
+ OR_R,
+ OR_INDIRECT_HL,
+ OR_R,
+
+ CP_R,
+ CP_R,
+ CP_R,
+ CP_R,
+ CP_R,
+ CP_R,
+ CP_INDIRECT_HL,
+ CP_R,
+
+ RET_CC,
+ POP_SS,
+ JP_CC_NN,
+ JP_NN,
+ CALL_CC_NN,
+ PUSH_SS,
+ ADD_N,
+ RST_P,
+
+ RET_CC,
+ RET,
+ JP_CC_NN,
+ CB_PREFIX,
+ CALL_CC_NN,
+ CALL_NN,
+ ADC_N,
+ RST_P,
+
+ RET_CC,
+ POP_SS,
+ JP_CC_NN,
+ OUT_N_A,
+ CALL_CC_NN,
+ PUSH_SS,
+ SUB_N,
+ RST_P,
+
+ RET_CC,
+ EXX,
+ JP_CC_NN,
+ IN_A_N,
+ CALL_CC_NN,
+ DD_PREFIX,
+ SBC_N,
+ RST_P,
+
+ RET_CC,
+ POP_SS,
+ JP_CC_NN,
+ EX_INDIRECT_SP_HL,
+ CALL_CC_NN,
+ PUSH_SS,
+ AND_N,
+ RST_P,
+
+ RET_CC,
+ JP_HL,
+ JP_CC_NN,
+ EX_DE_HL,
+ CALL_CC_NN,
+ ED_PREFIX,
+ XOR_N,
+ RST_P,
+
+ RET_CC,
+ POP_SS,
+ JP_CC_NN,
+ DI,
+ CALL_CC_NN,
+ PUSH_SS,
+ OR_N,
+ RST_P,
+
+ RET_CC,
+ LD_SP_HL,
+ JP_CC_NN,
+ EI,
+ CALL_CC_NN,
+ FD_PREFIX,
+ CP_N,
+ RST_P,
+
+};
+
+static const unsigned char CB_INSTRUCTION_TABLE[256] = {
+
+ RLC_R,
+ RLC_R,
+ RLC_R,
+ RLC_R,
+ RLC_R,
+ RLC_R,
+ RLC_INDIRECT_HL,
+ RLC_R,
+
+ RRC_R,
+ RRC_R,
+ RRC_R,
+ RRC_R,
+ RRC_R,
+ RRC_R,
+ RRC_INDIRECT_HL,
+ RRC_R,
+
+ RL_R,
+ RL_R,
+ RL_R,
+ RL_R,
+ RL_R,
+ RL_R,
+ RL_INDIRECT_HL,
+ RL_R,
+
+ RR_R,
+ RR_R,
+ RR_R,
+ RR_R,
+ RR_R,
+ RR_R,
+ RR_INDIRECT_HL,
+ RR_R,
+
+ SLA_R,
+ SLA_R,
+ SLA_R,
+ SLA_R,
+ SLA_R,
+ SLA_R,
+ SLA_INDIRECT_HL,
+ SLA_R,
+
+ SRA_R,
+ SRA_R,
+ SRA_R,
+ SRA_R,
+ SRA_R,
+ SRA_R,
+ SRA_INDIRECT_HL,
+ SRA_R,
+
+ SLL_R,
+ SLL_R,
+ SLL_R,
+ SLL_R,
+ SLL_R,
+ SLL_R,
+ SLL_INDIRECT_HL,
+ SLL_R,
+
+ SRL_R,
+ SRL_R,
+ SRL_R,
+ SRL_R,
+ SRL_R,
+ SRL_R,
+ SRL_INDIRECT_HL,
+ SRL_R,
+
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_INDIRECT_HL,
+ BIT_B_R,
+
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_INDIRECT_HL,
+ BIT_B_R,
+
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_INDIRECT_HL,
+ BIT_B_R,
+
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_INDIRECT_HL,
+ BIT_B_R,
+
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_INDIRECT_HL,
+ BIT_B_R,
+
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_INDIRECT_HL,
+ BIT_B_R,
+
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_INDIRECT_HL,
+ BIT_B_R,
+
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_R,
+ BIT_B_INDIRECT_HL,
+ BIT_B_R,
+
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_INDIRECT_HL,
+ RES_B_R,
+
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_INDIRECT_HL,
+ RES_B_R,
+
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_INDIRECT_HL,
+ RES_B_R,
+
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_INDIRECT_HL,
+ RES_B_R,
+
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_INDIRECT_HL,
+ RES_B_R,
+
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_INDIRECT_HL,
+ RES_B_R,
+
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_INDIRECT_HL,
+ RES_B_R,
+
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_R,
+ RES_B_INDIRECT_HL,
+ RES_B_R,
+
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_INDIRECT_HL,
+ SET_B_R,
+
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_INDIRECT_HL,
+ SET_B_R,
+
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_INDIRECT_HL,
+ SET_B_R,
+
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_INDIRECT_HL,
+ SET_B_R,
+
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_INDIRECT_HL,
+ SET_B_R,
+
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_INDIRECT_HL,
+ SET_B_R,
+
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_INDIRECT_HL,
+ SET_B_R,
+
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_R,
+ SET_B_INDIRECT_HL,
+ SET_B_R,
+
+};
+
+static const unsigned char ED_INSTRUCTION_TABLE[256] = {
+
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+
+ IN_R_C,
+ OUT_C_R,
+ SBC_HL_RR,
+ LD_INDIRECT_NN_RR,
+ NEG,
+ RETI_RETN,
+ IM_N,
+ LD_I_A_LD_R_A,
+
+ IN_R_C,
+ OUT_C_R,
+ ADC_HL_RR,
+ LD_RR_INDIRECT_NN,
+ NEG,
+ RETI_RETN,
+ IM_N,
+ LD_I_A_LD_R_A,
+
+ IN_R_C,
+ OUT_C_R,
+ SBC_HL_RR,
+ LD_INDIRECT_NN_RR,
+ NEG,
+ RETI_RETN,
+ IM_N,
+ LD_A_I_LD_A_R,
+
+ IN_R_C,
+ OUT_C_R,
+ ADC_HL_RR,
+ LD_RR_INDIRECT_NN,
+ NEG,
+ RETI_RETN,
+ IM_N,
+ LD_A_I_LD_A_R,
+
+ IN_R_C,
+ OUT_C_R,
+ SBC_HL_RR,
+ LD_INDIRECT_NN_RR,
+ NEG,
+ RETI_RETN,
+ IM_N,
+ RLD_RRD,
+
+ IN_R_C,
+ OUT_C_R,
+ ADC_HL_RR,
+ LD_RR_INDIRECT_NN,
+ NEG,
+ RETI_RETN,
+ IM_N,
+ RLD_RRD,
+
+ IN_R_C,
+ OUT_C_R,
+ SBC_HL_RR,
+ LD_INDIRECT_NN_RR,
+ NEG,
+ RETI_RETN,
+ IM_N,
+ ED_UNDEFINED,
+
+ IN_R_C,
+ OUT_C_R,
+ ADC_HL_RR,
+ LD_RR_INDIRECT_NN,
+ NEG,
+ RETI_RETN,
+ IM_N,
+ ED_UNDEFINED,
+
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+
+ LDI_LDD,
+ CPI_CPD,
+ INI_IND,
+ OUTI_OUTD,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+
+ LDI_LDD,
+ CPI_CPD,
+ INI_IND,
+ OUTI_OUTD,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+
+ LDIR_LDDR,
+ CPIR_CPDR,
+ INIR_INDR,
+ OTIR_OTDR,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+
+ LDIR_LDDR,
+ CPIR_CPDR,
+ INIR_INDR,
+ OTIR_OTDR,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+ ED_UNDEFINED,
+
+};
+
+static const unsigned char SZYX_FLAGS_TABLE[256] = {
+
+ 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+ 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08,
+ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+ 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08,
+ 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+ 0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28,
+ 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+ 0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28,
+ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+ 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08,
+ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+ 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08,
+ 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+ 0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28,
+ 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+ 0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28,
+ 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
+ 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88,
+ 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
+ 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88,
+ 0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0,
+ 0xa8, 0xa8, 0xa8, 0xa8, 0xa8, 0xa8, 0xa8, 0xa8,
+ 0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0,
+ 0xa8, 0xa8, 0xa8, 0xa8, 0xa8, 0xa8, 0xa8, 0xa8,
+ 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
+ 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88,
+ 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
+ 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88,
+ 0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0,
+ 0xa8, 0xa8, 0xa8, 0xa8, 0xa8, 0xa8, 0xa8, 0xa8,
+ 0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0,
+ 0xa8, 0xa8, 0xa8, 0xa8, 0xa8, 0xa8, 0xa8, 0xa8,
+
+};
+
+static const unsigned char SZYXP_FLAGS_TABLE[256] = {
+
+ 0x44, 0x00, 0x00, 0x04, 0x00, 0x04, 0x04, 0x00,
+ 0x08, 0x0c, 0x0c, 0x08, 0x0c, 0x08, 0x08, 0x0c,
+ 0x00, 0x04, 0x04, 0x00, 0x04, 0x00, 0x00, 0x04,
+ 0x0c, 0x08, 0x08, 0x0c, 0x08, 0x0c, 0x0c, 0x08,
+ 0x20, 0x24, 0x24, 0x20, 0x24, 0x20, 0x20, 0x24,
+ 0x2c, 0x28, 0x28, 0x2c, 0x28, 0x2c, 0x2c, 0x28,
+ 0x24, 0x20, 0x20, 0x24, 0x20, 0x24, 0x24, 0x20,
+ 0x28, 0x2c, 0x2c, 0x28, 0x2c, 0x28, 0x28, 0x2c,
+ 0x00, 0x04, 0x04, 0x00, 0x04, 0x00, 0x00, 0x04,
+ 0x0c, 0x08, 0x08, 0x0c, 0x08, 0x0c, 0x0c, 0x08,
+ 0x04, 0x00, 0x00, 0x04, 0x00, 0x04, 0x04, 0x00,
+ 0x08, 0x0c, 0x0c, 0x08, 0x0c, 0x08, 0x08, 0x0c,
+ 0x24, 0x20, 0x20, 0x24, 0x20, 0x24, 0x24, 0x20,
+ 0x28, 0x2c, 0x2c, 0x28, 0x2c, 0x28, 0x28, 0x2c,
+ 0x20, 0x24, 0x24, 0x20, 0x24, 0x20, 0x20, 0x24,
+ 0x2c, 0x28, 0x28, 0x2c, 0x28, 0x2c, 0x2c, 0x28,
+ 0x80, 0x84, 0x84, 0x80, 0x84, 0x80, 0x80, 0x84,
+ 0x8c, 0x88, 0x88, 0x8c, 0x88, 0x8c, 0x8c, 0x88,
+ 0x84, 0x80, 0x80, 0x84, 0x80, 0x84, 0x84, 0x80,
+ 0x88, 0x8c, 0x8c, 0x88, 0x8c, 0x88, 0x88, 0x8c,
+ 0xa4, 0xa0, 0xa0, 0xa4, 0xa0, 0xa4, 0xa4, 0xa0,
+ 0xa8, 0xac, 0xac, 0xa8, 0xac, 0xa8, 0xa8, 0xac,
+ 0xa0, 0xa4, 0xa4, 0xa0, 0xa4, 0xa0, 0xa0, 0xa4,
+ 0xac, 0xa8, 0xa8, 0xac, 0xa8, 0xac, 0xac, 0xa8,
+ 0x84, 0x80, 0x80, 0x84, 0x80, 0x84, 0x84, 0x80,
+ 0x88, 0x8c, 0x8c, 0x88, 0x8c, 0x88, 0x88, 0x8c,
+ 0x80, 0x84, 0x84, 0x80, 0x84, 0x80, 0x80, 0x84,
+ 0x8c, 0x88, 0x88, 0x8c, 0x88, 0x8c, 0x8c, 0x88,
+ 0xa0, 0xa4, 0xa4, 0xa0, 0xa4, 0xa0, 0xa0, 0xa4,
+ 0xac, 0xa8, 0xa8, 0xac, 0xa8, 0xac, 0xac, 0xa8,
+ 0xa4, 0xa0, 0xa0, 0xa4, 0xa0, 0xa4, 0xa4, 0xa0,
+ 0xa8, 0xac, 0xac, 0xa8, 0xac, 0xa8, 0xa8, 0xac,
+
+};
+# 24 "z80emu.c" 2
+# 36 "z80emu.c"
+static const int XOR_CONDITION_TABLE[8] = {
+
+        (1 << 6),
+        0,
+        (1 << 0),
+        0,
+        (1 << 2),
+        0,
+        (1 << 7),
+        0,
+
+};
+
+static const int AND_CONDITION_TABLE[8] = {
+
+        (1 << 6),
+        (1 << 6),
+        (1 << 0),
+        (1 << 0),
+        (1 << 2),
+        (1 << 2),
+        (1 << 7),
+        (1 << 7),
+
+};
+
+
+
+static const int RST_TABLE[8] = {
+
+        0x00,
+        0x08,
+        0x10,
+        0x18,
+        0x20,
+        0x28,
+        0x30,
+        0x38,
+
+};
+
+
+
+
+
+static const int OVERFLOW_TABLE[4] = {
+
+ 0,
+        (1 << 2),
+        (1 << 2),
+        0,
+
+};
+
+static int ICACHE_FLASH_ATTR emulate (
+                        Z80_STATE * state,
+   int opcode,
+   int elapsed_cycles, int number_cycles,
+   void *context);
+
+void ICACHE_FLASH_ATTR Z80Reset (Z80_STATE *state)
+{
+        int i;
+
+        state->status = 0;
+        (state->registers.word[3]) = 0xffff;
+        (state->registers.word[6]) = 0xffff;
+        state->i = state->pc = state->iff1 = state->iff2 = 0;
+        state->im = Z80_INTERRUPT_MODE_0;
+# 114 "z80emu.c"
+        state->register_table[0] = &state->registers.byte[1];
+        state->register_table[1] = &state->registers.byte[0];
+        state->register_table[2] = &state->registers.byte[3];
+        state->register_table[3] = &state->registers.byte[2];
+        state->register_table[4] = &state->registers.byte[5];
+        state->register_table[5] = &state->registers.byte[4];
+
+
+
+
+
+        state->register_table[6] = &state->registers.word[2];
+        state->register_table[7] = &state->registers.byte[7];
+
+
+
+        state->register_table[8] = &state->registers.word[0];
+        state->register_table[9] = &state->registers.word[1];
+        state->register_table[10] = &state->registers.word[2];
+        state->register_table[11] = &state->registers.word[6];
+
+
+
+
+
+        state->register_table[12] = &state->registers.word[0];
+        state->register_table[13] = &state->registers.word[1];
+        state->register_table[14] = &state->registers.word[2];
+        state->register_table[15] = &state->registers.word[3];
+
+
+
+        for (i = 0; i < 16; i++)
+
+                state->dd_register_table[i]
+                        = state->fd_register_table[i]
+                        = state->register_table[i];
+
+        state->dd_register_table[4] = &state->registers.byte[9];
+        state->dd_register_table[5] = &state->registers.byte[8];
+        state->dd_register_table[6] = &state->registers.word[4];
+        state->dd_register_table[10] = &state->registers.word[4];
+        state->dd_register_table[14] = &state->registers.word[4];
+
+        state->fd_register_table[4] = &state->registers.byte[11];
+        state->fd_register_table[5] = &state->registers.byte[10];
+        state->fd_register_table[6] = &state->registers.word[5];
+        state->fd_register_table[10] = &state->registers.word[5];
+        state->fd_register_table[14] = &state->registers.word[5];
+}
+
+
+
+int ICACHE_FLASH_ATTR Z80Interrupt (Z80_STATE *state, int data_on_bus, void *context)
+{
+        state->status = 0;
+        if (state->iff1) {
+
+                state->iff1 = state->iff2 = 0;
+                state->r = (state->r & 0x80) | ((state->r + 1) & 0x7f);
+                switch (state->im) {
+
+                        case Z80_INTERRUPT_MODE_0: {
+
+
+
+
+
+
+                                return emulate(state,
+     data_on_bus,
+     2, 4,
+     context);
+
+                        }
+
+                        case Z80_INTERRUPT_MODE_1: {
+
+    int elapsed_cycles;
+
+    elapsed_cycles = 0;
+                                (state->registers.word[6]) -= 2;
+                                { unsigned char *memory; memory = ((MACHINE *) context)->memory; memory[(((state->registers.word[6]))) & 0xffff] = ((state->pc)); memory[((((state->registers.word[6]))) + 1) & 0xffff] = ((state->pc)) >> 8; };
+                                state->pc = 0x0038;
+                                return elapsed_cycles + 13;
+
+                        }
+
+                        case Z80_INTERRUPT_MODE_2:
+                        default: {
+
+    int elapsed_cycles;
+
+    elapsed_cycles = 0;
+                                (state->registers.word[6]) -= 2;
+                                { unsigned char *memory; memory = ((MACHINE *) context)->memory; memory[(((state->registers.word[6]))) & 0xffff] = ((state->pc)); memory[((((state->registers.word[6]))) + 1) & 0xffff] = ((state->pc)) >> 8; };
+                                state->pc =
+                                        (state->i << 8 | data_on_bus)
+                                        & 0xfffe;
+                                return elapsed_cycles + 19;
+
+                        }
+
+                }
+
+        } else
+
+                return 0;
+}
+
+int ICACHE_FLASH_ATTR Z80NonMaskableInterrupt (Z80_STATE *state, void *context)
+{
+ int elapsed_cycles;
+
+        state->status = 0;
+
+        state->iff2 = state->iff1;
+        state->iff1 = 0;
+        state->r = (state->r & 0x80) | ((state->r + 1) & 0x7f);
+
+ elapsed_cycles = 0;
+        (state->registers.word[6]) -= 2;
+        { unsigned char *memory; memory = ((MACHINE *) context)->memory; memory[(((state->registers.word[6]))) & 0xffff] = ((state->pc)); memory[((((state->registers.word[6]))) + 1) & 0xffff] = ((state->pc)) >> 8; };
+        state->pc = 0x0066;
+
+        return elapsed_cycles + 11;
+}
+
+
+
+int ICACHE_FLASH_ATTR Z80Emulate (Z80_STATE *state, int number_cycles, void *context)
+{
+        int elapsed_cycles, pc, opcode;
+        printf("Z80Emulate\n");
+        state->status = 0;
+ elapsed_cycles = 0;
+ pc = state->pc;
+        { ((opcode)) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; };
+ printf("pc=%04x opcode=%d,0x%02x\n",pc,opcode,opcode);
+        state->pc = pc + 1;
+        printf("MEM[0x100]=");
+        int p;
+        for (p=0x100; p<0x100+20; p++) printf("%02x ",
+
+         ((MACHINE *) context)->memory[p & 0xffff]
+        );
+        printf("\n");
+
+        return emulate(state, opcode, elapsed_cycles, number_cycles, context);
+}
+
+
+
+
+
+static int ICACHE_FLASH_ATTR emulate (Z80_STATE * state,
+ int opcode,
+ int elapsed_cycles, int number_cycles,
+ void *context)
+{
+        int pc, r;
+        printf("emulate(opcode=%02x elcy=%d nucy=%d\n",opcode,elapsed_cycles,number_cycles);
+
+        pc = state->pc;
+        r = state->r & 0x7f;
+        goto start_emulation;
+
+        for ( ; ; ) {
+
+                void **registers;
+                int instruction;
+
+                { ((opcode)) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; };
+                pc++;
+
+start_emulation:
+
+                registers = state->register_table;
+
+emulate_next_opcode:
+
+                instruction = INSTRUCTION_TABLE[opcode];
+
+emulate_next_instruction:
+
+                elapsed_cycles += 4;
+                r++;
+                switch (instruction) {
+
+
+
+                        case LD_R_R: {
+
+                                *((unsigned char *) (registers[((((opcode) >> 3) & 0x07))])) = *((unsigned char *) (registers[(((opcode) & 0x07))]));
+                                break;
+
+                        }
+
+                        case LD_R_N: {
+
+                                { { (((*((unsigned char *) (registers[((((opcode) >> 3) & 0x07))]))))) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; }; pc++; elapsed_cycles += 3; };
+                                break;
+
+                        }
+
+                        case LD_R_INDIRECT_HL: {
+
+                                if (registers == state->register_table) {
+
+                                        { { ((*((unsigned char *) (registers[((((opcode) >> 3) & 0x07))])))) = ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff]; }; elapsed_cycles += 3; };
+
+                                } else {
+
+                                        int d;
+
+                                        { { (((d))) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; }; (d) = (char) (d); pc++; elapsed_cycles += 3; };
+                                        d += *((unsigned short *) registers[6]);
+                                        { { ((*((unsigned char *) state->register_table[((((opcode) >> 3) & 0x07))]))) = ((MACHINE *) context)->memory[((d)) & 0xffff]; }; elapsed_cycles += 3; };
+
+                                        elapsed_cycles += 5;
+
+                                }
+                                break;
+
+                        }
+
+                        case LD_INDIRECT_HL_R: {
+
+                                if (registers == state->register_table) {
+
+                                        { { ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff] = ((*((unsigned char *) (registers[(((opcode) & 0x07))])))); }; elapsed_cycles += 3; };
+
+                                } else {
+
+                                        int d;
+
+                                        { { (((d))) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; }; (d) = (char) (d); pc++; elapsed_cycles += 3; };
+                                        d += *((unsigned short *) registers[6]);
+                                        { { ((MACHINE *) context)->memory[((d)) & 0xffff] = ((*((unsigned char *) state->register_table[(((opcode) & 0x07))]))); }; elapsed_cycles += 3; };
+
+                                        elapsed_cycles += 5;
+
+                                }
+                                break;
+
+                        }
+
+                        case LD_INDIRECT_HL_N: {
+
+                                int n;
+
+                                if (registers == state->register_table) {
+
+                                        { { (((n))) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; }; pc++; elapsed_cycles += 3; };
+                                        { { ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff] = ((n)); }; elapsed_cycles += 3; };
+
+                                } else {
+
+                                        int d;
+
+                                        { { (((d))) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; }; (d) = (char) (d); pc++; elapsed_cycles += 3; };
+                                        d += *((unsigned short *) registers[6]);
+                                        { { (((n))) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; }; pc++; elapsed_cycles += 3; };
+                                        { { ((MACHINE *) context)->memory[((d)) & 0xffff] = ((n)); }; elapsed_cycles += 3; };
+
+                                        elapsed_cycles += 2;
+
+                                }
+
+                                break;
+
+                        }
+
+                        case LD_A_INDIRECT_BC: {
+
+                                { { (((state->registers.byte[7]))) = ((MACHINE *) context)->memory[(((state->registers.word[0]))) & 0xffff]; }; elapsed_cycles += 3; };
+                                break;
+
+                        }
+
+                        case LD_A_INDIRECT_DE: {
+
+                                { { (((state->registers.byte[7]))) = ((MACHINE *) context)->memory[(((state->registers.word[1]))) & 0xffff]; }; elapsed_cycles += 3; };
+                                break;
+
+                        }
+
+                        case LD_A_INDIRECT_NN: {
+
+                                int nn;
+
+                                { { unsigned char *memory; memory = ((MACHINE *) context)->memory; (((nn))) = memory[((pc)) & 0xffff] | (memory[(((pc)) + 1) & 0xffff] << 8); }; pc += 2; elapsed_cycles += 6; };
+                                { { (((state->registers.byte[7]))) = ((MACHINE *) context)->memory[((nn)) & 0xffff]; }; elapsed_cycles += 3; };
+                                break;
+
+                        }
+
+                        case LD_INDIRECT_BC_A: {
+
+                                { { ((MACHINE *) context)->memory[(((state->registers.word[0]))) & 0xffff] = (((state->registers.byte[7]))); }; elapsed_cycles += 3; };
+                                break;
+
+                        }
+
+                        case LD_INDIRECT_DE_A: {
+
+                                { { ((MACHINE *) context)->memory[(((state->registers.word[1]))) & 0xffff] = (((state->registers.byte[7]))); }; elapsed_cycles += 3; };
+                                break;
+
+                        }
+
+                        case LD_INDIRECT_NN_A: {
+
+                                int nn;
+
+                                { { unsigned char *memory; memory = ((MACHINE *) context)->memory; (((nn))) = memory[((pc)) & 0xffff] | (memory[(((pc)) + 1) & 0xffff] << 8); }; pc += 2; elapsed_cycles += 6; };
+                                { { ((MACHINE *) context)->memory[((nn)) & 0xffff] = (((state->registers.byte[7]))); }; elapsed_cycles += 3; };
+                                break;
+
+                        }
+
+                        case LD_A_I_LD_A_R: {
+
+                                int a, f;
+
+                                a = opcode == 0x57
+                                        ? state->i
+                                        : (state->r & 0x80) | (r & 0x7f);
+                                f = SZYX_FLAGS_TABLE[a];
+
+
+
+
+
+
+
+                                f |= state->iff2 << 2;
+                                f |= (state->registers.byte[6]) & (1 << 0);
+
+                                (state->registers.word[3]) = (a << 8) | f;
+
+                                elapsed_cycles++;
+
+                                break;
+
+                        }
+
+                        case LD_I_A_LD_R_A: {
+
+                                if (opcode == 0x47)
+
+                                        state->i = (state->registers.byte[7]);
+
+                                else {
+
+                                        state->r = (state->registers.byte[7]);
+                                        r = (state->registers.byte[7]) & 0x7f;
+
+                                }
+
+                                elapsed_cycles++;
+
+                                break;
+
+                        }
+
+
+
+                        case LD_RR_NN: {
+# 492 "z80emu.c"
+                                { { unsigned char *memory; memory = ((MACHINE *) context)->memory; (((*((unsigned short *) registers[((((opcode) >> 4) & 0x03)) + 8])))) = memory[((pc)) & 0xffff] | (memory[(((pc)) + 1) & 0xffff] << 8); }; pc += 2; elapsed_cycles += 6; };
+
+                                break;
+
+                        }
+
+                        case LD_HL_INDIRECT_NN: {
+
+                                int nn;
+
+                                { { unsigned char *memory; memory = ((MACHINE *) context)->memory; (((nn))) = memory[((pc)) & 0xffff] | (memory[(((pc)) + 1) & 0xffff] << 8); }; pc += 2; elapsed_cycles += 6; };
+                                { { unsigned char *memory; memory = ((MACHINE *) context)->memory; ((*((unsigned short *) registers[6]))) = memory[((nn)) & 0xffff] | (memory[(((nn)) + 1) & 0xffff] << 8); }; elapsed_cycles += 6; };
+                                break;
+
+                        }
+
+                        case LD_RR_INDIRECT_NN: {
+
+                                int nn;
+
+                                { { unsigned char *memory; memory = ((MACHINE *) context)->memory; (((nn))) = memory[((pc)) & 0xffff] | (memory[(((pc)) + 1) & 0xffff] << 8); }; pc += 2; elapsed_cycles += 6; };
+                                { { unsigned char *memory; memory = ((MACHINE *) context)->memory; ((*((unsigned short *) registers[((((opcode) >> 4) & 0x03)) + 8]))) = memory[((nn)) & 0xffff] | (memory[(((nn)) + 1) & 0xffff] << 8); }; elapsed_cycles += 6; };
+                                break;
+
+                        }
+
+                        case LD_INDIRECT_NN_HL: {
+
+                                int nn;
+
+                                { { unsigned char *memory; memory = ((MACHINE *) context)->memory; (((nn))) = memory[((pc)) & 0xffff] | (memory[(((pc)) + 1) & 0xffff] << 8); }; pc += 2; elapsed_cycles += 6; };
+                                { { unsigned char *memory; memory = ((MACHINE *) context)->memory; memory[((nn)) & 0xffff] = ((*((unsigned short *) registers[6]))); memory[(((nn)) + 1) & 0xffff] = ((*((unsigned short *) registers[6]))) >> 8; }; elapsed_cycles += 6; };
+                                break;
+
+                        }
+
+                        case LD_INDIRECT_NN_RR: {
+
+                                int nn;
+
+                                { { unsigned char *memory; memory = ((MACHINE *) context)->memory; (((nn))) = memory[((pc)) & 0xffff] | (memory[(((pc)) + 1) & 0xffff] << 8); }; pc += 2; elapsed_cycles += 6; };
+                                { { unsigned char *memory; memory = ((MACHINE *) context)->memory; memory[((nn)) & 0xffff] = ((*((unsigned short *) registers[((((opcode) >> 4) & 0x03)) + 8]))); memory[(((nn)) + 1) & 0xffff] = ((*((unsigned short *) registers[((((opcode) >> 4) & 0x03)) + 8]))) >> 8; }; elapsed_cycles += 6; };
+                                break;
+
+                        }
+
+                        case LD_SP_HL: {
+
+                                (state->registers.word[6]) = *((unsigned short *) registers[6]);
+                                elapsed_cycles += 2;
+                                break;
+
+                        }
+
+                        case PUSH_SS: {
+
+                                { (state->registers.word[6]) -= 2; { { unsigned char *memory; memory = ((MACHINE *) context)->memory; memory[(((state->registers.word[6]))) & 0xffff] = (((*((unsigned short *) registers[((((opcode) >> 4) & 0x03)) + 12])))); memory[((((state->registers.word[6]))) + 1) & 0xffff] = (((*((unsigned short *) registers[((((opcode) >> 4) & 0x03)) + 12])))) >> 8; }; elapsed_cycles += 6; }; };
+                                elapsed_cycles++;
+                                break;
+
+                        }
+
+                        case POP_SS: {
+
+                                { { { unsigned char *memory; memory = ((MACHINE *) context)->memory; (((*((unsigned short *) registers[((((opcode) >> 4) & 0x03)) + 12])))) = memory[(((state->registers.word[6]))) & 0xffff] | (memory[((((state->registers.word[6]))) + 1) & 0xffff] << 8); }; elapsed_cycles += 6; }; (state->registers.word[6]) += 2; };
+                                break;
+
+                        }
+
+
+
+                        case EX_DE_HL: {
+
+                                { int t; t = ((state->registers.word[1])); ((state->registers.word[1])) = ((state->registers.word[2])); ((state->registers.word[2])) = t; };
+                                break;
+
+                        }
+
+                        case EX_AF_AF_PRIME: {
+
+                                { int t; t = ((state->registers.word[3])); ((state->registers.word[3])) = (state->alternates[3]); (state->alternates[3]) = t; };
+                                break;
+
+                        }
+
+                        case EXX: {
+
+                                { int t; t = ((state->registers.word[0])); ((state->registers.word[0])) = (state->alternates[0]); (state->alternates[0]) = t; };
+                                { int t; t = ((state->registers.word[1])); ((state->registers.word[1])) = (state->alternates[1]); (state->alternates[1]) = t; };
+                                { int t; t = ((state->registers.word[2])); ((state->registers.word[2])) = (state->alternates[2]); (state->alternates[2]) = t; };
+                                break;
+
+                        }
+
+                        case EX_INDIRECT_SP_HL: {
+
+                                int t;
+
+                                { { unsigned char *memory; memory = ((MACHINE *) context)->memory; ((t)) = memory[(((state->registers.word[6]))) & 0xffff] | (memory[((((state->registers.word[6]))) + 1) & 0xffff] << 8); }; elapsed_cycles += 6; };
+                                { { unsigned char *memory; memory = ((MACHINE *) context)->memory; memory[(((state->registers.word[6]))) & 0xffff] = ((*((unsigned short *) registers[6]))); memory[((((state->registers.word[6]))) + 1) & 0xffff] = ((*((unsigned short *) registers[6]))) >> 8; }; elapsed_cycles += 6; };
+                                *((unsigned short *) registers[6]) = t;
+
+                                elapsed_cycles += 3;
+
+                                break;
+                        }
+
+                        case LDI_LDD: {
+
+                                int n, f, d;
+
+                                { { ((n)) = ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff]; }; elapsed_cycles += 3; };
+                                { { ((MACHINE *) context)->memory[(((state->registers.word[1]))) & 0xffff] = ((n)); }; elapsed_cycles += 3; };
+
+                                f = (state->registers.byte[6]) & ((1 << 7) | (1 << 6) | (1 << 0));
+                                f |= --(state->registers.word[0]) ? (1 << 2) : 0;
+
+
+
+                                n += (state->registers.byte[7]);
+                                f |= n & (1 << 3);
+                                f |= (n << (5 - 1))
+                                        & (1 << 5);
+
+
+
+                                (state->registers.byte[6]) = f;
+
+                                d = opcode == 0xa0 ? +1 : -1;
+                                (state->registers.word[1]) += d;
+                                (state->registers.word[2]) += d;
+
+                                elapsed_cycles += 2;
+
+                                break;
+
+                        }
+
+                        case LDIR_LDDR: {
+
+                                int d, f, bc, de, hl, n;
+# 643 "z80emu.c"
+                                d = opcode == 0xb0 ? +1 : -1;
+
+                                f = (state->registers.byte[6]) & ((1 << 7) | (1 << 6) | (1 << 0));
+                                bc = (state->registers.word[0]);
+                                de = (state->registers.word[1]);
+                                hl = (state->registers.word[2]);
+
+                                r -= 2;
+                                elapsed_cycles -= 8;
+                                for ( ; ; ) {
+
+                                        r += 2;
+
+                                        { (n) = ((MACHINE *) context)->memory[(hl) & 0xffff]; };
+                                        { ((MACHINE *) context)->memory[(de) & 0xffff] = (n); };
+
+                                        hl += d;
+                                        de += d;
+
+                                        if (--bc)
+
+                                                elapsed_cycles += 21;
+
+                                        else {
+
+                                                elapsed_cycles += 16;
+                                                break;
+
+                                        }
+# 686 "z80emu.c"
+                                        if (elapsed_cycles < number_cycles)
+
+                                                continue;
+
+                                        else {
+
+                                                f |= (1 << 2);
+                                                pc -= 2;
+                                                break;
+
+                                        }
+
+                                }
+
+                                (state->registers.word[2]) = hl;
+                                (state->registers.word[1]) = de;
+                                (state->registers.word[0]) = bc;
+
+
+
+                                n += (state->registers.byte[7]);
+                                f |= n & (1 << 3);
+                                f |= (n << (5 - 1))
+                                        & (1 << 5);
+
+
+
+                                (state->registers.byte[6]) = f;
+
+                                break;
+
+                        }
+
+                        case CPI_CPD: {
+
+                                int a, n, z, f;
+
+                                a = (state->registers.byte[7]);
+                                { { ((n)) = ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff]; }; elapsed_cycles += 3; };
+                                z = a - n;
+
+                                (state->registers.word[2]) += opcode == 0xa1 ? +1 : -1;
+
+                                f = (a ^ n ^ z) & (1 << 4);
+
+
+
+                                n = z - (f >> 4);
+                                f |= (n << (5 - 1))
+                                        & (1 << 5);
+                                f |= n & (1 << 3);
+
+
+
+                                f |= SZYX_FLAGS_TABLE[z & 0xff] & ((1 << 7) | (1 << 6));
+                                f |= --(state->registers.word[0]) ? (1 << 2) : 0;
+                                (state->registers.byte[6]) = f | (1 << 1) | ((state->registers.byte[6]) & (1 << 0));
+
+                                elapsed_cycles += 5;
+
+                                break;
+
+                        }
+
+                        case CPIR_CPDR: {
+
+                                int d, a, bc, hl, n, z, f;
+
+                                d = opcode == 0xb1 ? +1 : -1;
+
+                                a = (state->registers.byte[7]);
+                                bc = (state->registers.word[0]);
+                                hl = (state->registers.word[2]);
+
+                                r -= 2;
+                                elapsed_cycles -= 8;
+                                for ( ; ; ) {
+
+                                        r += 2;
+
+                                        { (n) = ((MACHINE *) context)->memory[(hl) & 0xffff]; };
+                                        z = a - n;
+
+                                        hl += d;
+                                        if (--bc && z)
+
+                                                elapsed_cycles += 21;
+
+                                        else {
+
+                                                elapsed_cycles += 16;
+                                                break;
+
+                                        }
+
+                                        if (elapsed_cycles < number_cycles)
+
+                                                continue;
+
+                                        else {
+
+                                                pc -= 2;
+                                                break;
+
+                                        }
+
+                                }
+
+                                (state->registers.word[2]) = hl;
+                                (state->registers.word[0]) = bc;
+
+                                f = (a ^ n ^ z) & (1 << 4);
+
+
+
+                                n = z - (f >> 4);
+                                f |= (n << (5 - 1))
+                                        & (1 << 5);
+                                f |= n & (1 << 3);
+
+
+
+                                f |= SZYX_FLAGS_TABLE[z & 0xff] & ((1 << 7) | (1 << 6));
+                                f |= bc ? (1 << 2) : 0;
+                                (state->registers.byte[6]) = f | (1 << 1) | ((state->registers.byte[6]) & (1 << 0));
+
+                                break;
+
+                        }
+
+
+
+                        case ADD_R: {
+
+                                { int a, z, c, f; a = (state->registers.byte[7]); z = a + (*((unsigned char *) (registers[(((opcode) & 0x07))]))); c = a ^ (*((unsigned char *) (registers[(((opcode) & 0x07))]))) ^ z; f = c & (1 << 4); f |= SZYX_FLAGS_TABLE[z & 0xff]; f |= OVERFLOW_TABLE[c >> 7]; f |= z >> (8 - 0); (state->registers.byte[7]) = z; (state->registers.byte[6]) = f; };
+                                break;
+
+                        }
+
+                        case ADD_N: {
+
+                                int n;
+
+                                { { (((n))) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; }; pc++; elapsed_cycles += 3; };
+                                { int a, z, c, f; a = (state->registers.byte[7]); z = a + (n); c = a ^ (n) ^ z; f = c & (1 << 4); f |= SZYX_FLAGS_TABLE[z & 0xff]; f |= OVERFLOW_TABLE[c >> 7]; f |= z >> (8 - 0); (state->registers.byte[7]) = z; (state->registers.byte[6]) = f; };
+                                break;
+
+                        }
+
+                        case ADD_INDIRECT_HL: {
+
+                                int x;
+
+                                { if (registers == state->register_table) { { { (((x))) = ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff]; }; elapsed_cycles += 3; }; } else { int d; { { (((d))) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; }; (d) = (char) (d); pc++; elapsed_cycles += 3; }; d += *((unsigned short *) registers[6]); { { (((x))) = ((MACHINE *) context)->memory[((d)) & 0xffff]; }; elapsed_cycles += 3; }; elapsed_cycles += 5; } };
+                                { int a, z, c, f; a = (state->registers.byte[7]); z = a + (x); c = a ^ (x) ^ z; f = c & (1 << 4); f |= SZYX_FLAGS_TABLE[z & 0xff]; f |= OVERFLOW_TABLE[c >> 7]; f |= z >> (8 - 0); (state->registers.byte[7]) = z; (state->registers.byte[6]) = f; };
+                                break;
+
+                        }
+
+                        case ADC_R: {
+
+                                { int a, z, c, f; a = (state->registers.byte[7]); z = a + (*((unsigned char *) (registers[(((opcode) & 0x07))]))) + ((state->registers.byte[6]) & (1 << 0)); c = a ^ (*((unsigned char *) (registers[(((opcode) & 0x07))]))) ^ z; f = c & (1 << 4); f |= SZYX_FLAGS_TABLE[z & 0xff]; f |= OVERFLOW_TABLE[c >> 7]; f |= z >> (8 - 0); (state->registers.byte[7]) = z; (state->registers.byte[6]) = f; };
+                                break;
+
+                        }
+
+                        case ADC_N: {
+
+                                int n;
+
+                                { { (((n))) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; }; pc++; elapsed_cycles += 3; };
+                                { int a, z, c, f; a = (state->registers.byte[7]); z = a + (n) + ((state->registers.byte[6]) & (1 << 0)); c = a ^ (n) ^ z; f = c & (1 << 4); f |= SZYX_FLAGS_TABLE[z & 0xff]; f |= OVERFLOW_TABLE[c >> 7]; f |= z >> (8 - 0); (state->registers.byte[7]) = z; (state->registers.byte[6]) = f; };
+                                break;
+
+                        }
+
+                        case ADC_INDIRECT_HL: {
+
+                                int x;
+
+                                { if (registers == state->register_table) { { { (((x))) = ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff]; }; elapsed_cycles += 3; }; } else { int d; { { (((d))) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; }; (d) = (char) (d); pc++; elapsed_cycles += 3; }; d += *((unsigned short *) registers[6]); { { (((x))) = ((MACHINE *) context)->memory[((d)) & 0xffff]; }; elapsed_cycles += 3; }; elapsed_cycles += 5; } };
+                                { int a, z, c, f; a = (state->registers.byte[7]); z = a + (x) + ((state->registers.byte[6]) & (1 << 0)); c = a ^ (x) ^ z; f = c & (1 << 4); f |= SZYX_FLAGS_TABLE[z & 0xff]; f |= OVERFLOW_TABLE[c >> 7]; f |= z >> (8 - 0); (state->registers.byte[7]) = z; (state->registers.byte[6]) = f; };
+                                break;
+
+                        }
+
+                        case SUB_R: {
+
+                                { int a, z, c, f; a = (state->registers.byte[7]); z = a - (*((unsigned char *) (registers[(((opcode) & 0x07))]))); c = a ^ (*((unsigned char *) (registers[(((opcode) & 0x07))]))) ^ z; f = (1 << 1) | (c & (1 << 4)); f |= SZYX_FLAGS_TABLE[z & 0xff]; c &= 0x0180; f |= OVERFLOW_TABLE[c >> 7]; f |= c >> (8 - 0); (state->registers.byte[7]) = z; (state->registers.byte[6]) = f; };
+                                break;
+
+                        }
+
+                        case SUB_N: {
+
+                                int n;
+
+                                { { (((n))) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; }; pc++; elapsed_cycles += 3; };
+                                { int a, z, c, f; a = (state->registers.byte[7]); z = a - (n); c = a ^ (n) ^ z; f = (1 << 1) | (c & (1 << 4)); f |= SZYX_FLAGS_TABLE[z & 0xff]; c &= 0x0180; f |= OVERFLOW_TABLE[c >> 7]; f |= c >> (8 - 0); (state->registers.byte[7]) = z; (state->registers.byte[6]) = f; };
+                                break;
+
+                        }
+
+                        case SUB_INDIRECT_HL: {
+
+                                int x;
+
+                                { if (registers == state->register_table) { { { (((x))) = ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff]; }; elapsed_cycles += 3; }; } else { int d; { { (((d))) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; }; (d) = (char) (d); pc++; elapsed_cycles += 3; }; d += *((unsigned short *) registers[6]); { { (((x))) = ((MACHINE *) context)->memory[((d)) & 0xffff]; }; elapsed_cycles += 3; }; elapsed_cycles += 5; } };
+                                { int a, z, c, f; a = (state->registers.byte[7]); z = a - (x); c = a ^ (x) ^ z; f = (1 << 1) | (c & (1 << 4)); f |= SZYX_FLAGS_TABLE[z & 0xff]; c &= 0x0180; f |= OVERFLOW_TABLE[c >> 7]; f |= c >> (8 - 0); (state->registers.byte[7]) = z; (state->registers.byte[6]) = f; };
+                                break;
+
+                        }
+
+                        case SBC_R: {
+
+                                { int a, z, c, f; a = (state->registers.byte[7]); z = a - (*((unsigned char *) (registers[(((opcode) & 0x07))]))) - ((state->registers.byte[6]) & (1 << 0)); c = a ^ (*((unsigned char *) (registers[(((opcode) & 0x07))]))) ^ z; f = (1 << 1) | (c & (1 << 4)); f |= SZYX_FLAGS_TABLE[z & 0xff]; c &= 0x0180; f |= OVERFLOW_TABLE[c >> 7]; f |= c >> (8 - 0); (state->registers.byte[7]) = z; (state->registers.byte[6]) = f; };
+                                break;
+
+                        }
+
+                        case SBC_N: {
+
+                                int n;
+
+                                { { (((n))) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; }; pc++; elapsed_cycles += 3; };
+                                { int a, z, c, f; a = (state->registers.byte[7]); z = a - (n) - ((state->registers.byte[6]) & (1 << 0)); c = a ^ (n) ^ z; f = (1 << 1) | (c & (1 << 4)); f |= SZYX_FLAGS_TABLE[z & 0xff]; c &= 0x0180; f |= OVERFLOW_TABLE[c >> 7]; f |= c >> (8 - 0); (state->registers.byte[7]) = z; (state->registers.byte[6]) = f; };
+                                break;
+
+                        }
+
+                        case SBC_INDIRECT_HL: {
+
+                                int x;
+
+                                { if (registers == state->register_table) { { { (((x))) = ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff]; }; elapsed_cycles += 3; }; } else { int d; { { (((d))) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; }; (d) = (char) (d); pc++; elapsed_cycles += 3; }; d += *((unsigned short *) registers[6]); { { (((x))) = ((MACHINE *) context)->memory[((d)) & 0xffff]; }; elapsed_cycles += 3; }; elapsed_cycles += 5; } };
+                                { int a, z, c, f; a = (state->registers.byte[7]); z = a - (x) - ((state->registers.byte[6]) & (1 << 0)); c = a ^ (x) ^ z; f = (1 << 1) | (c & (1 << 4)); f |= SZYX_FLAGS_TABLE[z & 0xff]; c &= 0x0180; f |= OVERFLOW_TABLE[c >> 7]; f |= c >> (8 - 0); (state->registers.byte[7]) = z; (state->registers.byte[6]) = f; };
+                                break;
+
+                        }
+
+                        case AND_R: {
+
+                                { (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(state->registers.byte[7]) &= (*((unsigned char *) (registers[(((opcode) & 0x07))])))] | (1 << 4); };
+                                break;
+
+                        }
+
+                        case AND_N: {
+
+                                int n;
+
+                                { { (((n))) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; }; pc++; elapsed_cycles += 3; };
+                                { (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(state->registers.byte[7]) &= (n)] | (1 << 4); };
+                                break;
+
+                        }
+
+                        case AND_INDIRECT_HL: {
+
+                                int x;
+
+                                { if (registers == state->register_table) { { { (((x))) = ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff]; }; elapsed_cycles += 3; }; } else { int d; { { (((d))) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; }; (d) = (char) (d); pc++; elapsed_cycles += 3; }; d += *((unsigned short *) registers[6]); { { (((x))) = ((MACHINE *) context)->memory[((d)) & 0xffff]; }; elapsed_cycles += 3; }; elapsed_cycles += 5; } };
+                                { (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(state->registers.byte[7]) &= (x)] | (1 << 4); };
+                                break;
+
+                        }
+
+                        case OR_R: {
+
+                                { (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(state->registers.byte[7]) |= (*((unsigned char *) (registers[(((opcode) & 0x07))])))]; };
+                                break;
+
+                        }
+
+                        case OR_N: {
+
+                                int n;
+
+                                { { (((n))) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; }; pc++; elapsed_cycles += 3; };
+                                { (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(state->registers.byte[7]) |= (n)]; };
+                                break;
+
+                        }
+
+                        case OR_INDIRECT_HL: {
+
+                                int x;
+
+                                { if (registers == state->register_table) { { { (((x))) = ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff]; }; elapsed_cycles += 3; }; } else { int d; { { (((d))) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; }; (d) = (char) (d); pc++; elapsed_cycles += 3; }; d += *((unsigned short *) registers[6]); { { (((x))) = ((MACHINE *) context)->memory[((d)) & 0xffff]; }; elapsed_cycles += 3; }; elapsed_cycles += 5; } };
+                                { (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(state->registers.byte[7]) |= (x)]; };
+                                break;
+
+                        }
+
+                        case XOR_R: {
+
+                                { (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(state->registers.byte[7]) ^= (*((unsigned char *) (registers[(((opcode) & 0x07))])))]; };
+                                break;
+
+                        }
+
+                        case XOR_N: {
+
+                                int n;
+
+                                { { (((n))) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; }; pc++; elapsed_cycles += 3; };
+                                { (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(state->registers.byte[7]) ^= (n)]; };
+                                break;
+
+                        }
+
+                        case XOR_INDIRECT_HL: {
+
+                                int x;
+
+                                { if (registers == state->register_table) { { { (((x))) = ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff]; }; elapsed_cycles += 3; }; } else { int d; { { (((d))) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; }; (d) = (char) (d); pc++; elapsed_cycles += 3; }; d += *((unsigned short *) registers[6]); { { (((x))) = ((MACHINE *) context)->memory[((d)) & 0xffff]; }; elapsed_cycles += 3; }; elapsed_cycles += 5; } };
+                                { (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(state->registers.byte[7]) ^= (x)]; };
+                                break;
+
+                        }
+
+                        case CP_R: {
+
+                                { int a, z, c, f; a = (state->registers.byte[7]); z = a - (*((unsigned char *) (registers[(((opcode) & 0x07))]))); c = a ^ (*((unsigned char *) (registers[(((opcode) & 0x07))]))) ^ z; f = (1 << 1) | (c & (1 << 4)); f |= SZYX_FLAGS_TABLE[z & 0xff] & ((1 << 7) | (1 << 6)); f |= (*((unsigned char *) (registers[(((opcode) & 0x07))]))) & ((1 << 5) | (1 << 3)); c &= 0x0180; f |= OVERFLOW_TABLE[c >> 7]; f |= c >> (8 - 0); (state->registers.byte[6]) = f; };
+                                break;
+
+                        }
+
+                        case CP_N: {
+
+                                int n;
+
+                                { { (((n))) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; }; pc++; elapsed_cycles += 3; };
+                                { int a, z, c, f; a = (state->registers.byte[7]); z = a - (n); c = a ^ (n) ^ z; f = (1 << 1) | (c & (1 << 4)); f |= SZYX_FLAGS_TABLE[z & 0xff] & ((1 << 7) | (1 << 6)); f |= (n) & ((1 << 5) | (1 << 3)); c &= 0x0180; f |= OVERFLOW_TABLE[c >> 7]; f |= c >> (8 - 0); (state->registers.byte[6]) = f; };
+                                break;
+
+                        }
+
+                        case CP_INDIRECT_HL: {
+
+                                int x;
+
+                                { if (registers == state->register_table) { { { (((x))) = ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff]; }; elapsed_cycles += 3; }; } else { int d; { { (((d))) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; }; (d) = (char) (d); pc++; elapsed_cycles += 3; }; d += *((unsigned short *) registers[6]); { { (((x))) = ((MACHINE *) context)->memory[((d)) & 0xffff]; }; elapsed_cycles += 3; }; elapsed_cycles += 5; } };
+                                { int a, z, c, f; a = (state->registers.byte[7]); z = a - (x); c = a ^ (x) ^ z; f = (1 << 1) | (c & (1 << 4)); f |= SZYX_FLAGS_TABLE[z & 0xff] & ((1 << 7) | (1 << 6)); f |= (x) & ((1 << 5) | (1 << 3)); c &= 0x0180; f |= OVERFLOW_TABLE[c >> 7]; f |= c >> (8 - 0); (state->registers.byte[6]) = f; };
+                                break;
+
+                        }
+
+                        case INC_R: {
+
+                                { int z, c, f; z = (*((unsigned char *) (registers[((((opcode) >> 3) & 0x07))]))) + 1; c = (*((unsigned char *) (registers[((((opcode) >> 3) & 0x07))]))) ^ z; f = (state->registers.byte[6]) & (1 << 0); f |= c & (1 << 4); f |= SZYX_FLAGS_TABLE[z & 0xff]; f |= OVERFLOW_TABLE[(c >> 7) & 0x03]; (*((unsigned char *) (registers[((((opcode) >> 3) & 0x07))]))) = z; (state->registers.byte[6]) = f; };
+                                break;
+
+                        }
+
+                        case INC_INDIRECT_HL: {
+
+                                int x;
+
+                                if (registers == state->register_table) {
+
+                                        { { ((x)) = ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff]; }; elapsed_cycles += 3; };
+                                        { int z, c, f; z = (x) + 1; c = (x) ^ z; f = (state->registers.byte[6]) & (1 << 0); f |= c & (1 << 4); f |= SZYX_FLAGS_TABLE[z & 0xff]; f |= OVERFLOW_TABLE[(c >> 7) & 0x03]; (x) = z; (state->registers.byte[6]) = f; };
+                                        { { ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff] = ((x)); }; elapsed_cycles += 3; };
+
+                                        elapsed_cycles++;
+
+                                } else {
+
+                                        int d;
+
+                                        { { (((d))) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; }; (d) = (char) (d); pc++; elapsed_cycles += 3; };
+                                        d += *((unsigned short *) registers[6]);
+                                        { { ((x)) = ((MACHINE *) context)->memory[((d)) & 0xffff]; }; elapsed_cycles += 3; };
+                                        { int z, c, f; z = (x) + 1; c = (x) ^ z; f = (state->registers.byte[6]) & (1 << 0); f |= c & (1 << 4); f |= SZYX_FLAGS_TABLE[z & 0xff]; f |= OVERFLOW_TABLE[(c >> 7) & 0x03]; (x) = z; (state->registers.byte[6]) = f; };
+                                        { { ((MACHINE *) context)->memory[((d)) & 0xffff] = ((x)); }; elapsed_cycles += 3; };
+
+                                        elapsed_cycles += 6;
+
+                                }
+                                break;
+
+                        }
+
+                        case DEC_R: {
+
+                                { int z, c, f; z = (*((unsigned char *) (registers[((((opcode) >> 3) & 0x07))]))) - 1; c = (*((unsigned char *) (registers[((((opcode) >> 3) & 0x07))]))) ^ z; f = (1 << 1) | ((state->registers.byte[6]) & (1 << 0)); f |= c & (1 << 4); f |= SZYX_FLAGS_TABLE[z & 0xff]; f |= OVERFLOW_TABLE[(c >> 7) & 0x03]; (*((unsigned char *) (registers[((((opcode) >> 3) & 0x07))]))) = z; (state->registers.byte[6]) = f; };
+                                break;
+
+                        }
+
+                        case DEC_INDIRECT_HL: {
+
+                                int x;
+
+                                if (registers == state->register_table) {
+
+                                        { { ((x)) = ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff]; }; elapsed_cycles += 3; };
+                                        { int z, c, f; z = (x) - 1; c = (x) ^ z; f = (1 << 1) | ((state->registers.byte[6]) & (1 << 0)); f |= c & (1 << 4); f |= SZYX_FLAGS_TABLE[z & 0xff]; f |= OVERFLOW_TABLE[(c >> 7) & 0x03]; (x) = z; (state->registers.byte[6]) = f; };
+                                        { { ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff] = ((x)); }; elapsed_cycles += 3; };
+
+                                        elapsed_cycles++;
+
+                                } else {
+
+                                        int d;
+
+                                        { { (((d))) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; }; (d) = (char) (d); pc++; elapsed_cycles += 3; };
+                                        d += *((unsigned short *) registers[6]);
+                                        { { ((x)) = ((MACHINE *) context)->memory[((d)) & 0xffff]; }; elapsed_cycles += 3; };
+                                        { int z, c, f; z = (x) - 1; c = (x) ^ z; f = (1 << 1) | ((state->registers.byte[6]) & (1 << 0)); f |= c & (1 << 4); f |= SZYX_FLAGS_TABLE[z & 0xff]; f |= OVERFLOW_TABLE[(c >> 7) & 0x03]; (x) = z; (state->registers.byte[6]) = f; };
+                                        { { ((MACHINE *) context)->memory[((d)) & 0xffff] = ((x)); }; elapsed_cycles += 3; };
+
+                                        elapsed_cycles += 6;
+
+                                }
+                                break;
+
+                        }
+
+
+
+                        case DAA: {
+
+                                int a, c, d;
+
+
+
+
+
+                                a = (state->registers.byte[7]);
+                                if (a > 0x99 || ((state->registers.byte[6]) & (1 << 0))) {
+
+                                        c = (1 << 0);
+                                        d = 0x60;
+
+                                } else
+
+                                        c = d = 0;
+
+                                if ((a & 0x0f) > 0x09 || ((state->registers.byte[6]) & (1 << 4)))
+
+                                        d += 0x06;
+
+                                (state->registers.byte[7]) += (state->registers.byte[6]) & (1 << 1) ? -d : +d;
+                                (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(state->registers.byte[7])]
+                                        | (((state->registers.byte[7]) ^ a) & (1 << 4))
+                                        | ((state->registers.byte[6]) & (1 << 1))
+                                        | c;
+
+                                break;
+
+                        }
+
+                        case CPL: {
+
+                                (state->registers.byte[7]) = ~(state->registers.byte[7]);
+                                (state->registers.byte[6]) = ((state->registers.byte[6]) & (((1 << 7) | (1 << 6) | (1 << 2)) | (1 << 0)))
+
+
+
+                                        | ((state->registers.byte[7]) & ((1 << 5) | (1 << 3)))
+
+
+
+                                        | (1 << 4) | (1 << 1);
+
+                                break;
+
+                        }
+
+                        case NEG: {
+
+                                int a, f, z, c;
+
+                                a = (state->registers.byte[7]);
+                                z = -a;
+
+                                c = a ^ z;
+                                f = (1 << 1) | (c & (1 << 4));
+                                f |= SZYX_FLAGS_TABLE[z &= 0xff];
+                                c &= 0x0180;
+                                f |= OVERFLOW_TABLE[c >> 7];
+                                f |= c >> (8 - 0);
+
+                                (state->registers.byte[7]) = z;
+                                (state->registers.byte[6]) = f;
+
+                                break;
+
+                        }
+
+                        case CCF: {
+
+                                int c;
+
+                                c = (state->registers.byte[6]) & (1 << 0);
+                                (state->registers.byte[6]) = ((state->registers.byte[6]) & ((1 << 7) | (1 << 6) | (1 << 2)))
+                                        | (c << 4)
+
+
+
+                                        | ((state->registers.byte[7]) & ((1 << 5) | (1 << 3)))
+
+
+
+                                        | (c ^ (1 << 0));
+
+                                break;
+
+                        }
+
+                        case SCF: {
+
+                                (state->registers.byte[6]) = ((state->registers.byte[6]) & ((1 << 7) | (1 << 6) | (1 << 2)))
+
+
+
+                                        | ((state->registers.byte[7]) & ((1 << 5) | (1 << 3)))
+
+
+
+                                        | (1 << 0);
+
+                                break;
+
+                        }
+
+                        case NOP: {
+
+                                break;
+
+                        }
+
+                        case HALT: {
+# 1234 "z80emu.c"
+    if (elapsed_cycles < number_cycles)
+
+     elapsed_cycles = number_cycles;
+
+
+
+    goto stop_emulation;
+
+                        }
+
+                        case DI: {
+
+    state->iff1 = state->iff2 = 0;
+# 1266 "z80emu.c"
+                                number_cycles += 4;
+                                break;
+
+
+
+                        }
+
+                        case EI: {
+
+                                state->iff1 = state->iff2 = 1;
+# 1286 "z80emu.c"
+                                number_cycles += 4;
+                                break;
+
+
+
+                        }
+
+                        case IM_N: {
+
+
+
+
+
+                                if (!((((opcode) >> 3) & 0x07) & 0x04))
+
+                                        state->im = Z80_INTERRUPT_MODE_0;
+
+                                else if (!((((opcode) >> 3) & 0x07) & 0x02))
+
+                                        state->im = Z80_INTERRUPT_MODE_1;
+
+                                else
+
+                                        state->im = Z80_INTERRUPT_MODE_2;
+
+                                break;
+
+                        }
+
+
+
+                        case ADD_HL_RR: {
+
+                                int x, y, z, f, c;
+
+                                x = *((unsigned short *) registers[6]);
+                                y = *((unsigned short *) registers[((((opcode) >> 4) & 0x03)) + 8]);
+                                z = x + y;
+
+                                c = x ^ y ^ z;
+                                f = (state->registers.byte[6]) & ((1 << 7) | (1 << 6) | (1 << 2));
+
+
+
+                                f |= (z >> 8) & ((1 << 5) | (1 << 3));
+                                f |= (c >> 8) & (1 << 4);
+
+
+
+                                f |= c >> (16 - 0);
+
+                                *((unsigned short *) registers[6]) = z;
+                                (state->registers.byte[6]) = f;
+
+                                elapsed_cycles += 7;
+
+                                break;
+
+                        }
+
+                        case ADC_HL_RR: {
+
+                                int x, y, z, f, c;
+
+                                x = (state->registers.word[2]);
+                                y = *((unsigned short *) registers[((((opcode) >> 4) & 0x03)) + 8]);
+                                z = x + y + ((state->registers.byte[6]) & (1 << 0));
+
+                                c = x ^ y ^ z;
+                                f = z & 0xffff
+                                        ? (z >> 8) & ((1 << 7) | (1 << 5) | (1 << 3))
+                                        : (1 << 6);
+
+
+
+                                f |= (c >> 8) & (1 << 4);
+
+
+
+                                f |= OVERFLOW_TABLE[c >> 15];
+                                f |= z >> (16 - 0);
+
+                                (state->registers.word[2]) = z;
+                                (state->registers.byte[6]) = f;
+
+                                elapsed_cycles += 7;
+
+                                break;
+
+                        }
+
+                        case SBC_HL_RR: {
+
+                                int x, y, z, f, c;
+
+                                x = (state->registers.word[2]);
+                                y = *((unsigned short *) registers[((((opcode) >> 4) & 0x03)) + 8]);
+                                z = x - y - ((state->registers.byte[6]) & (1 << 0));
+
+                                c = x ^ y ^ z;
+                                f = (1 << 1);
+                                f |= z & 0xffff
+                                        ? (z >> 8) & ((1 << 7) | (1 << 5) | (1 << 3))
+                                        : (1 << 6);
+
+
+
+                                f |= (c >> 8) & (1 << 4);
+
+
+
+                                c &= 0x018000;
+                                f |= OVERFLOW_TABLE[c >> 15];
+                                f |= c >> (16 - 0);
+
+                                (state->registers.word[2]) = z;
+                                (state->registers.byte[6]) = f;
+
+                                elapsed_cycles += 7;
+
+                                break;
+
+                        }
+
+                        case INC_RR: {
+
+                                int x;
+
+                                x = *((unsigned short *) registers[((((opcode) >> 4) & 0x03)) + 8]);
+                                x++;
+                                *((unsigned short *) registers[((((opcode) >> 4) & 0x03)) + 8]) = x;
+
+                                elapsed_cycles += 2;
+
+                                break;
+
+                        }
+
+                        case DEC_RR: {
+
+                                int x;
+
+                                x = *((unsigned short *) registers[((((opcode) >> 4) & 0x03)) + 8]);
+                                x--;
+                                *((unsigned short *) registers[((((opcode) >> 4) & 0x03)) + 8]) = x;
+
+                                elapsed_cycles += 2;
+
+                                break;
+
+                        }
+
+
+
+                        case RLCA: {
+
+                                (state->registers.byte[7]) = ((state->registers.byte[7]) << 1) | ((state->registers.byte[7]) >> 7);
+                                (state->registers.byte[6]) = ((state->registers.byte[6]) & ((1 << 7) | (1 << 6) | (1 << 2)))
+                                        | ((state->registers.byte[7]) & (((1 << 5) | (1 << 3)) | (1 << 0)));
+                                break;
+
+                        }
+
+                        case RLA: {
+
+                                int a, f;
+
+                                a = (state->registers.byte[7]) << 1;
+                                f = ((state->registers.byte[6]) & ((1 << 7) | (1 << 6) | (1 << 2)))
+
+
+
+                                        | (a & ((1 << 5) | (1 << 3)))
+
+
+
+                                        | ((state->registers.byte[7]) >> 7);
+                                (state->registers.byte[7]) = a | ((state->registers.byte[6]) & (1 << 0));
+                                (state->registers.byte[6]) = f;
+
+                                break;
+
+                        }
+
+                        case RRCA: {
+
+                                int c;
+
+                                c = (state->registers.byte[7]) & 0x01;
+                                (state->registers.byte[7]) = ((state->registers.byte[7]) >> 1) | ((state->registers.byte[7]) << 7);
+                                (state->registers.byte[6]) = ((state->registers.byte[6]) & ((1 << 7) | (1 << 6) | (1 << 2)))
+
+
+
+                                        | ((state->registers.byte[7]) & ((1 << 5) | (1 << 3)))
+
+
+
+                                        | c;
+
+                                break;
+
+                        }
+
+                        case RRA: {
+
+                                int c;
+
+                                c = (state->registers.byte[7]) & 0x01;
+                                (state->registers.byte[7]) = ((state->registers.byte[7]) >> 1) | (((state->registers.byte[6]) & (1 << 0)) << 7);
+                                (state->registers.byte[6]) = ((state->registers.byte[6]) & ((1 << 7) | (1 << 6) | (1 << 2)))
+
+
+
+                                        | ((state->registers.byte[7]) & ((1 << 5) | (1 << 3)))
+
+
+
+                                        | c;
+
+                                break;
+
+                        }
+
+                        case RLC_R: {
+
+                                { int c; c = (*((unsigned char *) (registers[(((opcode) & 0x07))]))) >> 7; (*((unsigned char *) (registers[(((opcode) & 0x07))]))) = ((*((unsigned char *) (registers[(((opcode) & 0x07))]))) << 1) | c; (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(*((unsigned char *) (registers[(((opcode) & 0x07))]))) & 0xff] | c; };
+                                break;
+
+                        }
+
+                        case RLC_INDIRECT_HL: {
+
+                                int x;
+
+                                if (registers == state->register_table) {
+
+                                        { { ((x)) = ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff]; }; elapsed_cycles += 3; };
+                                        { int c; c = (x) >> 7; (x) = ((x) << 1) | c; (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(x) & 0xff] | c; };
+                                        { { ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff] = ((x)); }; elapsed_cycles += 3; };
+
+                                        elapsed_cycles++;
+
+                                } else {
+
+                                        int d;
+
+                                        { ((d)) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; };
+                                        d = ((char) d) + *((unsigned short *) registers[6]);
+
+                                        { { ((x)) = ((MACHINE *) context)->memory[((d)) & 0xffff]; }; elapsed_cycles += 3; };
+                                        { int c; c = (x) >> 7; (x) = ((x) << 1) | c; (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(x) & 0xff] | c; };
+                                        { { ((MACHINE *) context)->memory[((d)) & 0xffff] = ((x)); }; elapsed_cycles += 3; };
+
+                                        if (((opcode) & 0x07) != 0x06)
+
+                                                *((unsigned char *) (registers[(((opcode) & 0x07))])) = x;
+
+                                        pc += 2;
+
+                                        elapsed_cycles += 5;
+
+                                }
+
+                                break;
+
+                        }
+
+                        case RL_R: {
+
+                                { int c; c = (*((unsigned char *) (registers[(((opcode) & 0x07))]))) >> 7; (*((unsigned char *) (registers[(((opcode) & 0x07))]))) = ((*((unsigned char *) (registers[(((opcode) & 0x07))]))) << 1) | ((state->registers.byte[6]) & (1 << 0)); (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(*((unsigned char *) (registers[(((opcode) & 0x07))]))) & 0xff] | c; };
+                                break;
+
+                        }
+
+                        case RL_INDIRECT_HL: {
+
+                                int x;
+
+                                if (registers == state->register_table) {
+
+                                        { { ((x)) = ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff]; }; elapsed_cycles += 3; };
+                                        { int c; c = (x) >> 7; (x) = ((x) << 1) | ((state->registers.byte[6]) & (1 << 0)); (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(x) & 0xff] | c; };
+                                        { { ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff] = ((x)); }; elapsed_cycles += 3; };
+
+                                        elapsed_cycles++;
+
+                                } else {
+
+                                        int d;
+
+                                        { ((d)) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; };
+                                        d = ((char) d) + *((unsigned short *) registers[6]);
+
+                                        { { ((x)) = ((MACHINE *) context)->memory[((d)) & 0xffff]; }; elapsed_cycles += 3; };
+                                        { int c; c = (x) >> 7; (x) = ((x) << 1) | ((state->registers.byte[6]) & (1 << 0)); (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(x) & 0xff] | c; };
+                                        { { ((MACHINE *) context)->memory[((d)) & 0xffff] = ((x)); }; elapsed_cycles += 3; };
+
+                                        if (((opcode) & 0x07) != 0x06)
+
+                                                *((unsigned char *) (registers[(((opcode) & 0x07))])) = x;
+
+                                        pc += 2;
+
+                                        elapsed_cycles += 5;
+
+                                }
+                                break;
+
+                        }
+
+                        case RRC_R: {
+
+                                { int c; c = (*((unsigned char *) (registers[(((opcode) & 0x07))]))) & 0x01; (*((unsigned char *) (registers[(((opcode) & 0x07))]))) = ((*((unsigned char *) (registers[(((opcode) & 0x07))]))) >> 1) | (c << 7); (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(*((unsigned char *) (registers[(((opcode) & 0x07))]))) & 0xff] | c; };
+                                break;
+
+                        }
+
+                        case RRC_INDIRECT_HL: {
+
+                                int x;
+
+                                if (registers == state->register_table) {
+
+                                        { { ((x)) = ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff]; }; elapsed_cycles += 3; };
+                                        { int c; c = (x) & 0x01; (x) = ((x) >> 1) | (c << 7); (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(x) & 0xff] | c; };
+                                        { { ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff] = ((x)); }; elapsed_cycles += 3; };
+
+                                        elapsed_cycles++;
+
+                                } else {
+
+                                        int d;
+
+                                        { ((d)) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; };
+                                        d = ((char) d) + *((unsigned short *) registers[6]);
+
+                                        { { ((x)) = ((MACHINE *) context)->memory[((d)) & 0xffff]; }; elapsed_cycles += 3; };
+                                        { int c; c = (x) & 0x01; (x) = ((x) >> 1) | (c << 7); (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(x) & 0xff] | c; };
+                                        { { ((MACHINE *) context)->memory[((d)) & 0xffff] = ((x)); }; elapsed_cycles += 3; };
+
+                                        if (((opcode) & 0x07) != 0x06)
+
+                                                *((unsigned char *) (registers[(((opcode) & 0x07))])) = x;
+
+                                        pc += 2;
+
+                                        elapsed_cycles += 5;
+
+                                }
+                                break;
+
+                        }
+
+                        case RR_R: {
+
+                                { int c; c = (*((unsigned char *) (registers[(((opcode) & 0x07))]))) & 0x01; (*((unsigned char *) (registers[(((opcode) & 0x07))]))) = ((*((unsigned char *) (registers[(((opcode) & 0x07))]))) >> 1) | (((state->registers.byte[6]) & (1 << 0)) << 7); (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(*((unsigned char *) (registers[(((opcode) & 0x07))]))) & 0xff] | c; };
+                                break;
+
+                        }
+
+                        case RR_INDIRECT_HL: {
+
+                                int x;
+
+                                if (registers == state->register_table) {
+
+                                        { { ((x)) = ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff]; }; elapsed_cycles += 3; };
+                                        { int c; c = (x) & 0x01; (x) = ((x) >> 1) | (((state->registers.byte[6]) & (1 << 0)) << 7); (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(x) & 0xff] | c; };
+                                        { { ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff] = ((x)); }; elapsed_cycles += 3; };
+
+                                        elapsed_cycles++;
+
+                                } else {
+
+                                        int d;
+
+                                        { ((d)) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; };
+                                        d = ((char) d) + *((unsigned short *) registers[6]);
+
+                                        { { ((x)) = ((MACHINE *) context)->memory[((d)) & 0xffff]; }; elapsed_cycles += 3; };
+                                        { int c; c = (x) & 0x01; (x) = ((x) >> 1) | (((state->registers.byte[6]) & (1 << 0)) << 7); (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(x) & 0xff] | c; };
+                                        { { ((MACHINE *) context)->memory[((d)) & 0xffff] = ((x)); }; elapsed_cycles += 3; };
+
+                                        if (((opcode) & 0x07) != 0x06)
+
+                                                *((unsigned char *) (registers[(((opcode) & 0x07))])) = x;
+
+                                        pc += 2;
+
+                                        elapsed_cycles += 5;
+
+                                }
+                                break;
+
+                        }
+
+                        case SLA_R: {
+
+                                { int c; c = (*((unsigned char *) (registers[(((opcode) & 0x07))]))) >> 7; (*((unsigned char *) (registers[(((opcode) & 0x07))]))) <<= 1; (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(*((unsigned char *) (registers[(((opcode) & 0x07))]))) & 0xff] | c; };
+                                break;
+
+                        }
+
+                        case SLA_INDIRECT_HL: {
+
+                                int x;
+
+                                if (registers == state->register_table) {
+
+                                        { { ((x)) = ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff]; }; elapsed_cycles += 3; };
+                                        { int c; c = (x) >> 7; (x) <<= 1; (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(x) & 0xff] | c; };
+                                        { { ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff] = ((x)); }; elapsed_cycles += 3; };
+
+                                        elapsed_cycles++;
+
+                                } else {
+
+                                        int d;
+
+                                        { ((d)) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; };
+                                        d = ((char) d) + *((unsigned short *) registers[6]);
+
+                                        { { ((x)) = ((MACHINE *) context)->memory[((d)) & 0xffff]; }; elapsed_cycles += 3; };
+                                        { int c; c = (x) >> 7; (x) <<= 1; (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(x) & 0xff] | c; };
+                                        { { ((MACHINE *) context)->memory[((d)) & 0xffff] = ((x)); }; elapsed_cycles += 3; };
+
+                                        if (((opcode) & 0x07) != 0x06)
+
+                                                *((unsigned char *) (registers[(((opcode) & 0x07))])) = x;
+
+                                        pc += 2;
+
+                                        elapsed_cycles += 5;
+
+                                }
+                                break;
+
+                        }
+
+                        case SLL_R: {
+
+                                { int c; c = (*((unsigned char *) (registers[(((opcode) & 0x07))]))) >> 7; (*((unsigned char *) (registers[(((opcode) & 0x07))]))) = ((*((unsigned char *) (registers[(((opcode) & 0x07))]))) << 1) | 0x01; (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(*((unsigned char *) (registers[(((opcode) & 0x07))]))) & 0xff] | c; };
+                                break;
+
+                        }
+
+                        case SLL_INDIRECT_HL: {
+
+                                int x;
+
+                                if (registers == state->register_table) {
+
+                                        { { ((x)) = ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff]; }; elapsed_cycles += 3; };
+                                        { int c; c = (x) >> 7; (x) = ((x) << 1) | 0x01; (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(x) & 0xff] | c; };
+                                        { { ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff] = ((x)); }; elapsed_cycles += 3; };
+
+                                        elapsed_cycles++;
+
+                                } else {
+
+                                        int d;
+
+                                        { ((d)) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; };
+                                        d = ((char) d) + *((unsigned short *) registers[6]);
+
+                                        { { ((x)) = ((MACHINE *) context)->memory[((d)) & 0xffff]; }; elapsed_cycles += 3; };
+                                        { int c; c = (x) >> 7; (x) = ((x) << 1) | 0x01; (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(x) & 0xff] | c; };
+                                        { { ((MACHINE *) context)->memory[((d)) & 0xffff] = ((x)); }; elapsed_cycles += 3; };
+
+                                        if (((opcode) & 0x07) != 0x06)
+
+                                                *((unsigned char *) (registers[(((opcode) & 0x07))])) = x;
+
+                                        pc += 2;
+
+                                        elapsed_cycles += 5;
+
+                                }
+                                break;
+
+                        }
+
+                        case SRA_R: {
+
+                                { int c; c = (*((unsigned char *) (registers[(((opcode) & 0x07))]))) & 0x01; (*((unsigned char *) (registers[(((opcode) & 0x07))]))) = ((char) (*((unsigned char *) (registers[(((opcode) & 0x07))])))) >> 1; (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(*((unsigned char *) (registers[(((opcode) & 0x07))]))) & 0xff] | c; };
+                                break;
+
+                        }
+
+                        case SRA_INDIRECT_HL: {
+
+                                int x;
+
+                                if (registers == state->register_table) {
+
+                                        { { ((x)) = ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff]; }; elapsed_cycles += 3; };
+                                        { int c; c = (x) & 0x01; (x) = ((char) (x)) >> 1; (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(x) & 0xff] | c; };
+                                        { { ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff] = ((x)); }; elapsed_cycles += 3; };
+
+                                        elapsed_cycles++;
+
+                                } else {
+
+                                        int d;
+
+                                        { ((d)) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; };
+                                        d = ((char) d) + *((unsigned short *) registers[6]);
+
+                                        { { ((x)) = ((MACHINE *) context)->memory[((d)) & 0xffff]; }; elapsed_cycles += 3; };
+                                        { int c; c = (x) & 0x01; (x) = ((char) (x)) >> 1; (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(x) & 0xff] | c; };
+                                        { { ((MACHINE *) context)->memory[((d)) & 0xffff] = ((x)); }; elapsed_cycles += 3; };
+
+                                        if (((opcode) & 0x07) != 0x06)
+
+                                                *((unsigned char *) (registers[(((opcode) & 0x07))])) = x;
+
+                                        pc += 2;
+
+                                        elapsed_cycles += 5;
+
+                                }
+                                break;
+
+                        }
+
+                        case SRL_R: {
+
+                                { int c; c = (*((unsigned char *) (registers[(((opcode) & 0x07))]))) & 0x01; (*((unsigned char *) (registers[(((opcode) & 0x07))]))) >>= 1; (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(*((unsigned char *) (registers[(((opcode) & 0x07))]))) & 0xff] | c; };
+                                break;
+
+                        }
+
+                        case SRL_INDIRECT_HL: {
+
+                                int x;
+
+                                if (registers == state->register_table) {
+
+                                        { { ((x)) = ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff]; }; elapsed_cycles += 3; };
+                                        { int c; c = (x) & 0x01; (x) >>= 1; (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(x) & 0xff] | c; };
+                                        { { ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff] = ((x)); }; elapsed_cycles += 3; };
+
+                                        elapsed_cycles++;
+
+                                } else {
+
+                                        int d;
+
+                                        { ((d)) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; };
+                                        d = ((char) d) + *((unsigned short *) registers[6]);
+
+                                        { { ((x)) = ((MACHINE *) context)->memory[((d)) & 0xffff]; }; elapsed_cycles += 3; };
+                                        { int c; c = (x) & 0x01; (x) >>= 1; (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[(x) & 0xff] | c; };
+                                        { { ((MACHINE *) context)->memory[((d)) & 0xffff] = ((x)); }; elapsed_cycles += 3; };
+
+                                        if (((opcode) & 0x07) != 0x06)
+
+                                                *((unsigned char *) (registers[(((opcode) & 0x07))])) = x;
+
+                                        pc += 2;
+
+                                        elapsed_cycles += 5;
+
+                                }
+                                break;
+
+                        }
+
+                        case RLD_RRD: {
+
+                                int x, y;
+
+                                { { ((x)) = ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff]; }; elapsed_cycles += 3; };
+                                y = ((state->registers.byte[7]) & 0xf0) << 8;
+                                y |= opcode == 0x6f
+                                        ? (x << 4) | ((state->registers.byte[7]) & 0x0f)
+                                        : ((x & 0x0f) << 8)
+                                                | (((state->registers.byte[7]) & 0x0f) << 4)
+                                                | (x >> 4);
+                                { { ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff] = ((y)); }; elapsed_cycles += 3; };
+                                y >>= 8;
+
+                                (state->registers.byte[7]) = y;
+                                (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[y] | ((state->registers.byte[6]) & (1 << 0));
+
+                                elapsed_cycles += 4;
+
+                                break;
+
+                        }
+
+
+
+                        case BIT_B_R: {
+
+                                int x;
+
+                                x = *((unsigned char *) (registers[(((opcode) & 0x07))])) & (1 << (((opcode) >> 3) & 0x07));
+                                (state->registers.byte[6]) = (x ? 0 : (1 << 6) | (1 << 2))
+
+
+
+                                        | (x & (1 << 7))
+                                        | (*((unsigned char *) (registers[(((opcode) & 0x07))])) & ((1 << 5) | (1 << 3)))
+
+
+
+                                        | (1 << 4)
+                                        | ((state->registers.byte[6]) & (1 << 0));
+
+                                break;
+
+                        }
+
+                        case BIT_B_INDIRECT_HL: {
+
+                                int d, x;
+
+                                if (registers == state->register_table) {
+
+                                        d = (state->registers.word[2]);
+
+                                        elapsed_cycles++;
+
+                                } else {
+
+                                        { ((d)) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; };
+                                        d = ((char) d) + *((unsigned short *) registers[6]);
+
+                                        pc += 2;
+
+                                        elapsed_cycles += 5;
+
+                                }
+
+                                { { ((x)) = ((MACHINE *) context)->memory[((d)) & 0xffff]; }; elapsed_cycles += 3; };
+                                x &= 1 << (((opcode) >> 3) & 0x07);
+                                (state->registers.byte[6]) = (x ? 0 : (1 << 6) | (1 << 2))
+
+
+
+                                        | (x & (1 << 7))
+                                        | (d & ((1 << 5) | (1 << 3)))
+
+
+
+                                        | (1 << 4)
+                                        | ((state->registers.byte[6]) & (1 << 0));
+
+                                break;
+
+                        }
+
+                        case SET_B_R: {
+
+                                *((unsigned char *) (registers[(((opcode) & 0x07))])) |= 1 << (((opcode) >> 3) & 0x07);
+                                break;
+
+                        }
+
+                        case SET_B_INDIRECT_HL: {
+
+                                int x;
+
+                                if (registers == state->register_table) {
+
+                                        { { ((x)) = ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff]; }; elapsed_cycles += 3; };
+                                        x |= 1 << (((opcode) >> 3) & 0x07);
+                                        { { ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff] = ((x)); }; elapsed_cycles += 3; };
+
+                                        elapsed_cycles++;
+
+                                } else {
+
+                                        int d;
+
+                                        { ((d)) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; };
+                                        d = ((char) d) + *((unsigned short *) registers[6]);
+
+                                        { { ((x)) = ((MACHINE *) context)->memory[((d)) & 0xffff]; }; elapsed_cycles += 3; };
+                                        x |= 1 << (((opcode) >> 3) & 0x07);
+                                        { { ((MACHINE *) context)->memory[((d)) & 0xffff] = ((x)); }; elapsed_cycles += 3; };
+
+                                        if (((opcode) & 0x07) != 0x06)
+
+                                                *((unsigned char *) (registers[(((opcode) & 0x07))])) = x;
+
+                                        pc += 2;
+
+                                        elapsed_cycles += 5;
+
+                                }
+                                break;
+
+                        }
+
+                        case RES_B_R: {
+
+                                *((unsigned char *) (registers[(((opcode) & 0x07))])) &= ~(1 << (((opcode) >> 3) & 0x07));
+                                break;
+
+                        }
+
+                        case RES_B_INDIRECT_HL: {
+
+                                int x;
+
+                                if (registers == state->register_table) {
+
+                                        { { ((x)) = ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff]; }; elapsed_cycles += 3; };
+                                        x &= ~(1 << (((opcode) >> 3) & 0x07));
+                                        { { ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff] = ((x)); }; elapsed_cycles += 3; };
+
+                                        elapsed_cycles++;
+
+                                } else {
+
+                                        int d;
+
+                                        { ((d)) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; };
+                                        d = ((char) d) + *((unsigned short *) registers[6]);
+
+                                        { { ((x)) = ((MACHINE *) context)->memory[((d)) & 0xffff]; }; elapsed_cycles += 3; };
+                                        x &= ~(1 << (((opcode) >> 3) & 0x07));
+                                        { { ((MACHINE *) context)->memory[((d)) & 0xffff] = ((x)); }; elapsed_cycles += 3; };
+
+                                        if (((opcode) & 0x07) != 0x06)
+
+                                                *((unsigned char *) (registers[(((opcode) & 0x07))])) = x;
+
+                                        pc += 2;
+
+                                        elapsed_cycles += 5;
+
+                                }
+                                break;
+
+                        }
+
+
+
+                        case JP_NN: {
+
+                                int nn;
+
+                                { unsigned char *memory; memory = ((MACHINE *) context)->memory; ((nn)) = memory[((pc)) & 0xffff] | (memory[(((pc)) + 1) & 0xffff] << 8); };
+                                pc = nn;
+
+                                elapsed_cycles += 6;
+
+                                break;
+
+                        }
+
+                        case JP_CC_NN: {
+
+                                int nn;
+
+                                if ((((state->registers.byte[6]) ^ XOR_CONDITION_TABLE[((((opcode) >> 3) & 0x07))]) & AND_CONDITION_TABLE[((((opcode) >> 3) & 0x07))])) {
+
+                                        { unsigned char *memory; memory = ((MACHINE *) context)->memory; ((nn)) = memory[((pc)) & 0xffff] | (memory[(((pc)) + 1) & 0xffff] << 8); };
+                                        pc = nn;
+
+                                } else {
+
+
+
+
+
+
+
+                                        pc += 2;
+
+                                }
+
+                                elapsed_cycles += 6;
+
+                                break;
+
+                        }
+
+                        case JR_E: {
+
+                                int e;
+
+                                { ((e)) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; };
+                                e = (char) e;
+                                pc += e + 1;
+
+                                elapsed_cycles += 8;
+
+                                break;
+
+                        }
+
+                        case JR_DD_E: {
+
+                                int e;
+
+                                if ((((state->registers.byte[6]) ^ XOR_CONDITION_TABLE[((((opcode) >> 3) & 0x03))]) & AND_CONDITION_TABLE[((((opcode) >> 3) & 0x03))])) {
+
+                                        { ((e)) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; };
+                                        e = (char) e;
+                                        pc += e + 1;
+
+                                        elapsed_cycles += 8;
+
+                                } else {
+
+
+
+
+
+
+
+                                        pc++;
+
+                                        elapsed_cycles += 3;
+
+                                }
+                                break;
+
+                        }
+
+                        case JP_HL: {
+
+                                pc = *((unsigned short *) registers[6]);
+                                break;
+
+                        }
+
+                        case DJNZ_E: {
+
+                                int e;
+
+                                if (--(state->registers.byte[1])) {
+
+                                        { ((e)) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; };
+                                        e = (char) e;
+                                        pc += e + 1;
+
+                                        elapsed_cycles += 9;
+
+                                } else {
+
+
+
+
+
+
+
+                                        pc++;
+
+                                        elapsed_cycles += 4;
+
+                                }
+                                break;
+
+                        }
+
+
+
+                        case CALL_NN: {
+
+                                int nn;
+
+                                { { unsigned char *memory; memory = ((MACHINE *) context)->memory; (((nn))) = memory[((pc)) & 0xffff] | (memory[(((pc)) + 1) & 0xffff] << 8); }; pc += 2; elapsed_cycles += 6; };
+                                { (state->registers.word[6]) -= 2; { { unsigned char *memory; memory = ((MACHINE *) context)->memory; memory[(((state->registers.word[6]))) & 0xffff] = (((pc))); memory[((((state->registers.word[6]))) + 1) & 0xffff] = (((pc))) >> 8; }; elapsed_cycles += 6; }; };
+                                pc = nn;
+
+                                elapsed_cycles++;
+
+                                break;
+
+                        }
+
+                        case CALL_CC_NN: {
+
+                                int nn;
+
+                                if ((((state->registers.byte[6]) ^ XOR_CONDITION_TABLE[((((opcode) >> 3) & 0x07))]) & AND_CONDITION_TABLE[((((opcode) >> 3) & 0x07))])) {
+
+                                        { { unsigned char *memory; memory = ((MACHINE *) context)->memory; (((nn))) = memory[((pc)) & 0xffff] | (memory[(((pc)) + 1) & 0xffff] << 8); }; pc += 2; elapsed_cycles += 6; };
+                                        { (state->registers.word[6]) -= 2; { { unsigned char *memory; memory = ((MACHINE *) context)->memory; memory[(((state->registers.word[6]))) & 0xffff] = (((pc))); memory[((((state->registers.word[6]))) + 1) & 0xffff] = (((pc))) >> 8; }; elapsed_cycles += 6; }; };
+                                        pc = nn;
+
+                                        elapsed_cycles++;
+
+                                } else {
+
+
+
+
+
+
+
+                                        pc += 2;
+
+                                        elapsed_cycles += 6;
+
+                                }
+                                break;
+
+                        }
+
+                        case RET: {
+
+                                { { { unsigned char *memory; memory = ((MACHINE *) context)->memory; (((pc))) = memory[(((state->registers.word[6]))) & 0xffff] | (memory[((((state->registers.word[6]))) + 1) & 0xffff] << 8); }; elapsed_cycles += 6; }; (state->registers.word[6]) += 2; };
+                                break;
+
+                        }
+
+                        case RET_CC: {
+
+                                if ((((state->registers.byte[6]) ^ XOR_CONDITION_TABLE[((((opcode) >> 3) & 0x07))]) & AND_CONDITION_TABLE[((((opcode) >> 3) & 0x07))])) {
+
+                                        { { { unsigned char *memory; memory = ((MACHINE *) context)->memory; (((pc))) = memory[(((state->registers.word[6]))) & 0xffff] | (memory[((((state->registers.word[6]))) + 1) & 0xffff] << 8); }; elapsed_cycles += 6; }; (state->registers.word[6]) += 2; };
+
+                                }
+                                elapsed_cycles++;
+                                break;
+
+                        }
+
+                        case RETI_RETN: {
+
+                                state->iff1 = state->iff2;
+                                { { { unsigned char *memory; memory = ((MACHINE *) context)->memory; (((pc))) = memory[(((state->registers.word[6]))) & 0xffff] | (memory[((((state->registers.word[6]))) + 1) & 0xffff] << 8); }; elapsed_cycles += 6; }; (state->registers.word[6]) += 2; };
+# 2235 "z80emu.c"
+                                break;
+
+
+
+                        }
+
+                        case RST_P: {
+
+                                { (state->registers.word[6]) -= 2; { { unsigned char *memory; memory = ((MACHINE *) context)->memory; memory[(((state->registers.word[6]))) & 0xffff] = (((pc))); memory[((((state->registers.word[6]))) + 1) & 0xffff] = (((pc))) >> 8; }; elapsed_cycles += 6; }; };
+                                pc = RST_TABLE[(((opcode) >> 3) & 0x07)];
+                                elapsed_cycles++;
+                                break;
+
+                        }
+
+
+
+                        case IN_A_N: {
+
+                                int n;
+
+                                { { (((n))) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; }; pc++; elapsed_cycles += 3; };
+                                { SystemCall((MACHINE *) context); };
+
+                                elapsed_cycles += 4;
+
+                                break;
+
+                        }
+
+                        case IN_R_C: {
+
+                                int x;
+                                { SystemCall((MACHINE *) context); };
+                                if ((((opcode) >> 3) & 0x07) != 0x06)
+
+                                        *((unsigned char *) (registers[((((opcode) >> 3) & 0x07))])) = x;
+
+                                (state->registers.byte[6]) = SZYXP_FLAGS_TABLE[x] | ((state->registers.byte[6]) & (1 << 0));
+
+                                elapsed_cycles += 4;
+
+                                break;
+
+                        }
+# 2288 "z80emu.c"
+                        case INI_IND: {
+
+                                int x, f;
+
+                                { SystemCall((MACHINE *) context); };
+                                { { ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff] = ((x)); }; elapsed_cycles += 3; };
+
+                                f = SZYX_FLAGS_TABLE[--(state->registers.byte[1]) & 0xff]
+                                        | (x >> (7 - 1));
+                                if (opcode == 0xa2) {
+
+                                        (state->registers.word[2])++;
+                                        x += ((state->registers.byte[0]) + 1) & 0xff;
+
+                                } else {
+
+                                        (state->registers.word[2])--;
+                                        x += ((state->registers.byte[0]) - 1) & 0xff;
+
+                                }
+                                f |= x & 0x0100 ? ((1 << 4) | (1 << 0)) : 0;
+                                f |= SZYXP_FLAGS_TABLE[(x & 0x07) ^ (state->registers.byte[1])]
+                                        & (1 << 2);
+                                (state->registers.byte[6]) = f;
+
+                                elapsed_cycles += 5;
+
+                                break;
+
+                        }
+
+                        case INIR_INDR: {
+
+                                int d, b, hl, x, f;
+# 2332 "z80emu.c"
+                                d = opcode == 0xb2 ? +1 : -1;
+
+                                b = (state->registers.byte[1]);
+                                hl = (state->registers.word[2]);
+
+                                r -= 2;
+                                elapsed_cycles -= 8;
+                                for ( ; ; ) {
+
+                                        r += 2;
+
+                                        { SystemCall((MACHINE *) context); };
+                                        { ((MACHINE *) context)->memory[(hl) & 0xffff] = (x); };
+
+                                        hl += d;
+
+                                        if (--b)
+
+                                                elapsed_cycles += 21;
+
+                                        else {
+
+                                                f = (1 << 6);
+                                                elapsed_cycles += 16;
+                                                break;
+
+                                        }
+# 2373 "z80emu.c"
+                                        if (elapsed_cycles < number_cycles)
+
+                                                continue;
+
+                                        else {
+
+                                                f = SZYX_FLAGS_TABLE[b];
+                                                pc -= 2;
+                                                break;
+
+                                        }
+
+                                }
+
+                                (state->registers.word[2]) = hl;
+                                (state->registers.byte[1]) = b;
+
+                                f |= x >> (7 - 1);
+                                x += ((state->registers.byte[0]) + d) & 0xff;
+                                f |= x & 0x0100 ? ((1 << 4) | (1 << 0)) : 0;
+                                f |= SZYXP_FLAGS_TABLE[(x & 0x07) ^ b]
+                                        & (1 << 2);
+                                (state->registers.byte[6]) = f;
+
+                                break;
+
+                        }
+
+                        case OUT_N_A: {
+
+                                int n;
+
+                                { { (((n))) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; }; pc++; elapsed_cycles += 3; };
+                                { ((MACHINE *) context)->is_done = !0; number_cycles = 0; };
+
+                                elapsed_cycles += 4;
+
+                                break;
+
+                        }
+
+                        case OUT_C_R: {
+
+                                int x;
+
+                                x = (((opcode) >> 3) & 0x07) != 0x06
+                                        ? *((unsigned char *) (registers[((((opcode) >> 3) & 0x07))]))
+                                        : 0;
+                                { ((MACHINE *) context)->is_done = !0; number_cycles = 0; };
+
+                                elapsed_cycles += 4;
+
+                                break;
+
+                        }
+
+                        case OUTI_OUTD: {
+
+                                int x, f;
+
+                                { { ((x)) = ((MACHINE *) context)->memory[(((state->registers.word[2]))) & 0xffff]; }; elapsed_cycles += 3; };
+                                { ((MACHINE *) context)->is_done = !0; number_cycles = 0; };
+
+                                (state->registers.word[2]) += opcode == 0xa3 ? +1 : -1;
+
+                                f = SZYX_FLAGS_TABLE[--(state->registers.byte[1]) & 0xff]
+                                        | (x >> (7 - 1));
+                                x += (state->registers.word[2]) & 0xff;
+                                f |= x & 0x0100 ? ((1 << 4) | (1 << 0)) : 0;
+                                f |= SZYXP_FLAGS_TABLE[(x & 0x07) ^ (state->registers.byte[1])]
+                                        & (1 << 2);
+                                (state->registers.byte[6]) = f;
+
+                                break;
+
+                        }
+
+                        case OTIR_OTDR: {
+
+                                int d, b, hl, x, f;
+
+                                d = opcode == 0xb3 ? +1 : -1;
+
+                                b = (state->registers.byte[1]);
+                                hl = (state->registers.word[2]);
+
+                                r -= 2;
+                                elapsed_cycles -= 8;
+                                for ( ; ; ) {
+
+                                        r += 2;
+
+                                        { (x) = ((MACHINE *) context)->memory[(hl) & 0xffff]; };
+                                        { ((MACHINE *) context)->is_done = !0; number_cycles = 0; };
+
+                                        hl += d;
+                                        if (--b)
+
+                                                elapsed_cycles += 21;
+
+                                        else {
+
+                                                f = (1 << 6);
+                                                elapsed_cycles += 16;
+                                                break;
+
+                                        }
+
+                                        if (elapsed_cycles < number_cycles)
+
+                                                continue;
+
+                                        else {
+
+                                                f = SZYX_FLAGS_TABLE[b];
+                                                pc -= 2;
+                                                break;
+
+                                        }
+
+                                }
+
+                                (state->registers.word[2]) = hl;
+                                (state->registers.byte[1]) = b;
+
+                                f |= x >> (7 - 1);
+                                x += hl & 0xff;
+                                f |= x & 0x0100 ? ((1 << 4) | (1 << 0)) : 0;
+                                f |= SZYXP_FLAGS_TABLE[(x & 0x07) ^ b]
+                                        & (1 << 2);
+                                (state->registers.byte[6]) = f;
+
+                                break;
+
+                        }
+
+
+
+                        case CB_PREFIX: {
+
+
+
+
+
+                                if (registers != state->register_table) {
+
+                                        r--;
+
+
+
+
+
+                                        { ((opcode)) = ((MACHINE *) context)->memory[((pc + 1)) & 0xffff]; };
+
+                                } else {
+
+                                        { ((opcode)) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; };
+                                        pc++;
+
+                                }
+                                instruction = CB_INSTRUCTION_TABLE[opcode];
+
+                                goto emulate_next_instruction;
+
+                        }
+
+                        case DD_PREFIX: {
+
+                                registers = state->dd_register_table;
+# 2566 "z80emu.c"
+                                { ((opcode)) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; };
+                                pc++;
+                                goto emulate_next_opcode;
+
+
+
+                        }
+
+                        case FD_PREFIX: {
+
+                                registers = state->fd_register_table;
+# 2597 "z80emu.c"
+                                { ((opcode)) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; };
+                                pc++;
+                                goto emulate_next_opcode;
+
+
+
+                        }
+
+                        case ED_PREFIX: {
+
+                                registers = state->register_table;
+                                { ((opcode)) = ((MACHINE *) context)->memory[((pc)) & 0xffff]; };
+                                pc++;
+                                instruction = ED_INSTRUCTION_TABLE[opcode];
+
+                                goto emulate_next_instruction;
+
+                        }
+
+
+
+                        case ED_UNDEFINED: {
+# 2628 "z80emu.c"
+                                break;
+
+
+
+                        }
+
+                }
+
+                if (elapsed_cycles >= number_cycles)
+
+                        goto stop_emulation;
+
+        }
+
+stop_emulation:
+
+        state->r = (state->r & 0x80) | (r & 0x7f);
+        state->pc = pc & 0xffff;
+
+        return elapsed_cycles;
+}
