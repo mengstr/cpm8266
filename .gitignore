@@ -6,9 +6,7 @@
 *.o
 *.bin
 *.map
-
-#The executable itself
-cpm8266
+*.elf
 
 # Some private folders
 private/

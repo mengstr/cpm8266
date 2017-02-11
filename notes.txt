@@ -34,3 +34,6 @@ http://www.gaby.de/sysdisk.htm
 00380000 DriveN
 003C0000 DriveO
 
+1486768789:  shf/rot (<ix,iy>+1)...........  ERROR **** crc expected:713acd81 found:cb288fcc
+1486768798:  shf/rot <b,c,d,e,h,l,(hl),a>..  ERROR **** crc expected:eb604d58 found:fac70e40
+
