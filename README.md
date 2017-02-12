@@ -2,7 +2,7 @@
 
 ## CP/M 2.2 for Z80 emulator running on ESP8266
 
-## Please note that this is still early work-in-progress
+## _Please note that this is still early work-in-progress_
 
 ### What
 
@@ -42,21 +42,14 @@ export ESPPORT=/dev/ttyUSB0
 Then just a `make clean && make && make flash` to compile and upload to the
 ESP.
 
-
-
-
 ### Acknowledgements and thanks
 I'm standing on the shoulders of a lot of really smart people here. Without
 their contributions I wouldn't even know where to start.
 
-Paul Sokolovsky @pfalcon made the Esp-Open-SDK installer/setup
-https://github.com/pfalcon
+Paul Sokolovsky _@pfalcon_ made the Esp-Open-SDK installer/setup. https://github.com/pfalcon
 
-Lin Ke-Fong @anotherlin made the Z80 Emulator
-https://github.com/anotherlin
+Lin Ke-Fong _@anotherlin_ made the Z80 Emulator. https://github.com/anotherlin
 
-Charles Lohr @CNLohr created the NoSDK for the ESP8266
-https://github.com/cnlohr
+Charles Lohr _@CNLohr_ created the NoSDK for the ESP8266. https://github.com/cnlohr
 
-Tim Olmstead (RIP) for managing to free the CP/M sources from the owners
-http://www.cpm.z80.de/ 
+Tim Olmstead (RIP) for managing to free the CP/M sources from their owners http://www.cpm.z80.de/ 
