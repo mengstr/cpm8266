@@ -26,7 +26,7 @@ when whith the FreeRtos and WIFI running.)
 
 You will need ESP-Open-SDK installed. If you don't already have it you can
 get it at https://github.com/pfalcon/esp-open-sdk. Just follow the
-instructions for there and br prepared for a lengthy (but automates)
+instructions for there and be prepared for a lengthy (but automated)
 process.
 
 Then clone the code for this project with:
