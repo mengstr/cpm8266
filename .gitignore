@@ -8,6 +8,7 @@
 *.map
 *.elf
 *.lst
+*.pre
 
 # Some private folders
 private/
