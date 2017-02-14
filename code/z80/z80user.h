@@ -91,6 +91,8 @@ typedef struct MACHINE {
   int is_done;
 } MACHINE;
 
+extern void SystemCall(MACHINE *m);
+
 #define Z80_READ_BYTE(address, x)                                              \
   { (x) = ((MACHINE *)context)->memory[(address)&0xffff]; }
 
