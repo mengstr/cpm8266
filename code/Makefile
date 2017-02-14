@@ -49,7 +49,10 @@ nosdk/startup.o: nosdk/startup.S
 	@$(AS) -o $@ -c $<
 
 flash : $(FW_FILE_1) $(FW_FILE_2)
-	$(ESPTOOL) -p $(FLASHPORT) -b $(FLASHBAUD) write_flash 0x00000 image.elf-0x00000.bin -ff 80m -fm dout
+	$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x00000 image.elf-0x00000.bin -ff 80m -fm dout
+
+serial : 
+	screen $(ESPPORT) 9600
 
 clean :
 	rm -rfv $(FW_1) $(FW_2) {.,nosdk,z80}/*.{s,o,i,elf,res,out,map,lst,out,bak} *~
