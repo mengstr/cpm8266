@@ -256,13 +256,13 @@ int ICACHE_FLASH_ATTR Z80Emulate (Z80_STATE *state, int number_cycles, void *con
  * needed by Z80Interrupt() for interrupt mode 0.
  */
 
+
 static int ICACHE_FLASH_ATTR emulate (Z80_STATE * state, 
 	int opcode, 
 	int elapsed_cycles, int number_cycles, 
 	void *context)
 {
         int	pc, r;
-//        printf("emulate(opcode=%02x elcy=%d nucy=%d\n",opcode,elapsed_cycles,number_cycles);
 
         pc = state->pc;
         r = state->r & 0x7f;
