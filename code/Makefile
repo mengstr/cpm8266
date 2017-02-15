@@ -1,9 +1,12 @@
 SHELL		=  /bin/bash		
 
+
 ESPPORT	    ?= /dev/ttyUSB0
 ESP8266SDK	?= /Volumes/case-sensitive/esp-open-sdk/
 FLASHBAUD	=  921600
 MAIN_MHZ	=  80 #Pick from *52, *80, 104 or *115, 160, *173, *189#, 231, 346, 378#  * = peripheral clock at processor clock. # = Mine won't boot + on ESP8285, Clock Lower and unreliable.  Warning. Peripheral clocks of >115 will NOT boot without a full power-down and up. (Don't know why)
+
+TERMSPEED   = 9600
 
 TARGET	 	=  image
 FW_1 		=  $(TARGET).elf-0x10000.bin
@@ -52,7 +55,7 @@ flash : $(FW_FILE_1) $(FW_FILE_2)
 	$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x00000 image.elf-0x00000.bin -ff 80m -fm dout
 
 serial : 
-	screen $(ESPPORT) 9600
+	minicom -b $(TERMSPEED) -D $(ESPPORT) 
 
 clean :
 	rm -rfv $(FW_1) $(FW_2) {.,nosdk,z80}/*.{s,o,i,elf,res,out,map,lst,out,bak} {.,nosdk,z80}/*~
