@@ -4,13 +4,18 @@
 #include "esp8266_rom.h"
 #include "ets_sys.h"
 #include "gpio.h"
+#include "uart_dev.h"
+#include "uart_register.h"
 #include "nosdk8266.h"
+#include "uart.h"
 
-#define TOLOWER(x) (x|0x20)
+// ESP related
 size_t strlen(const char *s);
 char *ets_strcpy(char *dest, const char *src);
 char *strcpy(char *dest, const char *src);
 
+
+#define TOLOWER(x) (x|0x20)
 #define BREAKKEY '`'
 
 
@@ -48,12 +53,8 @@ void ICACHE_FLASH_ATTR PatchBiosVectors(MACHINE *m) {
 // then 0x00 is returned
 //
 char ICACHE_FLASH_ATTR GetKey(bool wait) {
-  int res;
-  char buf = 0;
-  do {
-    res = uart_rx_one_char(&buf);
-  } while (res && wait);
-  return buf;
+  if (!wait && GetRxCnt()==0) return 0x00;
+  return GetRxChar();
 }
 
 //
@@ -61,12 +62,11 @@ char ICACHE_FLASH_ATTR GetKey(bool wait) {
 //
 char ICACHE_FLASH_ATTR *GetLine(void) {
   char ch;
-  static char line[80];
+  static char line[128];
   line[0] = 0;
   for (;;) {
     ch = GetKey(true);
-    //    printf("(%d)", ch);
-    if (ch == 13)
+    if (ch == 13 || ch==10)
       return line;
     if ((ch == 8 || ch == 127) && strlen(line) > 0) {
       printf("\b \b");
@@ -315,7 +315,7 @@ void LoadIntelHex(void) {
         address++;
       }
     } else {
-      printf("Invalid record type in '%s'\n",line);
+//      printf("Invalid record type in '%s'\n",line);
     }
   }
 }
@@ -403,6 +403,7 @@ void ICACHE_FLASH_ATTR ModifyRegister(char *regname, uint16_t val) {
   ShowAllRegisters();
 }
 
+
 //
 //
 //
@@ -410,7 +411,9 @@ int main() {
   char *line;
 
   nosdk8266_init();
+  InitUart();
   ets_delay_us(250000);
+  printf("\n");
 
   Z80Reset(&machine.state);
   machine.is_done = 0;

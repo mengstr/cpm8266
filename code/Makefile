@@ -1,4 +1,4 @@
-SHELL		=  /bin/bash		
+SHELL		=  /bin/bash
 
 
 ESPPORT	    ?= /dev/ttyUSB0
@@ -24,18 +24,22 @@ AS		    =  $(BINS)/xtensa-lx106-elf-as
 
 LDFLAGS		=  -T ld/linkerscript.ld -T ld/addresses.ld
 CFLAGS		=  -std=c11 -flto -Os -g -Iinclude -nostdlib -DMAIN_MHZ=$(MAIN_MHZ) -mno-serialize-volatile -mlongcalls
-SRCS		=  main.c z80/z80emu.c nosdk/startup.S nosdk/nosdk8266.c
-OBJS		=  main.o z80/z80emu.o nosdk/startup.o nosdk/nosdk8266.o
+SRCS		=  main.c uart.c z80/z80emu.c nosdk/startup.S nosdk/nosdk8266.c
+OBJS		=  main.o uart.o z80/z80emu.o nosdk/startup.o nosdk/nosdk8266.o
 
 all: $(OBJS)
 	@echo [LINK] $(OBJS)
-	@$(GCC) $(OBJS) $(CFLAGS) $(LDFLAGS) -o $(TARGET).elf 
+	@$(GCC) $(OBJS) $(CFLAGS) $(LDFLAGS) -o $(TARGET).elf
 	@$(SIZE) $(TARGET).elf
 	@nm -S -n $(TARGET).elf > $(TARGET).map
 	@$(OBJDUMP) -S $(TARGET).elf > $(TARGET).lst
 	@export PATH=$(BINS):$$PATH; $(ESPTOOL) elf2image $(TARGET).elf
 
 main.o: main.c z80/z80emu.h z80/z80user.h
+	@echo [CC] $<
+	@$(GCC) $(CFLAGS) -o $@ -c $<
+
+uart.o: uart.c uart.h
 	@echo [CC] $<
 	@$(GCC) $(CFLAGS) -o $@ -c $<
 
@@ -54,10 +58,11 @@ nosdk/startup.o: nosdk/startup.S
 flash : $(FW_FILE_1) $(FW_FILE_2)
 	$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x00000 image.elf-0x00000.bin -ff 80m -fm dout
 
-serial : 
-	minicom -b $(TERMSPEED) -D $(ESPPORT) 
+serial :
+#	minicom -b $(TERMSPEED) -D $(ESPPORT)
+	screen $(ESPPORT) $(TERMSPEED)
 
 clean :
 	rm -rfv $(FW_1) $(FW_2) {.,nosdk,z80}/*.{s,o,i,elf,res,out,map,lst,out,bak} {.,nosdk,z80}/*~
-	
+
 
