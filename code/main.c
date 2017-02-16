@@ -20,8 +20,8 @@ char *strcpy(char *dest, const char *src);
 
 
 static unsigned char z80code[] = {
-//#include "hex/hello.data"
-#include "hex/zexdoc.data"
+#include "hex/hello.data"
+//#include "hex/zexdoc.data"
 };
 #include "z80/z80emu.h"
 #include "z80/z80user.h"
@@ -404,6 +404,54 @@ void ICACHE_FLASH_ATTR ModifyRegister(char *regname, uint16_t val) {
 }
 
 
+#define SECTORSIZE        128
+#define SECTORSPERTRACK   26
+#define TRACKSPERDISK     77
+#define DISKFLASHOFFSET   0x40000 // Location in flash for first disk
+#define DISKFLASHSIZE     0x40000 // Number of bytes in flash for each disk 
+
+
+//
+//
+//
+void ReadDiskBlock(void *buf, uint8_t sectorNo, uint8_t trackNo, uint8_t diskNo) {
+  printf("(r%d,%d,%d)",diskNo,trackNo,sectorNo);
+  uint32_t flashloc=DISKFLASHOFFSET + 
+    DISKFLASHSIZE*diskNo + 
+    SECTORSPERTRACK*trackNo + 
+    SECTORSIZE*sectorNo;
+  Cache_Read_Disable();
+  SPIUnlock();
+  SPIRead(flashloc, (uint32_t *)buf, SECTORSIZE);
+  Cache_Read_Enable(0,0,1);
+}
+
+//
+//
+//
+void WriteDiskBlock(void *buf, uint8_t sectorNo, uint8_t trackNo, uint8_t diskNo) {
+  printf("(w%d,%d,%d)",diskNo,trackNo,sectorNo);
+  uint32_t flashloc=DISKFLASHOFFSET + 
+    DISKFLASHSIZE*diskNo + 
+    SECTORSPERTRACK*trackNo + 
+    SECTORSIZE*sectorNo;
+  Cache_Read_Disable();
+  SPIUnlock();
+  SPIWrite(flashloc, (uint32_t *)buf, SECTORSIZE);
+  Cache_Read_Enable(0,0,1);
+}
+
+
+
+//  Cache_Read_Disable();
+//	SPIUnlock();
+//	SPIEraseBlock(0x40000>>16);
+//	SPIWrite(0x40004, &stuff, 4);
+//	stuff = 0;
+//	SPIRead(0x40000, &sectorbuf, siezof(sectorbuf));
+//	Cache_Read_Enable(0,0,1);
+
+
 //
 //
 //
@@ -446,6 +494,33 @@ int main() {
       machine.state.pc=0x100;
       ShowAllRegisters();
       continue;
+    }
+
+// Read Section 6.4 and write a GETSYS program that reads the first two 
+// tracks of a disk into memory. The program from the disk must be loaded
+// starting at location 3380H. GETSYS is coded to start at location 100H
+// (base of the TPA) as shown in Appendix C.
+    if (cmd=='2') {
+      uint16_t loc=0x3380;
+      for (int trk=0; trk<2; trk++) {
+        for (int sec=1; sec<=SECTORSPERTRACK; sec++) {
+          ReadDiskBlock(&machine.memory[loc], sec, trk, 0);
+          loc+=SECTORSIZE;
+        }
+      }
+    }
+
+// Read Section 6.4 and write the PUTSYS program. This writes memory 
+// starting at 3380H back onto the first two tracks of the disk. The 
+// PUTSYS program should be located at 200H, as shown in Appendix C.
+    if (cmd=='3') {
+      uint16_t loc=0x3380;
+      for (int trk=0; trk<2; trk++) {
+        for (int sec=1; sec<=SECTORSPERTRACK; sec++) {
+          WriteDiskBlock(&machine.memory[loc], sec, trk, 0);
+          loc+=SECTORSIZE;
+        }
+      }
     }
 
     //

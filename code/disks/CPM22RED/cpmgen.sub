@@ -1,0 +1,48 @@
+xsub
+ddt
+f100,20ff,0
+iboot0.hex
+s5c
+02
+.
+rd180
+icpsys0.hex
+s5c
+02
+.
+r200
+ibios0.hex
+r200
+g0
+save 26 cpm0.com
+ddt
+f100,20ff,0
+iboot1.hex
+s5c
+02
+.
+rd180
+icpsys1.hex
+s5c
+02
+.
+r100
+ibios1.hex
+r100
+g0
+save 26 cpm1.com
+genhex cpm0.com
+genhex cpm1.com 100
+pip cpm10.hex = cpm0.hex,cpm1.hex
+genmod cpm10.hex cpm10.com
+save 38 cpm10.com
+ddt cpm10.com
+f100,7ff,0
+icpmove.hex
+s5c
+02
+.
+r
+g0
+save 38 movcpm1.com
+

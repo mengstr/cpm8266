@@ -58,6 +58,9 @@ nosdk/startup.o: nosdk/startup.S
 flash : $(FW_FILE_1) $(FW_FILE_2)
 	$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x00000 image.elf-0x00000.bin -ff 80m -fm dout
 
+disk:
+	$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x40000 disks/CPM22RED.DSK -ff 80m -fm dout
+
 serial :
 #	minicom -b $(TERMSPEED) -D $(ESPPORT)
 	screen $(ESPPORT) $(TERMSPEED)

@@ -38,3 +38,13 @@ http://www.gaby.de/sysdisk.htm
 1486768798:  shf/rot <b,c,d,e,h,l,(hl),a>..  ERROR **** crc expected:eb604d58 found:fac70e40
 
 https://github.com/ptcryan/CPM_Due/blob/master/Z80Dasm.h
+
+
+http://www.nj7p.org/Computers/Disk%20Subsystems/floppies.html
+The first standard disk was the IBM 3740 format 8-inch SSSD disk 241Kb (77 tracks, one head, 
+26 each 128 byte sectors per track with a skew of six) disk. This was the disk format used 
+for exchange between all the CPM-80 8-inch systems and software providers.
+
+
+http://schorn.ch/altair.html
+
