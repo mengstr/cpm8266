@@ -20,6 +20,7 @@ char *strcpy(char *dest, const char *src);
 
 
 static const uint8_t z80code[] ICACHE_RODATA_ATTR = {
+//#include "hex/outtest.data"
 #include "hex/CPM22.data"
 //#include "hex/hello.data"
 //#include "hex/zexdoc.data"
@@ -29,24 +30,10 @@ static const uint8_t z80code[] ICACHE_RODATA_ATTR = {
 
 static MACHINE machine;
 
-//
-// Patch memory for taking care of the JP 0x0000 (RESTART) and
-// the CALL 0x0005 (Generic BIOS call)
-//
-// The RESTART vector is replaced with a OUT instruction that will
-// be ....
-//
-// The 0x0005 vector used by BIOS calls is replaced with an IN
-// instruction that will be handled by the SystemCall() handler.
-//
-void ICACHE_FLASH_ATTR PatchBiosVectors(MACHINE *m) {
-  machine.memory[0] = 0xd3; /* OUT N, A */
-  machine.memory[1] = 0x00;
-
-  machine.memory[5] = 0xdb; /* IN A, N */
-  machine.memory[6] = 0x00;
-  machine.memory[7] = 0xc9; /* RET */
-}
+uint16_t	z80_dma=0x80;
+uint16_t	z80_trk=0x00;
+uint16_t	z80_sec=0x01;
+uint16_t 	z80_dsk=0x00;
 
 //
 // Returns the pressed key. This function waits until a key is
@@ -417,22 +404,41 @@ void ICACHE_FLASH_ATTR ModifyRegister(char *regname, uint16_t val) {
 //
 //
 void ReadDiskBlock(void *buf, uint8_t sectorNo, uint8_t trackNo, uint8_t diskNo) {
-  printf("(r%d,%d,%d)",diskNo,trackNo,sectorNo);
-  uint32_t flashloc=DISKFLASHOFFSET + 
+  uint8_t tmpbuf[SECTORSIZE];
+
+  if (diskNo>3) diskNo=3;
+  if (trackNo>(TRACKSPERDISK-1)) trackNo=TRACKSPERDISK-1;
+  if (sectorNo>(SECTORSPERTRACK-1)) sectorNo=SECTORSPERTRACK-1;
+
+  uint32_t lba=
     DISKFLASHSIZE*diskNo + 
     SECTORSPERTRACK*trackNo + 
-    SECTORSIZE*sectorNo;
+    sectorNo;
+
+  uint32_t flashloc=DISKFLASHOFFSET + SECTORSIZE*lba; 
+
+#ifdef DEBUG
+  printf("(read Sec=%d, Trk=%d Dsk=%d) LBA=%d\n",sectorNo, trackNo, diskNo,lba);
+#endif
+
   Cache_Read_Disable();
   SPIUnlock();
-  SPIRead(flashloc, (uint32_t *)buf, SECTORSIZE);
+  SPIRead(flashloc, (uint32_t *)tmpbuf, SECTORSIZE);
   Cache_Read_Enable(0,0,1);
+
+  for (uint8_t i=0; i<SECTORSIZE; i++) {
+   ((uint8_t *)buf)[i]=tmpbuf[i];
+  }
+
+#ifdef DEBUG
+  HexDump(z80_dma, 128, false);
+#endif
 }
 
 //
 //
 //
 void WriteDiskBlock(void *buf, uint8_t sectorNo, uint8_t trackNo, uint8_t diskNo) {
-  printf("(w%d,%d,%d)",diskNo,trackNo,sectorNo);
   uint32_t flashloc=DISKFLASHOFFSET + 
     DISKFLASHSIZE*diskNo + 
     SECTORSPERTRACK*trackNo + 
@@ -493,7 +499,7 @@ int main() {
 
     if (cmd=='1') {
       ets_memcpy(machine.memory + 0xDC00, z80code, sizeof(z80code));
-      machine.state.pc=0xDC00;
+      machine.state.pc=0xF200; // START OF BIOS
       ShowAllRegisters();
       continue;
     }
@@ -503,13 +509,15 @@ int main() {
 // starting at location 3380H. GETSYS is coded to start at location 100H
 // (base of the TPA) as shown in Appendix C.
     if (cmd=='2') {
-      uint16_t loc=0x3380;
-      for (int trk=0; trk<2; trk++) {
-        for (int sec=1; sec<=SECTORSPERTRACK; sec++) {
+      uint16_t loc=4;
+      uint16_t sec=0;
+      uint16_t trk=0;
+//      for (int trk=0; trk<2; trk++) {
+//        for (int sec=1; sec<=SECTORSPERTRACK; sec++) {
           ReadDiskBlock(&machine.memory[loc], sec, trk, 0);
           loc+=SECTORSIZE;
-        }
-      }
+//        }
+//      }
     }
 
 // Read Section 6.4 and write the PUTSYS program. This writes memory 
@@ -540,15 +548,15 @@ int main() {
     //
      if (TOLOWER(cmd)=='g') {
      uint32_t pc = getHexNum(&line);
-      if (pc<NONUM) machine.state.pc=pc;
-      PatchBiosVectors(&machine);
+      if (pc!=NONUM) machine.state.pc=pc;
       machine.is_done = 0;
+      printf("Starting excution at 0x%04X\n",machine.state.pc);
       do {
-        Z80Emulate(&machine.state, 1000000, &machine);
-        printf("_");
+        Z80Emulate(&machine.state, 1, &machine);
         if (cmd=='g' && GetKey(false)==BREAKKEY) break;
       } while (!machine.is_done);
       printf("\n");
+      continue;
     }
 
 
@@ -561,7 +569,6 @@ int main() {
       uint32_t cnt;
       cnt = getHexNum(&line);
       if ((cnt&0xFFFF)==0) cnt=1;
-      PatchBiosVectors(&machine);
       for (int i=0; i<cnt; i++) {
         Z80Emulate(&machine.state, 1, &machine);
         if (cmd=='S') ShowAllRegisters();
@@ -607,93 +614,205 @@ int main() {
 
 }
 
+#define CONOUT	1
+#define LIST	2
+#define PUNCH	3
+#define CONIN	4
+#define CONST	5
+#define SETDMA	6
+#define SETTRK	7
+#define SETSEC	8
+#define HOME	9
+#define SELDSK 10
+#define READ   11
+#define WRITE  12	
+
 //
-// Emulate CP/M bdos call 5 functions
 //
-void ICACHE_FLASH_ATTR SystemCall(MACHINE *m) {
-//   uint8_t A=m->state.registers.byte[Z80_A];
-//   uint8_t C=m->state.registers.byte[Z80_C];
-//   uint8_t E=m->state.registers.byte[Z80_E];
-//   uint8_t M4=m->memory[0x0004];
+//
+void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
+   uint8_t A=m->state.registers.byte[Z80_A];
+   uint8_t B=m->state.registers.byte[Z80_B];
+   uint8_t C=m->state.registers.byte[Z80_C];
+   uint8_t D=m->state.registers.byte[Z80_D];
+   uint8_t E=m->state.registers.byte[Z80_E];
+   uint16_t BC=m->state.registers.word[Z80_BC];
+   uint16_t DE=m->state.registers.word[Z80_DE];
+   uint16_t HL=m->state.registers.word[Z80_HL];
+   uint8_t argm1=m->memory[m->state.pc-1];
+   uint8_t arg=m->memory[m->state.pc];
+   uint8_t argp1=m->memory[m->state.pc+1];
+
+#ifdef DEBUG
+   printf("opcode=%04x val=%04x instr=%04x arg-1=%02x arg=%02x arg+1=%02x \n",opcode,val,instr,argm1,arg,argp1);
+#endif
+
+   switch (arg) {
+
+    case CONOUT:
+    case LIST:
+    case PUNCH:
+      printf("%c",C);
+      break;
+
+    // CONIN	The next console character is read into register A, and the 
+    // 		parity bit is set, high-order bit, to zero. If no console 
+    //		character is ready, wait until a character is typed before 
+    //		returning. 
+    case CONIN:
+      m->state.registers.byte[Z80_A]=GetKey(true);
+      break;
+
+    // CONST	You should sample the status of the currently assigned 
+    //		console device and return 0FFH in register A if a 
+    //		character is ready to read and 00H in register A if no 
+    //		console characters are ready. 
+    case CONST:
+      if (GetRxCnt()==0) {
+        m->state.registers.byte[Z80_A]=0x00;
+      } else {
+        m->state.registers.byte[Z80_A]=0xFF;
+      }
+      break;
+      
+    // SETDMA	Register BC contains the DMA (Disk Memory Access) address
+    //		for subsequent read or write operations. For example, if 
+    //		B = 00H and C = 80H when SETDMA is called, all subsequent 
+    //		read operations read their data into 80H through 0FFH and 
+    //		all subsequent write operations get their data from 80H 
+    //		through 0FFH, until the next call to SETDMA occurs. The 
+    //		initial DMA address is assumed to be 80H. The controller 
+    //		need not actually support Direct Memory Access. If, for 
+    //		example, all data transfers are through I/O ports, the 
+    //		CBIOS that is constructed uses the 128 byte area starting 
+    //		at the selected DMA address for the memory buffer during 
+    //		the subsequent read or write operations. 
+    case SETDMA:
+#ifdef DEBUG
+      printf("(SETDMA %04x)\n",BC);
+#endif
+      z80_dma=BC;
+      break;    
+
+    // SETTRK	Register BC contains the track number for subsequent disk 
+    //		accesses on the currently selected drive. The sector number
+    //		in BC is the same as the number returned from the SECTRAN 
+    //		entry point. You can choose to seek the selected track at 
+    //		this time or delay the seek until the next read or write 
+    //		actually occurs. Register BC can take on values in the 
+    //		range 0-76 corresponding to valid track numbers for 
+    //		standard floppy disk drives and 0- 65535 for nonstandard 
+    //		disk subsystems.
+    case SETTRK:
+#ifdef DEBUG
+      printf("(SETTRK B=%d C=%d)\n",B,C);
+#endif
+      z80_trk=BC & 0xFF;
+      break;    
+
+    // SETSEC	Register BC contains the sector number, 1 through 26, for 
+    //		subsequent disk accesses on the currently selected drive. 
+    //		The sector number in BC is the same as the number returned 
+    //		from the SECTRAN entry point. You can choose to send this 
+    //		information to the controller at this point or delay sector
+    //		selection until a read or write operation occurs. 
+    case SETSEC:
+#ifdef DEBUG
+      printf("(SETSEC B=%d C=%d)\n",B,C);
+#endif
+      z80_sec=BC & 0xFF;
+      break;    
+
+    //HOME	The disk head of the currently selected disk (initially 
+    //		disk A) is moved to the track 00 position. If the controller
+    //		allows access to the track 0 flag from the drive, the head 
+    //		is stepped until the track 0 flag is detected. If the 
+    //		controller does not support this feature, the HOME call is 
+    //		translated into a call to SETTRK with a parameter of 0. 
+    case HOME:
+#ifdef DEBUG
+      printf("(HOME)\n");
+#endif
+      z80_trk=0;
+      break;
+
+    // SELDSK	The disk drive given by register C is selected for further 
+    //		operations, where register C contains 0 for drive A, 1 for 
+    //		drive B, and so on up to 15 for drive P (the standard CP/M 
+    //		distribution version supports four drives). On each disk 
+    //		select, SELDSK must return in HL the base address of a 
+    //		16-byte area, called the Disk Parameter Header, described 
+    //		in Section 6.10. For standard floppy disk drives, the 
+    //		contents of the header and associated tables do not change; 
+    //		thus, the program segment included in the sample CBIOS 
+    //		performs this operation automatically.
+    //
+    //		If there is an attempt to select a nonexistent drive, 
+    //		SELDSK returns HL = 0000H as an error indicator. Although 
+    //		SELDSK must return the header address on each call, it is 
+    //		advisable to postpone the physical disk select operation 
+    //		until an I/O function (seek, read, or write) is actually 
+    //		performed, because disk selects often occur without 
+    //		ultimately performing any disk I/O, and many controllers 
+    //		unload the head of the current disk before selecting the 
+    //		new drive. This causes an excessive amount of noise and 
+    //		disk wear. The least significant bit of register E is zero 
+    //		if this is the first occurrence of the drive select since 
+    //		the last cold or warm start
+    case SELDSK:
+#ifdef DEBUG
+      printf("(SELDSK)\n");
+#endif
+      z80_dsk=C & 0x0F;
+      break;
+
+    // READ 	Assuming the drive has been selected, the track has been 
+    //		set, and the DMA address has been specified, the READ 
+    //		subroutine attempts to read eone sector based upon these 
+    //		parameters and returns the following error codes in 
+    //		register A:
+    //
+    //		0 - no errors occurred
+    //
+    //		1 - nonrecoverable error condition occurred
+    //
+    //		Currently, CP/M responds only to a zero or nonzero value as
+    //		the return code. That is, if the value in register A is 0, 
+    //		CP/M assumes that the disk operation was completed properly. 
+    //		If an error occurs the CBIOS should attempt at least 10 
+    //		retries to see if the error is recoverable. When an error is
+    //		reported the BDOS prints the message BDOS ERR ON x: BAD 
+    //		SECTOR. The operator then has the option of pressing a 
+    //		carriage return to ignore the error, or CTRL-C to abort. 
+    case READ:
+#ifdef DEBUG
+      printf("(READ D:%d T:%d S:%d)\n",z80_dsk, z80_trk, z80_sec);
+#endif
+      
+      ReadDiskBlock(&(m->memory[z80_dma]), z80_sec, z80_trk, z80_dsk);
+      m->state.registers.byte[Z80_A]=0x00;
+      
+      break;
 
 
-//   switch (C) {
+    // WRITE	Data is written from the currently selected DMA address to 
+    //		the currently selected drive, track, and sector. For floppy 
+    //		disks, the data should be marked as nondeleted data to 
+    //		maintain compatibility with other CP/M systems. The error 
+    //		codes given in the READ command are returned in register A, 
+    //		with error recovery attempts as described above. 
+    case WRITE:
+#ifdef DEBUG
+      printf("(WRITE)\n");
+#endif
+      m->state.registers.byte[Z80_A]=0x00;
+      break;
 
-// //
-// // 2    02    Console write         E = char                    --
-// //
-//     case 0x02:
-//       printf("%c", E);
-//       break;
-
-// //
-// // 9    09    Print string          DE = string addr            --
-// //             string terminated by $, tabs are expanded as in func 2
-// //
-//     case 0x09:
-//       for (int i = m->state.registers.word[Z80_DE]; m->memory[i] != '$'; i++) {
-//         printf("%c", m->memory[i & 0xffff]);
-//       }
-//       break;
-
-// //
-// // 10    0A    Read console buffer   DE = buffer addr        A = #chars in buffer
-// //               buffer: 1st byte = bufsize, 2nd byte = chars input
-// //
-// //              Console buffer: 1st byte = max # chars in buffer (input)
-// //                              2nd byte = actual # chars in buffer (output)
-// //                              remaining bytes = buffer//
-// //
-//     case 0x0A:
-//       break;
-
-// //
-// // 13    0D    Reset disk**              --                      --
-// //
-//     case 0x0D:
-//       break;
-
-// //
-// // 14    0E    Select disk           E = drive no                --
-// //                                   0=A, 1=B, ...0FH=P
-// // LOGIN BYTE (0004H)
-// // ==================
-// // low  nibble  =  current drive (0=A, 1=B, etc)
-// // high nibble  =  current user (V2.x only)
-// //
-//     case 0x0E:
-//       (m->memory[0x0004])=(M4&0xF0)+(E&0x0F);
-//       break;
+        
+    default:
+      printf("\nINVALID argument to IN/OUT, ARG=0x%02x PC=%04x\n",arg,m->state.pc);
+      machine.is_done=1;
+  }
 
 
-// //
-// // 25    19    Get disk no               --                  A = curr disk no
-// //
-// // LOGIN BYTE (0004H)
-// // ==================
-// // low  nibble  =  current drive (0=A, 1=B, etc)
-// // high nibble  =  current user (V2.x only)
-// //                                                             (0-15 for A-P)
-//     case 0x19:
-//       m->state.registers.byte[Z80_A]=M4&0x0F;
-//       break;
-    
-// //
-// // 32    20    Set user code         E = user code               --
-// // 32    20    Get user code         E = FFh                 A = curr user code
-// //
-// // LOGIN BYTE (0004H)
-// // ==================
-// // low  nibble  =  current drive (0=A, 1=B, etc)
-// // high nibble  =  current user (V2.x only)
-// //
-//     case 0x20:
-//       if (E==0xFF) {
-//         m->state.registers.byte[Z80_A]=M4>>4;
-//       } else {
-//         (m->memory[0x0004])=(M4&0x0F)+((E&0x0F)<<4);
-//       }
-//     default:
-//       printf("\nSystemcall C=%02x\n",m->state.registers.byte[Z80_C]);
-//   }
 }

@@ -22,6 +22,21 @@ cdisk	equ		0004h		;address of last logged disk on warm start
 buff	equ		0080h		;default buffer address
 retry	equ		10			;max retries on disk i/o before error
 
+
+EMU_CONOUT	equ	01h
+EMU_LIST	equ	02h
+EMU_PUNCH	equ	03h
+EMU_CONIN	equ	04h
+EMU_CONST	equ	05h
+EMU_SETDMA	equ	06h
+EMU_SETTRK	equ	07h
+EMU_SETSEC	equ	08h
+EMU_HOME	equ	09h
+EMU_SETDSK	equ	0Ah
+EMU_READ	equ	0Bh
+EMU_WRITE	equ	0Ch
+
+
 ;
 ;	perform following functions
 ;-----------------------------------------------
@@ -172,9 +187,9 @@ mon80	equ	0f800h		;mds monitor
 rmon80	equ	0ff0fh		;restart mon80 (boot error)
 ci		equ	0f803h		;console character to reg-a
 ri		equ	0f806h		;reader in to reg-a
-co		equ	0f809h		;console char from c to console out
-po		equ	0f80ch		;punch char from c to punch device
-lo		equ	0f80fh		;list from c to list device
+;TODO co		equ	0f809h		;console char from c to console out
+;TODO po		equ	0f80ch		;punch char from c to punch device
+;TODI lo		equ	0f80fh		;list from c to list device
 csts	equ	0f812h		;console status 00/ff to register a
 
 ;	disk ports and commands
@@ -269,15 +284,17 @@ rd1:INC		A				;to next sector
 
 gocpm:						;(enter here from cold start boot)
 							;	enable rst0 and rst7
-	DI
-	LD 		A,12h			;initialize command
-	OUT		(revrt),A
-	XOR		A
-	OUT		(intc),A		;cleared
-	LD 		A,inte			;rst0 and rst7 bits on
-	OUT		(intc),A
-	XOR		A
-	OUT		(icon),A		;interrupt control
+; TODO REMOVE THIS BLOCK
+;	DI
+;	LD 		A,12h			;initialize command
+;	OUT		(revrt),A
+;	XOR		A
+;	OUT		(intc),A		;cleared
+;	LD 		A,inte			;rst0 and rst7 bits on
+;	OUT		(intc),A
+;	XOR		A
+;	OUT		(icon),A		;interrupt control
+
 ;
 ;	set default buffer address to 80h
 	LD 		BC,buff
@@ -325,33 +342,33 @@ bootmsg:
 ; CONST
 ;****************************************************************************
 const:						;console status to reg-a
-							;	(exactly the same as mds call)
-	JP		csts
-
+	OUT	(EMU_CONST),A
+	RET
 ;
 ;****************************************************************************
-; CONIT
+; CONIN
 ;****************************************************************************
 conin:						;console character to reg-a
-	CALL	ci
-	AND		7fh				;remove parity bit
+	OUT	(EMU_CONIN),A
+	AND	7fh				;remove parity bit
 	RET
+
 
 ;
 ;****************************************************************************
 ; CONOUT
 ;****************************************************************************
 conout:						;console character from c to console out
-	JP		co
-
+	OUT	(EMU_CONOUT),A
+	RET
 
 ;
 ;****************************************************************************
 ; LIST
 ;****************************************************************************
 list:						;list device out
-							; (exactly the same as mds call)
-	JP		lo
+	OUT	(EMU_LIST),A
+	RET
 
 
 ;
@@ -367,9 +384,8 @@ listst:							;return list status
 ; PUNCH
 ;****************************************************************************
 punch:							;punch device out
-								; (exactly the same as mds call)
-	JP		po
-
+	OUT	(EMU_PUNCH),A
+	RET
 
 ;
 ;****************************************************************************
@@ -384,9 +400,8 @@ reader:							;reader character in to reg-a
 ; HOME
 ;****************************************************************************
 home:							;move to home position
-								;	treat as track 00 seek
-	LD 		C,0
-	JP		settrk
+	OUT	(EMU_HOME),A
+	RET
 
 ;
 ;****************************************************************************
@@ -396,22 +411,25 @@ seldsk:							;select disk given by register c
 	LD 		HL,0000h			;return 0000 if error
 	LD		A,C
 	CP		ndisks				;too large?
-	RET		NC					;leave HL = 0000
+	RET		NC				;leave HL = 0000
+
+	OUT		(EMU_SETDSK),A
 ;
-	AND		10b	;00 00 for drive 0,1 and 10 10 for drive 2,3
-	LD 		(dbank),A		;to select drive bank
-	LD		A,C			;00, 01, 10, 11
-	AND		1b	;mds has 0,1 at 78, 2,3 at 88
-	OR 		A	;result 00?
-	JP		Z,setdrive
-	LD 		A,00110000b	;selects drive 1 in bank
-setdrive:
-	LD		B,A			;save the function
-	LD 		HL,iof	;io function
-	LD		A,(HL)
-	AND		11001111b	;mask out disk number
-	OR 		B	;mask in new disk number
-	LD		(HL),A		;save it in iopb {mov m,a}
+;	AND		10b	;00 00 for drive 0,1 and 10 10 for drive 2,3
+;	LD 		(dbank),A		;to select drive bank
+;	LD		A,C			;00, 01, 10, 11
+;	AND		1b	;mds has 0,1 at 78, 2,3 at 88
+;	OR 		A	;result 00?
+;	JP		Z,setdrive
+;	LD 		A,00110000b	;selects drive 1 in bank
+;setdrive:
+;	LD		B,A			;save the function
+;	LD 		HL,iof	;io function
+;	LD		A,(HL)
+;	AND		11001111b	;mask out disk number
+;	OR 		B	;mask in new disk number
+;	LD		(HL),A		;save it in iopb {mov m,a}
+
 	LD		L,C
 	LD 		H,0		;HL=disk number
 	ADD		HL,HL	;*2
@@ -428,8 +446,7 @@ setdrive:
 ; SETTRK
 ;****************************************************************************
 settrk:						;set track address given by c
-	LD 		HL,iot
-	LD		(HL),C
+	OUT		(EMU_SETTRK),A
 	RET
 
 ;
@@ -437,8 +454,7 @@ settrk:						;set track address given by c
 ; SETSEC
 ;****************************************************************************
 setsec:	;set sector number given by c
-	LD 		HL,ios
-	LD		(HL),C
+	OUT		(EMU_SETSEC),A
 	RET
 
 ;
@@ -446,12 +462,13 @@ setsec:	;set sector number given by c
 ; SECTRAN
 ;****************************************************************************
 sectran:				;translate sector bc using table at de
-	LD 		B,0			;double precision sector number in BC
-	EX		DE,HL		;translate table address to HL
-	ADD		HL,BC		;translate(sector) address
-	LD		A,(HL)		;translated sector number to A
-	LD 		(ios),A
-	LD		L,A			;return sector number in L
+;	LD 		B,0		;double precision sector number in BC
+;	EX		DE,HL		;translate table address to HL
+;	ADD		HL,BC		;translate(sector) address
+;	LD		A,(HL)		;translated sector number to A
+;	LD 		(ios),A
+;	LD		L,A		;return sector number in L
+	LD	L,C
 	RET
 
 
@@ -460,9 +477,11 @@ sectran:				;translate sector bc using table at de
 ; SETDMA
 ;****************************************************************************
 setdma:	;set dma address given by regs b,c
-	LD 		L,C
-	LD 		H,B
-	LD		(iod),HL
+	OUT		(EMU_SETDMA),A
+; TODO REMOVE
+;	LD 		L,C
+;	LD 		H,B
+;	LD		(iod),HL
 	RET
 
 
@@ -471,9 +490,10 @@ setdma:	;set dma address given by regs b,c
 ; READ
 ;****************************************************************************
 read:						;read next disk record (disk/trk/sec/dma set)
-	LD 		C,readf	;set to read function
-	CALL	setfunc
-	CALL	waitio	;perform read function
+	OUT	(EMU_READ),A
+;	LD 		C,readf	;set to read function
+;	CALL	setfunc
+;	CALL	waitio	;perform read function
 	RET		;may have error set in reg-a
 
 
@@ -482,9 +502,10 @@ read:						;read next disk record (disk/trk/sec/dma set)
 ; WRITE
 ;****************************************************************************
 write:						;disk write function
-	LD 		C,writf
-	CALL	setfunc			;set to write function
-	CALL	waitio
+	OUT	(EMU_WRITE),A
+;	LD 		C,writf
+;	CALL	setfunc			;set to write function
+;	CALL	waitio
 	RET						;may have error set
 
 ;
@@ -495,79 +516,79 @@ prmsg:	;print message at h,l to 0
 	OR 		A	;zero?
 	RET 	Z
 ;	more to print
-	POP		HL
+	PUSH		HL
 	LD		C,A
 	CALL	conout
 	POP		HL
 	INC 	HL
 	JP		prmsg
 ;
-setfunc:
+;setfunc:
 ;	set function for next i/o (command in reg-c)
-	LD 		HL,iof	;io function address
-	LD		A,(HL)			;get it to accumulator for masking
-	AND		11111000b	;remove previous command
-	OR 		C	;set to new command
-	LD		(HL),A			;replaced in iopb
+;	LD 		HL,iof	;io function address
+;	LD		A,(HL)			;get it to accumulator for masking
+;	AND		11111000b	;remove previous command
+;	OR 		C	;set to new command
+;	LD		(HL),A			;replaced in iopb
 ;	the mds-800 controller requires disk bank bit in sector byte
 ;	mask the bit from the current i/o function
-	AND		00100000b		;mask the disk select bit
-	LD 		HL,ios			;address the sector select byte
-	OR		(HL)			;select proper disk bank
-	LD		(HL),A			;set disk select bit on/off
-	RET
+;	AND		00100000b		;mask the disk select bit
+;	LD 		HL,ios			;address the sector select byte
+;	OR		(HL)			;select proper disk bank
+;	LD		(HL),A			;set disk select bit on/off
+;	RET
 ;
-waitio:
-	LD 		C,retry			;max retries before perm error
-rewait:
+;waitio:
+;	LD 		C,retry			;max retries before perm error
+;rewait:
 ;	start the i/o function and wait for completion
-	CALL	intype	;in rtype
-	CALL	inbyte	;clears the controller
+;	CALL	intype	;in rtype
+;	CALL	inbyte	;clears the controller
 ;
-	LD 		A,(dbank)		;set bank flags
-	OR 		A		;zero if drive 0,1 and nz if 2,3
-	LD 		A,iopb&0ffh	;low address for iopb
-	LD 		B,iopb>>8		;high address for iopb
-	JP		NZ,iodr1		;drive bank 1?
-	OUT		(ilow),A		;low address to controller
-	LD		A,B
-	OUT		(ihigh),A	;high address
-	JP		wait0		;to wait for complete
+;	LD 		A,(dbank)		;set bank flags
+;	OR 		A		;zero if drive 0,1 and nz if 2,3
+;	LD 		A,iopb&0ffh	;low address for iopb
+;	LD 		B,iopb>>8		;high address for iopb
+;	JP		NZ,iodr1		;drive bank 1?
+;	OUT		(ilow),A		;low address to controller
+;	LD		A,B
+;	OUT		(ihigh),A	;high address
+;	JP		wait0		;to wait for complete
 ;
-iodr1:	;drive bank 1
-	OUT		(ilow+10h),A	;88 for drive bank 10
-	LD		A,B
-	OUT		(ihigh+10h),A
+;iodr1:	;drive bank 1
+;	OUT		(ilow+10h),A	;88 for drive bank 10
+;	LD		A,B
+;	OUT		(ihigh+10h),A
 ;
-wait0:	CALL	instat		;wait for completion
-	AND		iordy		;ready?
-	JP		Z,wait0
+;wait0:	CALL	instat		;wait for completion
+;	AND		iordy		;ready?
+;	JP		Z,wait0
 ;
 ;	check io completion ok
-	CALL	intype		;must be io complete (00) unlinked
+;	CALL	intype		;must be io complete (00) unlinked
 ;	00 unlinked i/o complete,    01 linked i/o complete (not used)
 ;	10 disk status changed       11 (not used)
-	CP		10b		;ready status change?
-	JP		Z,wready
+;	CP		10b		;ready status change?
+;	JP		Z,wready
 ;
 ;	must be 00 in the accumulator
-	OR 		A
-	JP		NZ,werror		;some other condition, retry
+;	OR 		A
+;	JP		NZ,werror		;some other condition, retry
 ;
 ;	check i/o error bits
-	CALL	inbyte
-	RLA
-	JP		C,wready		;unit not ready
-	RRA
-	AND		11111110b	;any other errors?  (deleted data ok)
-	JP		NZ,werror
+;	CALL	inbyte
+;	RLA
+;	JP		C,wready		;unit not ready
+;	RRA
+;	AND		11111110b	;any other errors?  (deleted data ok)
+;	JP		NZ,werror
 ;
 ;	read or write is ok, accumulator contains zero
-	RET
+;	RET
 ;
-wready:	;not ready, treat as error for now
-	CALL	inbyte		;clear result byte
-	JP		trycount
+;wready:	;not ready, treat as error for now
+;	CALL	inbyte		;clear result byte
+;	JP		trycount
 ;
 werror:	;return hardware malfunction (crc, track, seek, etc.)
 ;	the mds controller has returned a bit in each position
@@ -588,37 +609,37 @@ werror:	;return hardware malfunction (crc, track, seek, etc.)
 ;	treated as a separate condition for later improvement
 trycount:
 ;	register c contains retry count, decrement 'til zero
-	DEC 	c
-	JP		NZ,rewait	;for another try
+;	DEC 	c
+;	JP		NZ,rewait	;for another try
 ;
 ;	cannot recover from error
-	LD 		A,1	;error code
-	RET
+;	LD 		A,1	;error code
+;	RET
 ;
 ;	intype, inbyte, instat read drive bank 00 or 10
-intype:	LD 	A,(dbank)
-	OR 		A
-	JP		NZ,intyp1	;skip to bank 10
-	IN 		A,(rtype)
-	RET
-intyp1:	IN	A,(rtype+10h)	;78 for 0,1  88 for 2,3
-	RET
+;intype:	LD 	A,(dbank)
+;	OR 		A
+;	JP		NZ,intyp1	;skip to bank 10
+;	IN 		A,(rtype)
+;	RET
+;intyp1:	IN	A,(rtype+10h)	;78 for 0,1  88 for 2,3
+;	RET
 ;
-inbyte:	LD 	A,(dbank)
-	OR 		A
-	JP		NZ,inbyt1
-	IN		A,(rbyte)
-	RET
-inbyt1:	IN	A,(rbyte+10h)
-	RET
+;inbyte:	LD 	A,(dbank)
+;	OR 		A
+;	JP		NZ,inbyt1
+;	IN		A,(rbyte)
+;	RET
+;inbyt1:	IN	A,(rbyte+10h)
+;	RET
 ;
-instat:	LD 	A,(dbank)
-	OR 		A
-	JP		NZ,insta1
-	IN		A,(dstat)
-	RET
-insta1:	IN	A,(dstat+10h)
-	RET
+;instat:	LD 	A,(dbank)
+;	OR 		A
+;	JP		NZ,insta1
+;	IN		A,(dstat)
+;	RET
+;insta1:	IN	A,(dstat+10h)
+;	RET
 ;
 ;
 ;

@@ -91,7 +91,7 @@ typedef struct MACHINE {
   int is_done;
 } MACHINE;
 
-extern void SystemCall(MACHINE *m);
+extern void SystemCall(MACHINE *m, int opcode, int val, int inst);
 
 #define Z80_READ_BYTE(address, x)                                              \
   { (x) = ((MACHINE *)context)->memory[(address)&0xffff]; }
@@ -124,13 +124,11 @@ extern void SystemCall(MACHINE *m);
   { Z80_WRITE_WORD((address), (x)) }
 
 #define Z80_INPUT_BYTE(port, x)                                                \
-  { SystemCall((MACHINE *)context); }
+  { SystemCall((MACHINE *)context,opcode,x,instruction); }
 
 #define Z80_OUTPUT_BYTE(port, x)                                               \
-  {                                                                            \
-    ((MACHINE *)context)->is_done = !0;                                        \
-    number_cycles = 0;                                                         \
-  }
+  { SystemCall((MACHINE *)context,opcode,x,instruction); }
+//   ((MACHINE *)context)->is_done = !0;                                       
 
 #ifdef __cplusplus
 }

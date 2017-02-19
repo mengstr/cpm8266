@@ -73,6 +73,9 @@ serial :
 	screen $(ESPPORT) $(TERMSPEED)
 
 clean :
-	rm -rfv $(FW_1) $(FW_2) {.,CPM22,nosdk,z80}/*.{s,o,i,elf,res,out,map,bin,lst,out,bak} {.,nosdk,z80}/*~
+	rm -rfv $(FW_1) $(FW_2) 
+	rm -rfv hex/CPM22.data CPM22/*.{rom,bin,hex}
+	rm -rfv {.,CPM22,nosdk,z80}/*.{s,o,i,elf,res,map,bin,lst,out,bak} 
+	rm -rfv {.,nosdk,z80}/*~
 
 
