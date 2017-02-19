@@ -19,8 +19,8 @@ char *strcpy(char *dest, const char *src);
 #define BREAKKEY '`'
 
 
-static unsigned char z80code[] = {
-#include "hex/cpm.data"
+static const uint8_t z80code[] ICACHE_RODATA_ATTR = {
+#include "hex/CPM22.data"
 //#include "hex/hello.data"
 //#include "hex/zexdoc.data"
 };

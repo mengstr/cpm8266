@@ -14,6 +14,8 @@ FW_2 		=  $(TARGET).elf-0x00000.bin
 
 #all : $(TARGET).elf
 
+ZASM		=  /usr/local/bin/zasm
+XXD		=  /usr/bin/xxd
 ESPTOOL		=  $(ESP8266SDK)/esptool/esptool.py
 BINS		=  $(ESP8266SDK)/xtensa-lx106-elf/bin
 SIZE		=  $(BINS)/xtensa-lx106-elf-size
@@ -35,7 +37,7 @@ all: $(OBJS)
 	@$(OBJDUMP) -S $(TARGET).elf > $(TARGET).lst
 	@export PATH=$(BINS):$$PATH; $(ESPTOOL) elf2image $(TARGET).elf
 
-main.o: main.c z80/z80emu.h z80/z80user.h
+main.o: main.c z80/z80emu.h z80/z80user.h hex/CPM22.data
 	@echo [CC] $<
 	@$(GCC) $(CFLAGS) -o $@ -c $<
 
@@ -55,6 +57,11 @@ nosdk/startup.o: nosdk/startup.S
 	@echo [AS] $<
 	@$(AS) -o $@ -c $<
 
+hex/CPM22.data: CPM22/CPM22.Z80 CPM22/BDOS.Z80 CPM22/BIOS.Z80 CPM22/CCP.Z80  
+	@$(ZASM) --z80 -u -w -b CPM22/CPM22.Z80 CPM22/CPM22.bin
+	@$(XXD) -i < CPM22/CPM22.bin > hex/CPM22.data
+
+
 flash : $(FW_FILE_1) $(FW_FILE_2)
 	$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x00000 image.elf-0x00000.bin -ff 80m -fm dout
 
@@ -66,6 +73,6 @@ serial :
 	screen $(ESPPORT) $(TERMSPEED)
 
 clean :
-	rm -rfv $(FW_1) $(FW_2) {.,nosdk,z80}/*.{s,o,i,elf,res,out,map,lst,out,bak} {.,nosdk,z80}/*~
+	rm -rfv $(FW_1) $(FW_2) {.,CPM22,nosdk,z80}/*.{s,o,i,elf,res,out,map,bin,lst,out,bak} {.,nosdk,z80}/*~
 
 
