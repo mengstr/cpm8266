@@ -20,7 +20,8 @@ char *strcpy(char *dest, const char *src);
 
 
 static unsigned char z80code[] = {
-#include "hex/hello.data"
+#include "hex/cpm.data"
+//#include "hex/hello.data"
 //#include "hex/zexdoc.data"
 };
 #include "z80/z80emu.h"
@@ -56,6 +57,7 @@ char ICACHE_FLASH_ATTR GetKey(bool wait) {
   if (!wait && GetRxCnt()==0) return 0x00;
   return GetRxChar();
 }
+
 
 //
 //
@@ -275,7 +277,7 @@ void ICACHE_FLASH_ATTR ModifyMemory(uint16_t address) {
 //
 // INTEL  :llaaaatt[dd...]cc
 //
-void LoadIntelHex(void) {
+void LoadIntelHex(uint16_t offset) {
   char *line;
   uint16_t minAddress=0xFFFF;
   uint16_t maxAddress=0x0000;
@@ -299,7 +301,7 @@ void LoadIntelHex(void) {
 
     uint8_t len=hexDec2p(p);
     p+=2;
-    uint16_t address=hexDec4p(p);
+    uint16_t address=hexDec4p(p)+offset;
     p+=4;
     uint8_t typ=hexDec2p(p);
     p+=2;
@@ -480,7 +482,7 @@ int main() {
       printf("EMON v0.2\n");
       printf("\td ADR [LEN] - Hexdump LEN bytes of memory starting at ADR\n");
       printf("\tD ADR [LEN] - Intel hexdump LEN bytes of memory starting at ADR\n");
-      printf("\tL           - Load an Intel hexdump into memory\n");
+      printf("\tL [OFFSET]  - Load an Intel hexdump into memory with OFFSET\n");
       printf("\tm ADR       - Modify memory contents starting at ADR\n");
       printf("\tr [REG VAL] - Display all registers, or set REG to VAL\n");
       printf("\tg [ADR]     - Start execution at PC or [ADR]\n");
@@ -490,8 +492,8 @@ int main() {
     }
 
     if (cmd=='1') {
-      ets_memcpy(machine.memory + 0x100, z80code, sizeof(z80code));
-      machine.state.pc=0x100;
+      ets_memcpy(machine.memory + 0xDC00, z80code, sizeof(z80code));
+      machine.state.pc=0xDC00;
       ShowAllRegisters();
       continue;
     }
@@ -527,7 +529,9 @@ int main() {
     // Load INTEL Hex into memory
     //
     if (cmd=='L') {
-      LoadIntelHex();
+      uint32_t offset = getHexNum(&line);
+      if (offset==NONUM) offset=0;
+      LoadIntelHex(offset);
       continue;
     }
 
@@ -607,15 +611,89 @@ int main() {
 // Emulate CP/M bdos call 5 functions
 //
 void ICACHE_FLASH_ATTR SystemCall(MACHINE *m) {
-  if (m->state.registers.byte[Z80_C] == 2) {
-    printf("%c", m->state.registers.byte[Z80_E]);
-    return;
-  }
+//   uint8_t A=m->state.registers.byte[Z80_A];
+//   uint8_t C=m->state.registers.byte[Z80_C];
+//   uint8_t E=m->state.registers.byte[Z80_E];
+//   uint8_t M4=m->memory[0x0004];
 
-  if (m->state.registers.byte[Z80_C] == 9) {
-    int i;
-    for (i = m->state.registers.word[Z80_DE]; m->memory[i] != '$'; i++) {
-      printf("%c", m->memory[i & 0xffff]);
-    }
-  }
+
+//   switch (C) {
+
+// //
+// // 2    02    Console write         E = char                    --
+// //
+//     case 0x02:
+//       printf("%c", E);
+//       break;
+
+// //
+// // 9    09    Print string          DE = string addr            --
+// //             string terminated by $, tabs are expanded as in func 2
+// //
+//     case 0x09:
+//       for (int i = m->state.registers.word[Z80_DE]; m->memory[i] != '$'; i++) {
+//         printf("%c", m->memory[i & 0xffff]);
+//       }
+//       break;
+
+// //
+// // 10    0A    Read console buffer   DE = buffer addr        A = #chars in buffer
+// //               buffer: 1st byte = bufsize, 2nd byte = chars input
+// //
+// //              Console buffer: 1st byte = max # chars in buffer (input)
+// //                              2nd byte = actual # chars in buffer (output)
+// //                              remaining bytes = buffer//
+// //
+//     case 0x0A:
+//       break;
+
+// //
+// // 13    0D    Reset disk**              --                      --
+// //
+//     case 0x0D:
+//       break;
+
+// //
+// // 14    0E    Select disk           E = drive no                --
+// //                                   0=A, 1=B, ...0FH=P
+// // LOGIN BYTE (0004H)
+// // ==================
+// // low  nibble  =  current drive (0=A, 1=B, etc)
+// // high nibble  =  current user (V2.x only)
+// //
+//     case 0x0E:
+//       (m->memory[0x0004])=(M4&0xF0)+(E&0x0F);
+//       break;
+
+
+// //
+// // 25    19    Get disk no               --                  A = curr disk no
+// //
+// // LOGIN BYTE (0004H)
+// // ==================
+// // low  nibble  =  current drive (0=A, 1=B, etc)
+// // high nibble  =  current user (V2.x only)
+// //                                                             (0-15 for A-P)
+//     case 0x19:
+//       m->state.registers.byte[Z80_A]=M4&0x0F;
+//       break;
+    
+// //
+// // 32    20    Set user code         E = user code               --
+// // 32    20    Get user code         E = FFh                 A = curr user code
+// //
+// // LOGIN BYTE (0004H)
+// // ==================
+// // low  nibble  =  current drive (0=A, 1=B, etc)
+// // high nibble  =  current user (V2.x only)
+// //
+//     case 0x20:
+//       if (E==0xFF) {
+//         m->state.registers.byte[Z80_A]=M4>>4;
+//       } else {
+//         (m->memory[0x0004])=(M4&0x0F)+((E&0x0F)<<4);
+//       }
+//     default:
+//       printf("\nSystemcall C=%02x\n",m->state.registers.byte[Z80_C]);
+//   }
 }
