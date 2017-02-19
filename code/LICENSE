@@ -1,8 +1,11 @@
 MIT License
 
-Copyright (c) 2017 Mats Engstrom.
-The "nosdk" parts copyright (c) 2016 CNLohr.
-The Z80 emulator parts copyright (c) 2012, 2016 Lin Ke-Fong.
+*
+* Copyright (c) 2017 Mats Engstrom.
+* The "nosdk" parts copyright (c) 2016 CNLohr.
+* The Z80 emulator parts copyright (c) 2012, 2016 Lin Ke-Fong.
+* CP/M Copyright (c) 1980 Digital Research, used with permission from Lineo 2001
+*
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
