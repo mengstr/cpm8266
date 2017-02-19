@@ -6,7 +6,7 @@ ESP8266SDK	?= /Volumes/case-sensitive/esp-open-sdk/
 FLASHBAUD	=  921600
 MAIN_MHZ	=  80 #Pick from *52, *80, 104 or *115, 160, *173, *189#, 231, 346, 378#  * = peripheral clock at processor clock. # = Mine won't boot + on ESP8285, Clock Lower and unreliable.  Warning. Peripheral clocks of >115 will NOT boot without a full power-down and up. (Don't know why)
 
-TERMSPEED   = 9600
+TERMSPEED	= 9600
 
 TARGET	 	=  image
 FW_1 		=  $(TARGET).elf-0x10000.bin
@@ -21,8 +21,8 @@ BINS		=  $(ESP8266SDK)/xtensa-lx106-elf/bin
 SIZE		=  $(BINS)/xtensa-lx106-elf-size
 OBJDUMP		=  $(BINS)/xtensa-lx106-elf-objdump
 OBJCOPY		=  $(BINS)/xtensa-lx106-elf-objcopy
-GCC		    =  $(BINS)/xtensa-lx106-elf-gcc
-AS		    =  $(BINS)/xtensa-lx106-elf-as
+GCC		=  $(BINS)/xtensa-lx106-elf-gcc
+AS		=  $(BINS)/xtensa-lx106-elf-as
 
 LDFLAGS		=  -T ld/linkerscript.ld -T ld/addresses.ld
 CFLAGS		=  -std=c11 -flto -Os -g -Iinclude -nostdlib -DMAIN_MHZ=$(MAIN_MHZ) -mno-serialize-volatile -mlongcalls
@@ -63,19 +63,19 @@ hex/CPM22.data: CPM22/CPM22.Z80 CPM22/BDOS.Z80 CPM22/BIOS.Z80 CPM22/CCP.Z80
 
 
 flash : $(FW_FILE_1) $(FW_FILE_2)
-	$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x00000 image.elf-0x00000.bin -ff 80m -fm dout
+	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x00000 image.elf-0x00000.bin -ff 80m -fm dout
 
 disk:
-	$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x40000 disks/CPM22RED.DSK -ff 80m -fm dout
+	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x40000 disks/CPM22RED.DSK -ff 80m -fm dout
 
 serial :
 #	minicom -b $(TERMSPEED) -D $(ESPPORT)
 	screen $(ESPPORT) $(TERMSPEED)
 
 clean :
-	rm -rfv $(FW_1) $(FW_2) 
-	rm -rfv hex/CPM22.data CPM22/*.{rom,bin,hex}
-	rm -rfv {.,CPM22,nosdk,z80}/*.{s,o,i,elf,res,map,bin,lst,out,bak} 
-	rm -rfv {.,nosdk,z80}/*~
+	@rm -rfv $(FW_1) $(FW_2) 
+	@rm -rfv hex/CPM22.data CPM22/*.{rom,bin,hex}
+	@rm -rfv {.,CPM22,nosdk,z80}/*.{s,o,i,elf,res,map,bin,lst,out,bak} 
+	@rm -rfv {.,nosdk,z80}/*~
 
 
