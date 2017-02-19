@@ -1,0 +1,645 @@
+;	MDS-800 I/O Drivers for CP/M 2.2
+;	(four drive single density version)
+;
+;	Version 2.2 February, 1980
+;
+vers	equ	22	;version 2.2
+;
+;	Copyright (c) 1980
+;	Digital Research
+;	Box 579, Pacific Grove
+;	California, 93950
+;
+;
+
+patch	equ		1600h
+cpmb	equ		$-patch		;base of cpm console processor
+bdos	equ		806h+cpmb	;basic dos (resident portion)
+cpml	equ		$-cpmb		;length (in bytes) of cpm system
+nsects	equ		cpml/128	;number of sectors to load
+offset	equ		2			;number of disk tracks used by cp/m
+cdisk	equ		0004h		;address of last logged disk on warm start
+buff	equ		0080h		;default buffer address
+retry	equ		10			;max retries on disk i/o before error
+
+;
+;	perform following functions
+;-----------------------------------------------
+;	*boot		Cold start
+;	*wboot		Warm start (save i/o byte)
+;				(boot and wboot are the same for mds)
+;	*const		Console status
+;				reg-a = 00 if no character ready
+;				reg-a = ff if character ready
+;	*conin		Console character in (result in reg-a)
+;	*conOUT		Console character out (char in reg-c)
+;	*list		List out (char in reg-c)
+;	*punch		Punch out (char in reg-c)
+;	*reader		Paper tape reader in (result to reg-a)
+;	*home		Move to track 00
+;
+;	(The following calls set-up the io parameter block for the
+;	mds, which is used to perform subsequent reads and writes)
+;	*seldsk		Select disk given by reg-c (0,1,2...)
+;	*settrk		Set track address (0,...76) for subsequent read/write
+;	*setsec		Set sector address (1,...,26) for subsequent read/write
+;	*setdma		Set subsequent dma address (initially 80h)
+;
+;	(Read and write assume previous calls to set up the io parameters)
+;	*read		Read track/sector to preset dma address
+;	*write		Write track/sector from preset dma address
+
+;	jump vector for indiviual routines
+
+BOOT:	JP		boot
+WBOOT:	JP		wboot
+CONST:	JP		const
+CONIN:	JP		conin
+CONOUT:	JP		conout
+LIST:	JP		list
+PUNCH:	JP		punch
+READER:	JP		reader
+HOME:	JP		home
+SELDSK:	JP		seldsk
+SETTRK:	JP		settrk
+SETSEC:	JP		setsec
+SETDMA:	JP		setdma
+READ:	JP		read
+WRITE:	JP		write
+LISTST:	JP		listst	;list status
+SECTRN:	JP		sectran
+
+
+;
+; Fixed data tables for four-drive standard ibm-compatible 8" disks
+; No translations
+;
+
+ndisks	equ		4			; We have 4 disks drives in this system
+
+;
+; XLT	Address of the logical-to-physical translation vector, if used for
+;		this particular drive, or the value 0000H if no sector translation
+;		takes place (that is, the physical and logical sector numbers are
+;		the same). Disk drives with identical sector skew factors share the
+;		same translate tables.
+;
+; 0000	Scratch pad value for use within the BDOS.
+;
+; 0000	Scratch pad value for use within the BDOS.
+;
+; 0000	Scratch pad value for use within the BDOS.
+;
+; DIRBUF Address of a 128-byte scratch pad area for directory operations
+;		within BDOS. All DPHs address the same scratch pad area.
+;
+; DPB	Address of a disk parameter block for this drive. Drives with
+;		identical disk characteristics address the same disk parameter block.
+;
+; CSV	Address of a scratch pad area used for software check for changed
+;		disks. This address is different for each DPH.
+;
+; ALV	Address of a scratch pad area used by the BDOS to keep disk storage
+;		allocation information. This address is different for each DPH.
+;
+
+dpbase:	  ; XLT    Scratch DIRBUF DPB    CSV    ALV
+		  ;-----------------------------------------------------
+	defw 	0000h, 0,0,0,  dirbf, dpblk, chk00, all00	; Disk A
+	defw 	0000h, 0,0,0,  dirbf, dpblk, chk01, all01	; Disk B
+	defw 	0000h, 0,0,0,  dirbf, dpblk, chk02, all02	; Disk C
+	defw 	0000h, 0,0,0,  dirbf, dpblk, chk03, all03	; Disk D
+
+; Sector translate vector
+trans:
+	defm 	 1,  7, 13, 19	;sectors  1,  2,  3,  4
+	defm	25,  5, 11, 17	;sectors  5,  6,  7,  6
+	defm	23,  3,  9, 15	;sectors  9, 10, 11, 12
+	defm	21,  2,  8, 14	;sectors 13, 14, 15, 16
+	defm	20, 26,  6, 12 	;sectors 17, 18, 19, 20
+	defm	18, 24,  4, 10	;sectors 21, 22, 23, 24
+	defm	16, 22			;sectors 25, 26
+
+;
+; SPT	BSH	BLM	EXM	DSM	DRM	AL0	AL1	CKS	OFF
+; 16B	8B 	8B 	8B 	16B	16B	8B 	8B 	16B	16B
+;
+; *SPT	Total number of sectors per track.
+; *BSH	Data allocation block shift factor, determined by the data block
+; 		allocation size.
+; *BLM	Data allocation block mask (2[BSH-1]).
+; *EXM	Extent mask, determined by the data block allocation size and the
+;		number of disk blocks.
+; *DSM	Total storage capacity of the disk drive.
+; *DRM	Total number of directory entries that can be stored on this drive.
+; *AL0/AL1 Reserved directory blocks.
+; *CKS	Size of the directory check vector.
+; *OFF	Number of reserved tracks at the beginning of the (logical) disk.
+;
+
+; Disk parameter block for all disks.
+dpblk:
+	defw	26				;sectors per track
+	defm	3				;block shift factor
+	defm	7				;block mask
+	defm	0				;null mask
+	defw	242 			;disk size-1
+	defw	63				;directory max
+	defm	192				;alloc 0
+	defm	0				;alloc 1
+	defw	0				;check size
+	defw	2				;track offset
+
+
+;
+;	End of controller - independent code, the remaining subroutines
+;	are tailored to the particular operating environment, and must
+;	be altered for any system which differs from the intel mds.
+;
+;	The following code assumes the mds monitor exists at 0f800h
+;	and uses the i/o subroutines within the monitor
+;
+;	We also assume the mds system has four disk drives
+;
+
+revrt	equ	0fdh	;interrupt revert port
+intc	equ	0fch	;interrupt mask port
+icon	equ	0f3h	;interrupt control port
+inte	equ	01111110b	;enable rst 0(warm boot), rst 7 (monitor)
+
+;	mds monitor equates
+mon80	equ	0f800h		;mds monitor
+rmon80	equ	0ff0fh		;restart mon80 (boot error)
+ci		equ	0f803h		;console character to reg-a
+ri		equ	0f806h		;reader in to reg-a
+co		equ	0f809h		;console char from c to console out
+po		equ	0f80ch		;punch char from c to punch device
+lo		equ	0f80fh		;list from c to list device
+csts	equ	0f812h		;console status 00/ff to register a
+
+;	disk ports and commands
+base	equ	78h			;base of disk command io ports
+dstat	equ	base		;disk status (input)
+rtype	equ	base+1		;result type (input)
+rbyte	equ	base+3		;result byte (input)
+;
+ilow	equ	base+1		;iopb low address (output)
+ihigh	equ	base+2		;iopb high address (output)
+;
+readf	equ	4h			;read function
+writf	equ	6h			;write function
+recal	equ	3h			;recalibrate drive
+iordy	equ	4h			;i/o finished mask
+cr		equ	0dh			;carriage return
+lf		equ	0ah			;line feed
+
+signon:					;signon message: xxk cp/m vers y.y
+	db	cr,lf,lf
+	db	'00'			;memory size filled by relocator
+	db	'k CP/M vers '
+	db	vers/10+'0','.',vers%10+'0'
+	db	cr,lf,0
+
+;
+;****************************************************************************
+; BOOT
+;****************************************************************************
+boot:						;print signon message and go to ccp
+							;(note: mds boot initialized iobyte at 0003h)
+	LD		SP,buff+80h		;
+	LD		HL,signon		;
+	CALL	prmsg			;print message
+	XOR 	A				;clear accumulator {xra a}
+	LD		(cdisk),A		;set initially to disk a {sta cdisk}
+	JP		gocpm			;go to cp/m
+
+;
+;****************************************************************************
+; WBOOT
+;****************************************************************************
+wboot:						; loader on track 0, sector 1, which will be
+							; skipped for warm read cp/m from disk -
+							; assuming there is a 128 byte cold start start.
+;
+	LD		SP,buff			; using dma - thus 80 thru ff available for stack
+;
+	LD		C,retry			; max retries {mvi c,retry}
+	PUSH	BC
+wboot0:						; enter here on error retries
+	LD		BC,cpmb			; set dma address to start of disk system
+	CALL	setdma
+	LD		C,0				;boot from drive 0
+	CALL	seldsk
+	LD		C,0				;
+	CALL	settrk			;start with track 0
+	LD		C,2				;start reading sector 2 {mvi c,2}
+	CALL	setsec
+;
+;	read sectors, count nsects to zero
+	POP 	BC				; 10-error count
+	LD		B,nsects		;
+
+rdsec:						;read next sector
+	PUSH 	BC				; save sector count
+	CALL	read
+	JP		NZ,booterr		; retry if errors occur
+	LD		HL,(iod)		; increment dma address
+	LD		DE,128			; sector size
+	ADD		HL,DE			; incremented dma address in hl
+	LD		B,H				;
+	LD		C,L				; ready for call to set dma
+	CALL	setdma
+	LD 		A,(ios)			;sector number just read
+	CP 		26				;read last sector?
+	JP		C,rd1
+;	must be sector 26, zero and go to next track
+	LD 		A,(iot)			;get track to register a
+	INC 	A
+	LD		C,A				;ready for call
+	CALL	settrk
+	XOR		A				;clear sector number
+rd1:INC		A				;to next sector
+	LD		C,A				;ready for call
+	CALL	setsec
+	POP		BC				;recall sector count
+	DEC 	B				;done?
+	JP		NZ,rdsec
+;
+;	done with the load, reset default buffer address
+
+gocpm:						;(enter here from cold start boot)
+							;	enable rst0 and rst7
+	DI
+	LD 		A,12h			;initialize command
+	OUT		(revrt),A
+	XOR		A
+	OUT		(intc),A		;cleared
+	LD 		A,inte			;rst0 and rst7 bits on
+	OUT		(intc),A
+	XOR		A
+	OUT		(icon),A		;interrupt control
+;
+;	set default buffer address to 80h
+	LD 		BC,buff
+	CALL	setdma
+;
+;	reset monitor entry points
+	LD 		A,0C3h			; C3h is the Z80 instruction JP
+	LD		(0),A
+	LD 		HL,WBOOT
+	LD		(1),HL			;jmp wboot at location 00
+	LD 		(5),A
+	LD 		HL,bdos
+	LD		(6),HL			;jmp bdos at location 5
+	LD		(7*8),A			;jmp to mon80 (may have been changed by ddt)
+	LD 		HL,mon80
+	LD		(7*8+1),HL
+;	leave iobyte set
+;	previously selected disk was b, send parameter to cpm
+	LD 		A,(cdisk)		;last logged disk number
+	LD		C,A				;send to ccp to log it in {mov	c,a}
+	EI
+	JP		cpmb
+;
+;	error condition occurred, print message and retry
+booterr:
+	POP		BC				;recall counts
+	DEC 	C
+	JP		Z,booter0
+;	try again
+	PUSH	BC
+	JP		wboot0
+;
+booter0:
+;	otherwise too many retries
+	LD 		HL,bootmsg
+	CALL	prmsg
+	JP		rmon80	;mds hardware monitor
+;
+bootmsg:
+	db	'?boot',0
+
+;
+;
+;****************************************************************************
+; CONST
+;****************************************************************************
+const:						;console status to reg-a
+							;	(exactly the same as mds call)
+	JP		csts
+
+;
+;****************************************************************************
+; CONIT
+;****************************************************************************
+conin:						;console character to reg-a
+	CALL	ci
+	AND		7fh				;remove parity bit
+	RET
+
+;
+;****************************************************************************
+; CONOUT
+;****************************************************************************
+conout:						;console character from c to console out
+	JP		co
+
+
+;
+;****************************************************************************
+; LIST
+;****************************************************************************
+list:						;list device out
+							; (exactly the same as mds call)
+	JP		lo
+
+
+;
+;****************************************************************************
+; LISTST
+;****************************************************************************
+listst:							;return list status
+	XOR		A
+	RET							;always not ready
+
+;
+;****************************************************************************
+; PUNCH
+;****************************************************************************
+punch:							;punch device out
+								; (exactly the same as mds call)
+	JP		po
+
+
+;
+;****************************************************************************
+; READER
+;****************************************************************************
+reader:							;reader character in to reg-a
+								; (exactly the same as mds call)
+	JP		ri
+
+;
+;****************************************************************************
+; HOME
+;****************************************************************************
+home:							;move to home position
+								;	treat as track 00 seek
+	LD 		C,0
+	JP		settrk
+
+;
+;****************************************************************************
+; SELDSK
+;****************************************************************************
+seldsk:							;select disk given by register c
+	LD 		HL,0000h			;return 0000 if error
+	LD		A,C
+	CP		ndisks				;too large?
+	RET		NC					;leave HL = 0000
+;
+	AND		10b	;00 00 for drive 0,1 and 10 10 for drive 2,3
+	LD 		(dbank),A		;to select drive bank
+	LD		A,C			;00, 01, 10, 11
+	AND		1b	;mds has 0,1 at 78, 2,3 at 88
+	OR 		A	;result 00?
+	JP		Z,setdrive
+	LD 		A,00110000b	;selects drive 1 in bank
+setdrive:
+	LD		B,A			;save the function
+	LD 		HL,iof	;io function
+	LD		A,(HL)
+	AND		11001111b	;mask out disk number
+	OR 		B	;mask in new disk number
+	LD		(HL),A		;save it in iopb {mov m,a}
+	LD		L,C
+	LD 		H,0		;HL=disk number
+	ADD		HL,HL	;*2
+	ADD		HL,HL	;*4
+	ADD		HL,HL	;*8
+	ADD		HL,HL	;*16
+	LD		DE,dpbase
+	ADD		HL,DE	;HL=disk header table address
+	RET
+
+
+;
+;****************************************************************************
+; SETTRK
+;****************************************************************************
+settrk:						;set track address given by c
+	LD 		HL,iot
+	LD		(HL),C
+	RET
+
+;
+;****************************************************************************
+; SETSEC
+;****************************************************************************
+setsec:	;set sector number given by c
+	LD 		HL,ios
+	LD		(HL),C
+	RET
+
+;
+;****************************************************************************
+; SECTRAN
+;****************************************************************************
+sectran:				;translate sector bc using table at de
+	LD 		B,0			;double precision sector number in BC
+	EX		DE,HL		;translate table address to HL
+	ADD		HL,BC		;translate(sector) address
+	LD		A,(HL)		;translated sector number to A
+	LD 		(ios),A
+	LD		L,A			;return sector number in L
+	RET
+
+
+;
+;****************************************************************************
+; SETDMA
+;****************************************************************************
+setdma:	;set dma address given by regs b,c
+	LD 		L,C
+	LD 		H,B
+	LD		(iod),HL
+	RET
+
+
+;
+;****************************************************************************
+; READ
+;****************************************************************************
+read:						;read next disk record (disk/trk/sec/dma set)
+	LD 		C,readf	;set to read function
+	CALL	setfunc
+	CALL	waitio	;perform read function
+	RET		;may have error set in reg-a
+
+
+;
+;****************************************************************************
+; WRITE
+;****************************************************************************
+write:						;disk write function
+	LD 		C,writf
+	CALL	setfunc			;set to write function
+	CALL	waitio
+	RET						;may have error set
+
+;
+;
+;	utility subroutines
+prmsg:	;print message at h,l to 0
+	LD		A,(HL)
+	OR 		A	;zero?
+	RET 	Z
+;	more to print
+	POP		HL
+	LD		C,A
+	CALL	conout
+	POP		HL
+	INC 	HL
+	JP		prmsg
+;
+setfunc:
+;	set function for next i/o (command in reg-c)
+	LD 		HL,iof	;io function address
+	LD		A,(HL)			;get it to accumulator for masking
+	AND		11111000b	;remove previous command
+	OR 		C	;set to new command
+	LD		(HL),A			;replaced in iopb
+;	the mds-800 controller requires disk bank bit in sector byte
+;	mask the bit from the current i/o function
+	AND		00100000b		;mask the disk select bit
+	LD 		HL,ios			;address the sector select byte
+	OR		(HL)			;select proper disk bank
+	LD		(HL),A			;set disk select bit on/off
+	RET
+;
+waitio:
+	LD 		C,retry			;max retries before perm error
+rewait:
+;	start the i/o function and wait for completion
+	CALL	intype	;in rtype
+	CALL	inbyte	;clears the controller
+;
+	LD 		A,(dbank)		;set bank flags
+	OR 		A		;zero if drive 0,1 and nz if 2,3
+	LD 		A,iopb&0ffh	;low address for iopb
+	LD 		B,iopb>>8		;high address for iopb
+	JP		NZ,iodr1		;drive bank 1?
+	OUT		(ilow),A		;low address to controller
+	LD		A,B
+	OUT		(ihigh),A	;high address
+	JP		wait0		;to wait for complete
+;
+iodr1:	;drive bank 1
+	OUT		(ilow+10h),A	;88 for drive bank 10
+	LD		A,B
+	OUT		(ihigh+10h),A
+;
+wait0:	CALL	instat		;wait for completion
+	AND		iordy		;ready?
+	JP		Z,wait0
+;
+;	check io completion ok
+	CALL	intype		;must be io complete (00) unlinked
+;	00 unlinked i/o complete,    01 linked i/o complete (not used)
+;	10 disk status changed       11 (not used)
+	CP		10b		;ready status change?
+	JP		Z,wready
+;
+;	must be 00 in the accumulator
+	OR 		A
+	JP		NZ,werror		;some other condition, retry
+;
+;	check i/o error bits
+	CALL	inbyte
+	RLA
+	JP		C,wready		;unit not ready
+	RRA
+	AND		11111110b	;any other errors?  (deleted data ok)
+	JP		NZ,werror
+;
+;	read or write is ok, accumulator contains zero
+	RET
+;
+wready:	;not ready, treat as error for now
+	CALL	inbyte		;clear result byte
+	JP		trycount
+;
+werror:	;return hardware malfunction (crc, track, seek, etc.)
+;	the mds controller has returned a bit in each position
+;	of the accumulator, corresponding to the conditions:
+;	0	- deleted data (accepted as ok above)
+;	1	- crc error
+;	2	- seek error
+;	3	- address error (hardware malfunction)
+;	4	- data over/under flow (hardware malfunction)
+;	5	- write protect (treated as not ready)
+;	6	- write error (hardware malfunction)
+;	7	- not ready
+;	(accumulator bits are numbered 7 6 5 4 3 2 1 0)
+;
+;	it may be useful to filter out the various conditions,
+;	but we will get a permanent error message if it is not
+;	recoverable.  in any case, the not ready condition is
+;	treated as a separate condition for later improvement
+trycount:
+;	register c contains retry count, decrement 'til zero
+	DEC 	c
+	JP		NZ,rewait	;for another try
+;
+;	cannot recover from error
+	LD 		A,1	;error code
+	RET
+;
+;	intype, inbyte, instat read drive bank 00 or 10
+intype:	LD 	A,(dbank)
+	OR 		A
+	JP		NZ,intyp1	;skip to bank 10
+	IN 		A,(rtype)
+	RET
+intyp1:	IN	A,(rtype+10h)	;78 for 0,1  88 for 2,3
+	RET
+;
+inbyte:	LD 	A,(dbank)
+	OR 		A
+	JP		NZ,inbyt1
+	IN		A,(rbyte)
+	RET
+inbyt1:	IN	A,(rbyte+10h)
+	RET
+;
+instat:	LD 	A,(dbank)
+	OR 		A
+	JP		NZ,insta1
+	IN		A,(dstat)
+	RET
+insta1:	IN	A,(dstat+10h)
+	RET
+;
+;
+;
+;	data areas (must be in ram)
+dbank:	db	0		;disk bank 00 if drive 0,1
+					; 10 if drive 2,3
+iopb:				;io parameter block
+		db	80h		;normal i/o operation
+iof:	db	readf	;io function, initial read
+ion:	db	1		;number of sectors to read
+iot:	db	offset	;track number
+ios:	db	1		;sector number
+iod:	dw	buff	;io address
+
+dirbf:	ds	128		;DIRECTORY ACCESS BUFFER
+chk00:	ds	16
+all00:	ds	31
+chk01:	ds	16
+all01:	ds	31
+chk02:	ds	16
+all02:	ds	31
+chk03:	ds	16
+all03:	ds	31
+

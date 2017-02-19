@@ -1,0 +1,35 @@
+;**************************************************************
+;*
+;*             C P / M   version   2 . 2
+;*
+;*   Reconstructed from memory image on February 27, 1981
+;*
+;*                by Clark A. Calkins
+;*
+;**************************************************************
+;
+; Set memory limit here. This is the amount of contigeous
+; ram starting from 0000. CP/M will reside at the end of this space.
+;
+
+MEM	EQU	62		;for a 62k system 
+
+;
+;   Set origin for CP/M
+;
+	ORG	(MEM-7)*1024
+
+
+START_CCP equ $
+#include "CCP.Z80"
+END_CCP equ $
+
+START_BDOS equ $
+#include "BDOS.Z80"
+END_BDOS equ $
+
+
+START_BIOS equ $
+#include "BIOS.Z80"
+END_BIOS equ $
+
