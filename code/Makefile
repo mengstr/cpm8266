@@ -6,7 +6,7 @@ ESP8266SDK	?= /Volumes/case-sensitive/esp-open-sdk/
 FLASHBAUD	=  921600
 MAIN_MHZ	=  80 #Pick from *52, *80, 104 or *115, 160, *173, *189#, 231, 346, 378#  * = peripheral clock at processor clock. # = Mine won't boot + on ESP8285, Clock Lower and unreliable.  Warning. Peripheral clocks of >115 will NOT boot without a full power-down and up. (Don't know why)
 
-TERMSPEED	= 9600
+ESPBAUDRATE	=  300
 
 TARGET	 	=  image
 FW_1 		=  $(TARGET).elf-0x10000.bin
@@ -24,12 +24,13 @@ OBJCOPY		=  $(BINS)/xtensa-lx106-elf-objcopy
 GCC		=  $(BINS)/xtensa-lx106-elf-gcc
 AS		=  $(BINS)/xtensa-lx106-elf-as
 
+CFLAGS		=  -std=c99 -flto -Os -g -Iinclude -nostdlib -mno-serialize-volatile -mlongcalls
+CFLAGS		:= $(CFLAGS) -DMAIN_MHZ=$(MAIN_MHZ) -DESPBAUDRATE=$(ESPBAUDRATE)
+#CFLAGS		:= $(CFLAGS) -DDEBUG 
 LDFLAGS		=  -T ld/linkerscript.ld -T ld/addresses.ld
-CFLAGS		=  -std=c11 -flto -Os -g -Iinclude -nostdlib -DMAIN_MHZ=$(MAIN_MHZ) -mno-serialize-volatile -mlongcalls
 SRCS		=  main.c uart.c z80/z80emu.c nosdk/startup.S nosdk/nosdk8266.c
 OBJS		=  main.o uart.o z80/z80emu.o nosdk/startup.o nosdk/nosdk8266.o
 
-#CFLAGS		:= -DDEBUG $(CFLAGS)
 
 all: $(OBJS)
 	@echo [LINK] $(OBJS)
@@ -85,8 +86,8 @@ disk :
 	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x3C0000 disks/FORMATTED.DSK -ff 80m -fm dout
 
 serial :
-#	minicom -b $(TERMSPEED) -D $(ESPPORT)
-	screen $(ESPPORT) $(TERMSPEED)
+#	minicom -b $(ESPBAUDRATE) -D $(ESPPORT)
+	screen $(ESPPORT) $(ESPBAUDRATE)
 
 clean :
 	@rm -rfv $(FW_1) $(FW_2) 
