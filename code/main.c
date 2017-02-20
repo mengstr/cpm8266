@@ -393,29 +393,24 @@ void ICACHE_FLASH_ATTR ModifyRegister(char *regname, uint16_t val) {
 }
 
 
-#define SECTORSIZE        128
-#define SECTORSPERTRACK   26
-#define TRACKSPERDISK     77
-#define DISKFLASHOFFSET   0x40000 // Location in flash for first disk
-#define DISKFLASHSIZE     0x40000 // Number of bytes in flash for each disk 
-
-
+#define SECTORSIZE      128
+#define SECTORSPERTRACK 26
+#define TRACKSPERDISK   77
+#define DISKFLASHOFFSET 0x40000 // Location in flash for first disk
+#define DISKFLASHSIZE   0x40000 // Number of bytes in flash for each disk 
+#define DISKCOUNT	15	// We have 15 disks A..O
 //
 //
 //
 void ReadDiskBlock(void *buf, uint8_t sectorNo, uint8_t trackNo, uint8_t diskNo) {
   uint8_t tmpbuf[SECTORSIZE];
 
-  if (diskNo>3) diskNo=3;
+  if (diskNo>DISKCOUNT-1) diskNo=DISKCOUNT-1;
   if (trackNo>(TRACKSPERDISK-1)) trackNo=TRACKSPERDISK-1;
   if (sectorNo>(SECTORSPERTRACK-1)) sectorNo=SECTORSPERTRACK-1;
 
-  uint32_t lba=
-    DISKFLASHSIZE*diskNo + 
-    SECTORSPERTRACK*trackNo + 
-    sectorNo;
-
-  uint32_t flashloc=DISKFLASHOFFSET + SECTORSIZE*lba; 
+  uint32_t lba= SECTORSPERTRACK*trackNo + sectorNo;
+  uint32_t flashloc=DISKFLASHOFFSET + DISKFLASHSIZE*diskNo + SECTORSIZE*lba; 
 
 #ifdef DEBUG
   printf("(read Sec=%d, Trk=%d Dsk=%d) LBA=%d\n",sectorNo, trackNo, diskNo,lba);
@@ -439,14 +434,32 @@ void ReadDiskBlock(void *buf, uint8_t sectorNo, uint8_t trackNo, uint8_t diskNo)
 //
 //
 void WriteDiskBlock(void *buf, uint8_t sectorNo, uint8_t trackNo, uint8_t diskNo) {
-  uint32_t flashloc=DISKFLASHOFFSET + 
-    DISKFLASHSIZE*diskNo + 
-    SECTORSPERTRACK*trackNo + 
-    SECTORSIZE*sectorNo;
+  uint8_t tmpbuf[SECTORSIZE];
+
+  if (diskNo>DISKCOUNT-1) diskNo=DISKCOUNT-1;
+  if (trackNo>(TRACKSPERDISK-1)) trackNo=TRACKSPERDISK-1;
+  if (sectorNo>(SECTORSPERTRACK-1)) sectorNo=SECTORSPERTRACK-1;
+
+  uint32_t lba= SECTORSPERTRACK*trackNo + sectorNo;
+  uint32_t flashloc=DISKFLASHOFFSET + DISKFLASHSIZE*diskNo + SECTORSIZE*lba; 
+
+#ifdef DEBUG
+  printf("(write Sec=%d, Trk=%d Dsk=%d) LBA=%d\n",sectorNo, trackNo, diskNo,lba);
+#endif
+
+  for (uint8_t i=0; i<SECTORSIZE; i++) {
+   tmpbuf[i]=((uint8_t *)buf)[i];
+  }
+
   Cache_Read_Disable();
   SPIUnlock();
-  SPIWrite(flashloc, (uint32_t *)buf, SECTORSIZE);
+  SPIWrite(flashloc, (uint32_t *)tmpbuf, SECTORSIZE);
   Cache_Read_Enable(0,0,1);
+
+
+#ifdef DEBUG
+  HexDump(z80_dma, 128, false);
+#endif
 }
 
 
@@ -614,18 +627,19 @@ int main() {
 
 }
 
-#define CONOUT	1
-#define LIST	2
-#define PUNCH	3
-#define CONIN	4
-#define CONST	5
-#define SETDMA	6
-#define SETTRK	7
-#define SETSEC	8
-#define HOME	9
-#define SELDSK 10
-#define READ   11
-#define WRITE  12	
+#define EXIT	0x00
+#define CONOUT	0x01
+#define LIST	0x02
+#define PUNCH	0x03
+#define CONIN	0x04
+#define CONST	0x05
+#define SETDMA	0x06
+#define SETTRK	0x07
+#define SETSEC	0x08
+#define HOME	0x09
+#define SELDSK  0x0A
+#define READ   	0x0B
+#define WRITE   0x0C	
 
 //
 //
@@ -648,6 +662,10 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
 #endif
 
    switch (arg) {
+
+    case EXIT:
+      machine.is_done=1;
+      break;
 
     case CONOUT:
     case LIST:
@@ -805,6 +823,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
 #ifdef DEBUG
       printf("(WRITE)\n");
 #endif
+      WriteDiskBlock(&(m->memory[z80_dma]), z80_sec, z80_trk, z80_dsk);
       m->state.registers.byte[Z80_A]=0x00;
       break;
 

@@ -23,6 +23,11 @@ buff	equ		0080h		;default buffer address
 retry	equ		10			;max retries on disk i/o before error
 
 
+;
+; Command codes that are sent to the emulator via a OUT (xxx),A instruction
+; to handle the BIOS low level console & disk I/O emulation
+;
+EMU_EXIT	equ	00h
 EMU_CONOUT	equ	01h
 EMU_LIST	equ	02h
 EMU_PUNCH	equ	03h
@@ -35,7 +40,6 @@ EMU_HOME	equ	09h
 EMU_SETDSK	equ	0Ah
 EMU_READ	equ	0Bh
 EMU_WRITE	equ	0Ch
-
 
 ;
 ;	perform following functions
@@ -90,7 +94,6 @@ SECTRN:	JP		sectran
 ; No translations
 ;
 
-ndisks	equ		4			; We have 4 disks drives in this system
 
 ;
 ; XLT	Address of the logical-to-physical translation vector, if used for
@@ -118,12 +121,24 @@ ndisks	equ		4			; We have 4 disks drives in this system
 ;		allocation information. This address is different for each DPH.
 ;
 
-dpbase:	  ; XLT    Scratch DIRBUF DPB    CSV    ALV
-		  ;-----------------------------------------------------
+ndisks	equ		15	; We have 14 disks drives (A..O) in this system
+
+dpbase:	       ; XLT    Scratch DIRBUF DPB    CSV    ALV
 	defw 	0000h, 0,0,0,  dirbf, dpblk, chk00, all00	; Disk A
 	defw 	0000h, 0,0,0,  dirbf, dpblk, chk01, all01	; Disk B
 	defw 	0000h, 0,0,0,  dirbf, dpblk, chk02, all02	; Disk C
 	defw 	0000h, 0,0,0,  dirbf, dpblk, chk03, all03	; Disk D
+	defw 	0000h, 0,0,0,  dirbf, dpblk, chk04, all04	; Disk E
+	defw 	0000h, 0,0,0,  dirbf, dpblk, chk05, all05	; Disk F
+	defw 	0000h, 0,0,0,  dirbf, dpblk, chk06, all06	; Disk G
+	defw 	0000h, 0,0,0,  dirbf, dpblk, chk07, all07	; Disk H
+	defw 	0000h, 0,0,0,  dirbf, dpblk, chk08, all08	; Disk I
+	defw 	0000h, 0,0,0,  dirbf, dpblk, chk09, all09	; Disk J
+	defw 	0000h, 0,0,0,  dirbf, dpblk, chk10, all10	; Disk K
+	defw 	0000h, 0,0,0,  dirbf, dpblk, chk11, all11	; Disk L
+	defw 	0000h, 0,0,0,  dirbf, dpblk, chk12, all12	; Disk M
+	defw 	0000h, 0,0,0,  dirbf, dpblk, chk13, all13	; Disk N
+	defw 	0000h, 0,0,0,  dirbf, dpblk, chk14, all14	; Disk O
 
 ; Sector translate vector
 trans:
@@ -136,20 +151,27 @@ trans:
 	defm	16, 22			;sectors 25, 26
 
 ;
-; SPT	BSH	BLM	EXM	DSM	DRM	AL0	AL1	CKS	OFF
-; 16B	8B 	8B 	8B 	16B	16B	8B 	8B 	16B	16B
 ;
 ; *SPT	Total number of sectors per track.
-; *BSH	Data allocation block shift factor, determined by the data block
-; 		allocation size.
+;
+; *BSH	Data allocation block shift factor, determined by the data 
+;       block allocation size.
+;
 ; *BLM	Data allocation block mask (2[BSH-1]).
-; *EXM	Extent mask, determined by the data block allocation size and the
-;		number of disk blocks.
+;
+; *EXM	Extent mask, determined by the data block allocation size 
+;	and the number of disk blocks.
+;
 ; *DSM	Total storage capacity of the disk drive.
-; *DRM	Total number of directory entries that can be stored on this drive.
+;
+; *DRM	Total number of directory entries that can be stored on 
+;	this drive.
+;
 ; *AL0/AL1 Reserved directory blocks.
+;
 ; *CKS	Size of the directory check vector.
-; *OFF	Number of reserved tracks at the beginning of the (logical) disk.
+;
+; *OFF	Number of reserved tracks at the beginning of the disk.
 ;
 
 ; Disk parameter block for all disks.
@@ -158,24 +180,13 @@ dpblk:
 	defm	3				;block shift factor
 	defm	7				;block mask
 	defm	0				;null mask
-	defw	242 			;disk size-1
+	defw	242 				;disk size-1
 	defw	63				;directory max
 	defm	192				;alloc 0
 	defm	0				;alloc 1
 	defw	0				;check size
 	defw	2				;track offset
 
-
-;
-;	End of controller - independent code, the remaining subroutines
-;	are tailored to the particular operating environment, and must
-;	be altered for any system which differs from the intel mds.
-;
-;	The following code assumes the mds monitor exists at 0f800h
-;	and uses the i/o subroutines within the monitor
-;
-;	We also assume the mds system has four disk drives
-;
 
 revrt	equ	0fdh	;interrupt revert port
 intc	equ	0fch	;interrupt mask port
@@ -210,7 +221,7 @@ lf		equ	0ah			;line feed
 
 signon:					;signon message: xxk cp/m vers y.y
 	db	cr,lf,lf
-	db	'00'			;memory size filled by relocator
+	db	MEM/10+'0',MEM%10+'0'
 	db	'k CP/M vers '
 	db	vers/10+'0','.',vers%10+'0'
 	db	cr,lf,0
@@ -220,12 +231,12 @@ signon:					;signon message: xxk cp/m vers y.y
 ; BOOT
 ;****************************************************************************
 boot:						;print signon message and go to ccp
-							;(note: mds boot initialized iobyte at 0003h)
 	LD		SP,buff+80h		;
+						; TODO set iobyte
 	LD		HL,signon		;
 	CALL	prmsg			;print message
-	XOR 	A				;clear accumulator {xra a}
-	LD		(cdisk),A		;set initially to disk a {sta cdisk}
+	XOR 	A				;clear accumulator 
+	LD		(cdisk),A		;set initially to disk a 
 	JP		gocpm			;go to cp/m
 
 ;
@@ -238,7 +249,7 @@ wboot:						; loader on track 0, sector 1, which will be
 ;
 	LD		SP,buff			; using dma - thus 80 thru ff available for stack
 ;
-	LD		C,retry			; max retries {mvi c,retry}
+	LD		C,retry			; max retries
 	PUSH	BC
 wboot0:						; enter here on error retries
 	LD		BC,cpmb			; set dma address to start of disk system
@@ -247,7 +258,7 @@ wboot0:						; enter here on error retries
 	CALL	seldsk
 	LD		C,0				;
 	CALL	settrk			;start with track 0
-	LD		C,2				;start reading sector 2 {mvi c,2}
+	LD		C,2				;start reading sector 2 
 	CALL	setsec
 ;
 ;	read sectors, count nsects to zero
@@ -283,40 +294,25 @@ rd1:INC		A				;to next sector
 ;	done with the load, reset default buffer address
 
 gocpm:						;(enter here from cold start boot)
-							;	enable rst0 and rst7
-; TODO REMOVE THIS BLOCK
-;	DI
-;	LD 		A,12h			;initialize command
-;	OUT		(revrt),A
-;	XOR		A
-;	OUT		(intc),A		;cleared
-;	LD 		A,inte			;rst0 and rst7 bits on
-;	OUT		(intc),A
-;	XOR		A
-;	OUT		(icon),A		;interrupt control
-
-;
 ;	set default buffer address to 80h
 	LD 		BC,buff
 	CALL	setdma
 ;
 ;	reset monitor entry points
 	LD 		A,0C3h			; C3h is the Z80 instruction JP
-	LD		(0),A
-	LD 		HL,WBOOT
-	LD		(1),HL			;jmp wboot at location 00
-	LD 		(5),A
-	LD 		HL,bdos
-	LD		(6),HL			;jmp bdos at location 5
-	LD		(7*8),A			;jmp to mon80 (may have been changed by ddt)
-	LD 		HL,mon80
-	LD		(7*8+1),HL
-;	leave iobyte set
-;	previously selected disk was b, send parameter to cpm
-	LD 		A,(cdisk)		;last logged disk number
-	LD		C,A				;send to ccp to log it in {mov	c,a}
-	EI
+
+	LD		(0),A			; Patch in a JP to ...
+	LD 		HL,WBOOT		; ... WBOOT at .... 
+	LD		(1),HL			; ... location 0000
+
+	LD 		(5),A			; Patch in a JP to ...
+	LD 		HL,bdos			; ... the BDOS entry at ...
+	LD		(6),HL			; ... location 0005
+
+	LD 		A,(cdisk)		; last logged disk number
+	LD		C,A			;send to ccp to log it in
 	JP		cpmb
+
 ;
 ;	error condition occurred, print message and retry
 booterr:
@@ -329,9 +325,9 @@ booterr:
 ;
 booter0:
 ;	otherwise too many retries
-	LD 		HL,bootmsg
+	LD 	HL,bootmsg
 	CALL	prmsg
-	JP		rmon80	;mds hardware monitor
+	OUT	(EMU_EXIT), A		; Exit from emulator
 ;
 bootmsg:
 	db	'?boot',0
@@ -392,8 +388,7 @@ punch:							;punch device out
 ; READER
 ;****************************************************************************
 reader:							;reader character in to reg-a
-								; (exactly the same as mds call)
-	JP		ri
+	RET ; TODO
 
 ;
 ;****************************************************************************
@@ -414,21 +409,6 @@ seldsk:							;select disk given by register c
 	RET		NC				;leave HL = 0000
 
 	OUT		(EMU_SETDSK),A
-;
-;	AND		10b	;00 00 for drive 0,1 and 10 10 for drive 2,3
-;	LD 		(dbank),A		;to select drive bank
-;	LD		A,C			;00, 01, 10, 11
-;	AND		1b	;mds has 0,1 at 78, 2,3 at 88
-;	OR 		A	;result 00?
-;	JP		Z,setdrive
-;	LD 		A,00110000b	;selects drive 1 in bank
-;setdrive:
-;	LD		B,A			;save the function
-;	LD 		HL,iof	;io function
-;	LD		A,(HL)
-;	AND		11001111b	;mask out disk number
-;	OR 		B	;mask in new disk number
-;	LD		(HL),A		;save it in iopb {mov m,a}
 
 	LD		L,C
 	LD 		H,0		;HL=disk number
@@ -478,10 +458,6 @@ sectran:				;translate sector bc using table at de
 ;****************************************************************************
 setdma:	;set dma address given by regs b,c
 	OUT		(EMU_SETDMA),A
-; TODO REMOVE
-;	LD 		L,C
-;	LD 		H,B
-;	LD		(iod),HL
 	RET
 
 
@@ -491,9 +467,6 @@ setdma:	;set dma address given by regs b,c
 ;****************************************************************************
 read:						;read next disk record (disk/trk/sec/dma set)
 	OUT	(EMU_READ),A
-;	LD 		C,readf	;set to read function
-;	CALL	setfunc
-;	CALL	waitio	;perform read function
 	RET		;may have error set in reg-a
 
 
@@ -503,9 +476,6 @@ read:						;read next disk record (disk/trk/sec/dma set)
 ;****************************************************************************
 write:						;disk write function
 	OUT	(EMU_WRITE),A
-;	LD 		C,writf
-;	CALL	setfunc			;set to write function
-;	CALL	waitio
 	RET						;may have error set
 
 ;
@@ -655,12 +625,35 @@ ios:	db	1		;sector number
 iod:	dw	buff	;io address
 
 dirbf:	ds	128		;DIRECTORY ACCESS BUFFER
-chk00:	ds	16
+
+chk00:	ds	16		; A Drive
 all00:	ds	31
-chk01:	ds	16
+chk01:	ds	16		; B Drive
 all01:	ds	31
-chk02:	ds	16
+chk02:	ds	16		; C Drive
 all02:	ds	31
-chk03:	ds	16
+chk03:	ds	16		; D Drive
 all03:	ds	31
+chk04:	ds	16		; E Drive
+all04:	ds	31
+chk05:	ds	16		; F Drive
+all05:	ds	31
+chk06:	ds	16		; G Drive
+all06:	ds	31
+chk07:	ds	16		; H Drive
+all07:	ds	31
+chk08:	ds	16		; I Drive
+all08:	ds	31
+chk09:	ds	16		; J Drive
+all09:	ds	31
+chk10:	ds	16		; K Drive
+all10:	ds	31
+chk11:	ds	16		; L Drive
+all11:	ds	31
+chk12:	ds	16		; M Drive
+all12:	ds	31
+chk13:	ds	16		; N Drive
+all13:	ds	31
+chk14:	ds	16		; O Drive
+all14:	ds	31
 

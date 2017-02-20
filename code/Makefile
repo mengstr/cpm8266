@@ -1,7 +1,7 @@
 SHELL		=  /bin/bash
 
 
-ESPPORT	    ?= /dev/ttyUSB0
+ESPPORT	    	?= /dev/ttyUSB0
 ESP8266SDK	?= /Volumes/case-sensitive/esp-open-sdk/
 FLASHBAUD	=  921600
 MAIN_MHZ	=  80 #Pick from *52, *80, 104 or *115, 160, *173, *189#, 231, 346, 378#  * = peripheral clock at processor clock. # = Mine won't boot + on ESP8285, Clock Lower and unreliable.  Warning. Peripheral clocks of >115 will NOT boot without a full power-down and up. (Don't know why)
@@ -28,6 +28,8 @@ LDFLAGS		=  -T ld/linkerscript.ld -T ld/addresses.ld
 CFLAGS		=  -std=c11 -flto -Os -g -Iinclude -nostdlib -DMAIN_MHZ=$(MAIN_MHZ) -mno-serialize-volatile -mlongcalls
 SRCS		=  main.c uart.c z80/z80emu.c nosdk/startup.S nosdk/nosdk8266.c
 OBJS		=  main.o uart.o z80/z80emu.o nosdk/startup.o nosdk/nosdk8266.o
+
+#CFLAGS		:= -DDEBUG $(CFLAGS)
 
 all: $(OBJS)
 	@echo [LINK] $(OBJS)
@@ -65,8 +67,22 @@ hex/CPM22.data: CPM22/CPM22.Z80 CPM22/BDOS.Z80 CPM22/BIOS.Z80 CPM22/CCP.Z80
 flash : $(FW_FILE_1) $(FW_FILE_2)
 	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x00000 image.elf-0x00000.bin -ff 80m -fm dout
 
-disk:
-	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x40000 disks/CPM22RED.DSK -ff 80m -fm dout
+disk :
+	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x040000 disks/CPM22RED.DSK -ff 80m -fm dout
+	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x080000 disks/FORMATTED.DSK -ff 80m -fm dout
+	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x0C0000 disks/FORMATTED.DSK -ff 80m -fm dout
+	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x100000 disks/FORMATTED.DSK -ff 80m -fm dout
+	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x140000 disks/FORMATTED.DSK -ff 80m -fm dout
+	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x180000 disks/FORMATTED.DSK -ff 80m -fm dout
+	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x1C0000 disks/FORMATTED.DSK -ff 80m -fm dout
+	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x200000 disks/FORMATTED.DSK -ff 80m -fm dout
+	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x240000 disks/FORMATTED.DSK -ff 80m -fm dout
+	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x280000 disks/FORMATTED.DSK -ff 80m -fm dout
+	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x2C0000 disks/FORMATTED.DSK -ff 80m -fm dout
+	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x300000 disks/FORMATTED.DSK -ff 80m -fm dout
+	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x340000 disks/FORMATTED.DSK -ff 80m -fm dout
+	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x380000 disks/FORMATTED.DSK -ff 80m -fm dout
+	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x3C0000 disks/FORMATTED.DSK -ff 80m -fm dout
 
 serial :
 #	minicom -b $(TERMSPEED) -D $(ESPPORT)
