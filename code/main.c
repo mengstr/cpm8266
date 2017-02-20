@@ -14,7 +14,6 @@ size_t strlen(const char *s);
 char *ets_strcpy(char *dest, const char *src);
 char *strcpy(char *dest, const char *src);
 
-
 #define TOLOWER(x) (x|0x20)
 #define BREAKKEY '`'
 
@@ -399,30 +398,69 @@ void ICACHE_FLASH_ATTR ModifyRegister(char *regname, uint16_t val) {
 #define DISKFLASHOFFSET 0x40000 // Location in flash for first disk
 #define DISKFLASHSIZE   0x40000 // Number of bytes in flash for each disk 
 #define DISKCOUNT	15	// We have 15 disks A..O
+#define FLASHBLOCKSIZE	4096
+
+
+static uint16_t flashSectorNo=0xFFFF;
+static uint8_t  flashBuf[FLASHBLOCKSIZE];
+
+void ICACHE_FLASH_ATTR hexdumpflash() {
+  uint16_t a=0;
+  char cleartext[17];
+  int len = 512;
+
+    cleartext[16] = 0;
+    while (a < len) {
+      printf("%04X:", a);
+      for (uint16_t i = 0; i < 16; i++) {
+        cleartext[i] = '.';
+        char mem = flashBuf[a];
+        printf(" %02X", mem);
+        if (mem >= 32 && mem < 127) cleartext[i] = mem;
+        a++;
+      }
+      printf("  %s\n", cleartext);
+    }
+
+}
+
+
 //
 //
 //
 void ReadDiskBlock(void *buf, uint8_t sectorNo, uint8_t trackNo, uint8_t diskNo) {
-  uint8_t tmpbuf[SECTORSIZE];
-
   if (diskNo>DISKCOUNT-1) diskNo=DISKCOUNT-1;
   if (trackNo>(TRACKSPERDISK-1)) trackNo=TRACKSPERDISK-1;
   if (sectorNo>(SECTORSPERTRACK-1)) sectorNo=SECTORSPERTRACK-1;
 
   uint32_t lba= SECTORSPERTRACK*trackNo + sectorNo;
   uint32_t flashloc=DISKFLASHOFFSET + DISKFLASHSIZE*diskNo + SECTORSIZE*lba; 
+  uint16_t myFlashSectorNo=flashloc/FLASHBLOCKSIZE;
 
 #ifdef DEBUG
-  printf("(read Sec=%d, Trk=%d Dsk=%d) LBA=%d\n",sectorNo, trackNo, diskNo,lba);
+  printf("(read Sec=%d, Trk=%d Dsk=%d) LBA=%d myFlashSectorNo=%04X flashSectorNo=%04X  \n",
+          sectorNo, trackNo, diskNo,
+          lba, myFlashSectorNo, flashSectorNo
+        );
 #endif
 
-  Cache_Read_Disable();
-  SPIUnlock();
-  SPIRead(flashloc, (uint32_t *)tmpbuf, SECTORSIZE);
-  Cache_Read_Enable(0,0,1);
+  if (myFlashSectorNo!=flashSectorNo) {
+    Cache_Read_Disable();
+    SPIUnlock();
+    flashSectorNo=myFlashSectorNo;
+#ifdef DEBUG
+  printf("(FLASH READ sector %04X %08X\n",flashSectorNo,flashSectorNo*FLASHBLOCKSIZE);
+#endif
+    SPIRead(flashSectorNo*FLASHBLOCKSIZE,(uint32_t *)flashBuf, FLASHBLOCKSIZE);
+    Cache_Read_Enable(0,0,1);
+  }
 
+  uint16_t fl=flashloc%FLASHBLOCKSIZE;
+#ifdef DEBUG
+  printf("(fl=0x%04X\n",fl);
+#endif
   for (uint8_t i=0; i<SECTORSIZE; i++) {
-   ((uint8_t *)buf)[i]=tmpbuf[i];
+   ((uint8_t *)buf)[i]=flashBuf[fl+i];
   }
 
 #ifdef DEBUG
@@ -430,30 +468,49 @@ void ReadDiskBlock(void *buf, uint8_t sectorNo, uint8_t trackNo, uint8_t diskNo)
 #endif
 }
 
+
+
+
 //
 //
 //
 void WriteDiskBlock(void *buf, uint8_t sectorNo, uint8_t trackNo, uint8_t diskNo) {
-  uint8_t tmpbuf[SECTORSIZE];
-
   if (diskNo>DISKCOUNT-1) diskNo=DISKCOUNT-1;
   if (trackNo>(TRACKSPERDISK-1)) trackNo=TRACKSPERDISK-1;
   if (sectorNo>(SECTORSPERTRACK-1)) sectorNo=SECTORSPERTRACK-1;
 
   uint32_t lba= SECTORSPERTRACK*trackNo + sectorNo;
   uint32_t flashloc=DISKFLASHOFFSET + DISKFLASHSIZE*diskNo + SECTORSIZE*lba; 
+  uint16_t myFlashSectorNo=flashloc/FLASHBLOCKSIZE;
 
 #ifdef DEBUG
-  printf("(write Sec=%d, Trk=%d Dsk=%d) LBA=%d\n",sectorNo, trackNo, diskNo,lba);
+  printf("(read Sec=%d, Trk=%d Dsk=%d) LBA=%d myFlashSectorNo=%04X flashSectorNo=%04X  \n",
+          sectorNo, trackNo, diskNo,
+          lba, myFlashSectorNo, flashSectorNo
+        );
 #endif
-
-  for (uint8_t i=0; i<SECTORSIZE; i++) {
-   tmpbuf[i]=((uint8_t *)buf)[i];
-  }
 
   Cache_Read_Disable();
   SPIUnlock();
-  SPIWrite(flashloc, (uint32_t *)tmpbuf, SECTORSIZE);
+  if (myFlashSectorNo!=flashSectorNo) {
+    flashSectorNo=myFlashSectorNo;
+    #ifdef DEBUG
+      printf("(FLASH READ(for erase/write) sector %04X %08X\n",flashSectorNo,flashSectorNo*FLASHBLOCKSIZE);
+    #endif
+    SPIRead(flashSectorNo*FLASHBLOCKSIZE,(uint32_t *)flashBuf, FLASHBLOCKSIZE);
+  }
+#ifdef DEBUG
+  printf("(FLASH ERASE/WRITE sector %04X %08X\n",flashSectorNo,flashSectorNo*FLASHBLOCKSIZE);
+#endif
+  uint16_t fl=flashloc%FLASHBLOCKSIZE;
+#ifdef DEBUG
+  printf("(fl=0x%04X\n",fl);
+#endif
+  for (uint8_t i=0; i<SECTORSIZE; i++) {
+   flashBuf[fl+i]=((uint8_t *)buf)[i];
+  }
+  SPIEraseSector(flashSectorNo);
+  SPIWrite(flashSectorNo*FLASHBLOCKSIZE, (uint32_t *)flashBuf, FLASHBLOCKSIZE);
   Cache_Read_Enable(0,0,1);
 
 
@@ -510,6 +567,10 @@ int main() {
       continue;
     }
 
+
+
+
+
     if (cmd=='1') {
       ets_memcpy(machine.memory + 0xDC00, z80code, sizeof(z80code));
       machine.state.pc=0xF200; // START OF BIOS
@@ -517,34 +578,20 @@ int main() {
       continue;
     }
 
-// Read Section 6.4 and write a GETSYS program that reads the first two 
-// tracks of a disk into memory. The program from the disk must be loaded
-// starting at location 3380H. GETSYS is coded to start at location 100H
-// (base of the TPA) as shown in Appendix C.
-    if (cmd=='2') {
-      uint16_t loc=4;
-      uint16_t sec=0;
-      uint16_t trk=0;
-//      for (int trk=0; trk<2; trk++) {
-//        for (int sec=1; sec<=SECTORSPERTRACK; sec++) {
-          ReadDiskBlock(&machine.memory[loc], sec, trk, 0);
-          loc+=SECTORSIZE;
-//        }
-//      }
+
+
+    if (cmd=='4') {
+     for (int b=0; b<128; b++) {
+      for (int f=0; f<128; f++) {
+       machine.memory[0x100+b*128+f]=b;
+      }
+     }
     }
 
-// Read Section 6.4 and write the PUTSYS program. This writes memory 
-// starting at 3380H back onto the first two tracks of the disk. The 
-// PUTSYS program should be located at 200H, as shown in Appendix C.
-    if (cmd=='3') {
-      uint16_t loc=0x3380;
-      for (int trk=0; trk<2; trk++) {
-        for (int sec=1; sec<=SECTORSPERTRACK; sec++) {
-          WriteDiskBlock(&machine.memory[loc], sec, trk, 0);
-          loc+=SECTORSIZE;
-        }
-      }
-    }
+    if (cmd=='5') { printf("00..7F\n"); for (int i=0; i<128; i++) { machine.memory[0x100+i]=i; }}
+    if (cmd=='6') { printf("80..FF\n"); for (int i=0; i<128; i++) { machine.memory[0x100+i]=i+128; }}
+    if (cmd=='7') { printf("FF\n"); for (int i=0; i<128; i++) { machine.memory[0x100+i]=0xFF; }}
+    if (cmd=='8') { printf("00\n"); for (int i=0; i<128; i++) { machine.memory[0x100+i]=0x00; }}
 
     //
     // Load INTEL Hex into memory
@@ -658,7 +705,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
    uint8_t argp1=m->memory[m->state.pc+1];
 
 #ifdef DEBUG
-   printf("opcode=%04x val=%04x instr=%04x arg-1=%02x arg=%02x arg+1=%02x \n",opcode,val,instr,argm1,arg,argp1);
+//   printf("opcode=%04x val=%04x instr=%04x arg-1=%02x arg=%02x arg+1=%02x \n",opcode,val,instr,argm1,arg,argp1);
 #endif
 
    switch (arg) {
@@ -835,3 +882,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
 
 
 }
+
+
+
+

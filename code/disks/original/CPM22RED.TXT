@@ -1,1 +1,0 @@
-Wrote 77 cyls, 1 head, 26 sectors,  128 bytes/sector = 256256 bytes
