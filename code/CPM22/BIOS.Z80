@@ -121,24 +121,24 @@ SECTRN:	JP		sectran
 ;		allocation information. This address is different for each DPH.
 ;
 
-ndisks	equ		15	; We have 14 disks drives (A..O) in this system
+ndisks	equ		15	; We have 15 disks drives (A..O) in this system
 
 dpbase:	       ; XLT    Scratch DIRBUF DPB    CSV    ALV
-	defw 	0000h, 0,0,0,  dirbf, dpblk, chk00, all00	; Disk A
-	defw 	0000h, 0,0,0,  dirbf, dpblk, chk01, all01	; Disk B
-	defw 	0000h, 0,0,0,  dirbf, dpblk, chk02, all02	; Disk C
-	defw 	0000h, 0,0,0,  dirbf, dpblk, chk03, all03	; Disk D
-	defw 	0000h, 0,0,0,  dirbf, dpblk, chk04, all04	; Disk E
-	defw 	0000h, 0,0,0,  dirbf, dpblk, chk05, all05	; Disk F
-	defw 	0000h, 0,0,0,  dirbf, dpblk, chk06, all06	; Disk G
-	defw 	0000h, 0,0,0,  dirbf, dpblk, chk07, all07	; Disk H
-	defw 	0000h, 0,0,0,  dirbf, dpblk, chk08, all08	; Disk I
-	defw 	0000h, 0,0,0,  dirbf, dpblk, chk09, all09	; Disk J
-	defw 	0000h, 0,0,0,  dirbf, dpblk, chk10, all10	; Disk K
-	defw 	0000h, 0,0,0,  dirbf, dpblk, chk11, all11	; Disk L
-	defw 	0000h, 0,0,0,  dirbf, dpblk, chk12, all12	; Disk M
-	defw 	0000h, 0,0,0,  dirbf, dpblk, chk13, all13	; Disk N
-	defw 	0000h, 0,0,0,  dirbf, dpblk, chk14, all14	; Disk O
+	defw 	trans, 0,0,0,  dirbf, dpblk, chk00, all00	; Disk A
+	defw 	trans, 0,0,0,  dirbf, dpblk, chk01, all01	; Disk B
+	defw 	trans, 0,0,0,  dirbf, dpblk, chk02, all02	; Disk C
+	defw 	trans, 0,0,0,  dirbf, dpblk, chk03, all03	; Disk D
+	defw 	trans, 0,0,0,  dirbf, dpblk, chk04, all04	; Disk E
+	defw 	trans, 0,0,0,  dirbf, dpblk, chk05, all05	; Disk F
+	defw 	trans, 0,0,0,  dirbf, dpblk, chk06, all06	; Disk G
+	defw 	trans, 0,0,0,  dirbf, dpblk, chk07, all07	; Disk H
+	defw 	trans, 0,0,0,  dirbf, dpblk, chk08, all08	; Disk I
+	defw 	trans, 0,0,0,  dirbf, dpblk, chk09, all09	; Disk J
+	defw 	trans, 0,0,0,  dirbf, dpblk, chk10, all10	; Disk K
+	defw 	trans, 0,0,0,  dirbf, dpblk, chk11, all11	; Disk L
+	defw 	trans, 0,0,0,  dirbf, dpblk, chk12, all12	; Disk M
+	defw 	trans, 0,0,0,  dirbf, dpblk, chk13, all13	; Disk N
+	defw 	trans, 0,0,0,  dirbf, dpblk, chk14, all14	; Disk O
 
 ; Sector translate vector
 trans:
@@ -176,16 +176,16 @@ trans:
 
 ; Disk parameter block for all disks.
 dpblk:
-	defw	26				;sectors per track
-	defm	3				;block shift factor
-	defm	7				;block mask
-	defm	0				;null mask
-	defw	242 				;disk size-1
-	defw	63				;directory max
-	defm	192				;alloc 0
-	defm	0				;alloc 1
-	defw	0				;check size
-	defw	2				;track offset
+	defw	26	; SPT - sectors per track
+	defm	3	; BSH - block shift factor
+	defm	7	; BLM - block mask
+	defm	0	; EXM - null mask
+	defw	242 	; DSM - disk size-1
+	defw	63	; DRM - directory max
+	defm	192	; AL0 - alloc 0
+	defm	0	; AL1 - alloc 1
+	defw	0	; CKS - check size
+	defw	2	; OFF - track offset
 
 
 revrt	equ	0fdh	;interrupt revert port
@@ -441,15 +441,30 @@ setsec:	;set sector number given by c
 ;****************************************************************************
 ; SECTRAN
 ;****************************************************************************
-sectran:				;translate sector bc using table at de
-;	LD 		B,0		;double precision sector number in BC
-;	EX		DE,HL		;translate table address to HL
-;	ADD		HL,BC		;translate(sector) address
-;	LD		A,(HL)		;translated sector number to A
-;	LD 		(ios),A
-;	LD		L,A		;return sector number in L
-	LD	L,C
-	RET
+sectran:			;translate sector bc using table at de
+;	LD 	B,0		;double precision sector number in BC
+;	EX	DE,HL		;translate table address to HL
+;	ADD	HL,BC		;translate(sector) address
+;	LD	A,(HL)		;translated sector number to A
+;	LD 	(ios),A
+;	LD	L,A		;return sector number in L
+;	LD	L,C
+;	RET
+
+	LD	A,D		;do we have a translation table?
+ 	OR	E
+ 	JP	NZ,SECT1	;yes, translate
+ 	LD	L,C		;no, return untranslated
+ 	LD	H,B		;in HL
+ 	INC	L		;sector no. start with 1
+ 	RET	NZ
+ 	INC	H
+ 	RET
+SECT1:	EX	DE,HL		;HL=.trans
+ 	ADD	HL,BC		;HL=.trans(sector)
+ 	LD	L,(HL)		;L = trans(sector)
+ 	LD	H,0		;HL= trans(sector)
+ 	RET			;with value in HL
 
 
 ;
@@ -628,32 +643,47 @@ dirbf:	ds	128		;DIRECTORY ACCESS BUFFER
 
 chk00:	ds	16		; A Drive
 all00:	ds	31
+
 chk01:	ds	16		; B Drive
 all01:	ds	31
+
 chk02:	ds	16		; C Drive
 all02:	ds	31
+
 chk03:	ds	16		; D Drive
 all03:	ds	31
+
 chk04:	ds	16		; E Drive
 all04:	ds	31
+
 chk05:	ds	16		; F Drive
 all05:	ds	31
+
 chk06:	ds	16		; G Drive
 all06:	ds	31
+
 chk07:	ds	16		; H Drive
 all07:	ds	31
+
 chk08:	ds	16		; I Drive
 all08:	ds	31
+
 chk09:	ds	16		; J Drive
 all09:	ds	31
+
 chk10:	ds	16		; K Drive
 all10:	ds	31
+
 chk11:	ds	16		; L Drive
 all11:	ds	31
+
 chk12:	ds	16		; M Drive
 all12:	ds	31
+
 chk13:	ds	16		; N Drive
 all13:	ds	31
+
 chk14:	ds	16		; O Drive
 all14:	ds	31
+
 

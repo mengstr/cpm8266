@@ -785,7 +785,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
 #ifdef DEBUG
       printf("(SETSEC B=%d C=%d)\n",B,C);
 #endif
-      z80_sec=BC & 0xFF;
+      z80_sec=BC-1;
       break;    
 
     //HOME	The disk head of the currently selected disk (initially 
