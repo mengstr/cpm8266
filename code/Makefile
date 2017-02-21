@@ -10,11 +10,11 @@ FLASHBAUD	=  921600
 EMULATIONBAUD	=  9600
 DISKSIZE	=  0x3E900 # 256256 bytes (IMB 8-inch 26sec, 77trk, SS)
 
-CPMMEMORY	=  48
+CPMMEMORY	=  64
 
 TARGET	 	=  image
-FW_1 		=  $(TARGET).elf-0x10000.bin
-FW_2 		=  $(TARGET).elf-0x00000.bin
+FW1 		=  $(TARGET).elf-0x10000.bin
+FW2 		=  $(TARGET).elf-0x00000.bin
 
 ZASM		=  /usr/local/bin/zasm
 XXD		=  /usr/bin/xxd
@@ -30,8 +30,8 @@ CFLAGS		=  -std=c99 -flto -Os -g -Iinclude -nostdlib -mno-serialize-volatile -ml
 CFLAGS		:= $(CFLAGS) -DMAIN_MHZ=$(MAIN_MHZ) -DEMULATIONBAUD=$(EMULATIONBAUD) -DCPMMEMORY=$(CPMMEMORY)
 #CFLAGS		:= $(CFLAGS) -DDEBUG 
 LDFLAGS		=  -T ld/linkerscript.ld -T ld/addresses.ld
-SRCS		=  main.c uart.c disasm.c z80/z80emu.c nosdk/startup.S nosdk/nosdk8266.c
-OBJS		=  main.o uart.o disasm.o z80/z80emu.o nosdk/startup.o nosdk/nosdk8266.o
+SRCS		=  main.c uart.c disasm/disasm.c z80/z80emu.c nosdk/startup.S nosdk/nosdk8266.c
+OBJS		=  main.o uart.o disasm/disasm.o z80/z80emu.o nosdk/startup.o nosdk/nosdk8266.o
 
 bins:   $(OBJS)
 	@echo [LINK] $(OBJS)
@@ -51,13 +51,35 @@ uart.o: uart.c uart.h
 	@echo [CC] $<
 	@$(GCC) $(CFLAGS) -o $@ -c $<
 
-disasm.o: disasm.c disasm.h
+
+disasm/mnemonic_cb.data: disasm/mnemonic_cb.txt  
+	@$(XXD) -i < $< > $@
+
+disasm/mnemonic_main.data: disasm/mnemonic_main.txt
+	@$(XXD) -i < $< > $@
+
+disasm/mnemonic_xx.data: disasm/mnemonic_xx.txt
+	@$(XXD) -i < $< > $@
+
+disasm/mnemonic_ed.data: disasm/mnemonic_ed.txt  
+	@$(XXD) -i < $< > $@
+
+disasm/mnemonic_xx_cb.data: disasm/mnemonic_xx_cb.txt
+	@$(XXD) -i < $< > $@
+
+disasm/disasm.o: disasm/disasm.c disasm/disasm.h \
+		 disasm/mnemonic_xx_cb.data \
+		 disasm/mnemonic_cb.data \
+		 disasm/mnemonic_main.data \
+		 disasm/mnemonic_xx.data \
+		 disasm/mnemonic_ed.data 
 	@echo [CC] $<
 	@$(GCC) $(CFLAGS) -o $@ -c $<
 
 z80/z80emu.o: z80/z80emu.c z80/z80emu.h
 	@echo [CC] $<
 	@$(GCC) $(CFLAGS) -o $@ -c $<
+
 
 nosdk/nosdk8266.o: nosdk/nosdk8266.c
 	@echo [CC] $<
@@ -72,8 +94,8 @@ hex/CPM22.data: CPM22/CPM22.Z80 CPM22/BDOS.Z80 CPM22/BIOS.Z80 CPM22/CCP.Z80
 	@$(ZASM) --z80 -u -w -b CPM22/CPM22.Z80 CPM22/CPM22.bin
 	@$(XXD) -i < CPM22/CPM22.bin > hex/CPM22.data
 
-flash : $(FW_FILE_1) $(FW_FILE_2)
-	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x00000 image.elf-0x00000.bin $(FLASHPARAM)
+flash : $(FW1) $(FW2)
+	$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x00000 $(FW2) 0x10000 $(FW1) $(FLASHPARAM)
 
 writealldisks : writediskA writediskB writediskC writediskC writediskD writediskE \
 		writediskF writediskG writediskH writediskI writediskJ writediskK \
@@ -179,9 +201,9 @@ serial :
 	screen $(ESPPORT) $(EMULATIONBAUD)
 
 clean :
-	@rm -rfv $(FW_1) $(FW_2) 
+	@rm -rfv $(FW1) $(FW2) 
 	@rm -rfv hex/CPM22.data CPM22/*.{rom,bin,hex}
-	@rm -rfv {.,CPM22,nosdk,z80}/*.{s,o,i,elf,res,map,bin,lst,out,bak} 
-	@rm -rfv {.,nosdk,z80}/*~
+	@rm -rfv {.,CPM22,nosdk,z80,disasm}/*.{data,s,o,i,elf,res,map,bin,lst,out,bak} 
+	@rm -rfv {.,nosdk,z80,disasm}/*~
 
 

@@ -8,17 +8,25 @@
 #include "uart_dev.h"
 #include "uart_register.h"
 
-//#include "disasm.h"
+#include "disasm/disasm.h"
+
+#define RODATA_ATTR  __attribute__((section(".irom.text"))) __attribute__((aligned(4)))
+#define ROMSTR_ATTR  __attribute__((section(".irom.text.romstr"))) __attribute__((aligned(4)))
+
+
+//   text	   data	    bss	    dec	    hex	filename
+//  29192	      6	  71040	 100238	  1878e	image.elf
+
+//   text	   data	    bss	    dec	    hex	filename
+//  29189	      6	  71040	 100235	  1878b	image.elf
 
 #define TOLOWER(x) (x | 0x20)
 #define BREAKKEY '`'
 
-static const uint8_t z80code[] ICACHE_RODATA_ATTR = {
-//#include "hex/outtest.data"
-#include "hex/CPM22.data"
-    //#include "hex/hello.data"
-    //#include "hex/zexdoc.data"
+static const char z80code[] RODATA_ATTR = {
+  #include "hex/CPM22.data"
 };
+
 #include "z80/z80emu.h"
 #include "z80/z80user.h"
 
@@ -28,6 +36,14 @@ uint16_t z80_dma = 0x80;
 uint16_t z80_trk = 0x00;
 uint16_t z80_sec = 0x01;
 uint16_t z80_dsk = 0x00;
+
+static inline uint8_t ICACHE_FLASH_ATTR readRomByte(const uint8_t* addr) {
+    uint32_t bytes;
+    bytes = *(uint32_t*)((uint32_t)addr & ~3);
+    return ((uint8_t*)&bytes)[(uint32_t)addr & 3];
+}
+
+
 
 //
 // Returns the pressed key. This function waits until a key is
@@ -578,7 +594,13 @@ int main() {
     if (cmd == '1') {
       uint16_t ccp=1024*(CPMMEMORY-8);
       uint16_t bios=ccp+0x1600;
-      ets_memcpy(machine.memory + ccp, z80code, sizeof(z80code));
+      uint8_t *p=z80code;
+ 
+//      ets_memcpy(machine.memory + ccp, z80code, sizeof(z80code));
+      printf("Patching in data into z80 %04x..%04x reading from flash %p (%p)\n",ccp,ccp+sizeof(z80code),z80code,p);
+      for (uint16_t i=0; i<sizeof(z80code); i++) {
+        machine.memory[ccp+i]=readRomByte(p++);
+      }
       machine.state.pc = bios;
       ShowAllRegisters();
       continue;
@@ -632,7 +654,7 @@ int main() {
           for (i = 0; i < 16; ++i)
             printf("%02X ", buffer[i]);
           printf("\n");
-//          i = Z80_Dasm(buffer, dest, 0);
+          i = Z80_Dasm(buffer, dest, 0);
           printf("%s  - %d bytes\n", dest, i);
         }
         Z80Emulate(&machine.state, 1, &machine);
