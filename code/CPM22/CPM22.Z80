@@ -7,18 +7,25 @@
 ;*                by Clark A. Calkins
 ;*
 ;**************************************************************
+
 ;
 ; Set memory limit here. This is the amount of contigeous
 ; ram starting from 0000. CP/M will reside at the end of this space.
 ;
+; The size is set in the MEMORY.Z80 so it can be set from the Makefile
+; it's a single like containing just
+;
+; MEM EQU 48
+;
+; for a 48KB RAM machine
+;
 
-MEM	EQU	62		;for a 62k system 
+#include "MEMORY.Z80"
 
 ;
 ;   Set origin for CP/M
 ;
-	ORG	(MEM-7)*1024
-
+	ORG	(MEM-8)*1024
 
 START_CCP equ $
 #include "CCP.Z80"

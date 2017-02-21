@@ -85,9 +85,13 @@ extern "C" {
  *  port macros are used as "traps" to simulate system calls.
  */
 
+//#ifndef CPMMEMORY
+//  #define CPMMEMORY 64
+//#endif
+
 typedef struct MACHINE {
   Z80_STATE state;
-  unsigned char memory[64 * 1024];
+  unsigned char memory[CPMMEMORY * 1024];
   int is_done;
 } MACHINE;
 
@@ -124,11 +128,11 @@ extern void SystemCall(MACHINE *m, int opcode, int val, int inst);
   { Z80_WRITE_WORD((address), (x)) }
 
 #define Z80_INPUT_BYTE(port, x)                                                \
-  { SystemCall((MACHINE *)context,opcode,x,instruction); }
+  { SystemCall((MACHINE *)context, opcode, x, instruction); }
 
 #define Z80_OUTPUT_BYTE(port, x)                                               \
-  { SystemCall((MACHINE *)context,opcode,x,instruction); }
-//   ((MACHINE *)context)->is_done = !0;                                       
+  { SystemCall((MACHINE *)context, opcode, x, instruction); }
+//   ((MACHINE *)context)->is_done = !0;
 
 #ifdef __cplusplus
 }

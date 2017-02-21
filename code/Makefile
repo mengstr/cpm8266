@@ -10,6 +10,7 @@ FLASHBAUD	=  921600
 EMULATIONBAUD	=  9600
 DISKSIZE	=  0x3E900 # 256256 bytes (IMB 8-inch 26sec, 77trk, SS)
 
+CPMMEMORY	=  48
 
 TARGET	 	=  image
 FW_1 		=  $(TARGET).elf-0x10000.bin
@@ -26,14 +27,13 @@ GCC		=  $(BINS)/xtensa-lx106-elf-gcc
 AS		=  $(BINS)/xtensa-lx106-elf-as
 
 CFLAGS		=  -std=c99 -flto -Os -g -Iinclude -nostdlib -mno-serialize-volatile -mlongcalls
-CFLAGS		:= $(CFLAGS) -DMAIN_MHZ=$(MAIN_MHZ) -DEMULATIONBAUD=$(EMULATIONBAUD)
+CFLAGS		:= $(CFLAGS) -DMAIN_MHZ=$(MAIN_MHZ) -DEMULATIONBAUD=$(EMULATIONBAUD) -DCPMMEMORY=$(CPMMEMORY)
 #CFLAGS		:= $(CFLAGS) -DDEBUG 
 LDFLAGS		=  -T ld/linkerscript.ld -T ld/addresses.ld
-SRCS		=  main.c uart.c z80/z80emu.c nosdk/startup.S nosdk/nosdk8266.c
-OBJS		=  main.o uart.o z80/z80emu.o nosdk/startup.o nosdk/nosdk8266.o
+SRCS		=  main.c uart.c disasm.c z80/z80emu.c nosdk/startup.S nosdk/nosdk8266.c
+OBJS		=  main.o uart.o disasm.o z80/z80emu.o nosdk/startup.o nosdk/nosdk8266.o
 
-
-all: $(OBJS)
+bins:   $(OBJS)
 	@echo [LINK] $(OBJS)
 	@$(GCC) $(OBJS) $(CFLAGS) $(LDFLAGS) -o $(TARGET).elf
 	@$(SIZE) $(TARGET).elf
@@ -41,11 +41,17 @@ all: $(OBJS)
 	@$(OBJDUMP) -S $(TARGET).elf > $(TARGET).lst
 	@export PATH=$(BINS):$$PATH; $(ESPTOOL) elf2image $(TARGET).elf
 
+all:	clean bins flash serial
+
 main.o: main.c z80/z80emu.h z80/z80user.h hex/CPM22.data
 	@echo [CC] $<
 	@$(GCC) $(CFLAGS) -o $@ -c $<
 
 uart.o: uart.c uart.h
+	@echo [CC] $<
+	@$(GCC) $(CFLAGS) -o $@ -c $<
+
+disasm.o: disasm.c disasm.h
 	@echo [CC] $<
 	@$(GCC) $(CFLAGS) -o $@ -c $<
 
@@ -62,9 +68,9 @@ nosdk/startup.o: nosdk/startup.S
 	@$(AS) -o $@ -c $<
 
 hex/CPM22.data: CPM22/CPM22.Z80 CPM22/BDOS.Z80 CPM22/BIOS.Z80 CPM22/CCP.Z80  
+	@echo "MEM EQU $(CPMMEMORY)" > CPM22/MEMORY.Z80
 	@$(ZASM) --z80 -u -w -b CPM22/CPM22.Z80 CPM22/CPM22.bin
 	@$(XXD) -i < CPM22/CPM22.bin > hex/CPM22.data
-
 
 flash : $(FW_FILE_1) $(FW_FILE_2)
 	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x00000 image.elf-0x00000.bin $(FLASHPARAM)
