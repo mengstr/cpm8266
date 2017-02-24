@@ -1,0 +1,39 @@
+#include "MEMSIZE.Z80"
+
+RAMSIZE		    equ	MEM - 0800h
+RAMSIZEK	    equ	RAMSIZE / 1024
+
+START_ROMMON	equ	MEM - 0800h
+START_BIOSDATA	equ	MEM - 0800h - 0380h
+START_BIOSCODE	equ	MEM - 0800h - 0380h - 0380h
+START_BDOSCODE	equ	MEM - 0800h - 0380h - 0380h - 0E00h
+START_CCPCODE	equ	MEM - 0800h - 0380h - 0380h - 0E00h - 0800h
+
+;
+; Areas in ZERO PAGE MEMORY
+;
+IOBYTE	EQU	3		;i/o definition byte.
+TDRIVE	EQU	4		;current drive name and user number.
+ENTRY	EQU	5		;entry point for the cp/m bdos.
+TBUFF	EQU	80H		;i/o buffer and command line storage.
+
+;
+; BIOS JUMP VECTORS
+;
+BOOT            equ START_BIOSCODE + 00h  
+WBOOT           equ START_BIOSCODE + 03h  
+CONST           equ START_BIOSCODE + 06h  
+CONIN           equ START_BIOSCODE + 09h  
+CONOUT          equ START_BIOSCODE + 0Ch  
+LIST            equ START_BIOSCODE + 0Fh  
+PUNCH           equ START_BIOSCODE + 12h  
+READER          equ START_BIOSCODE + 15h  
+HOME            equ START_BIOSCODE + 18h  
+SELDSK          equ START_BIOSCODE + 1Bh  
+SETTRK          equ START_BIOSCODE + 1Eh  
+SETSEC          equ START_BIOSCODE + 21h  
+SETDMA          equ START_BIOSCODE + 24h  
+READ            equ START_BIOSCODE + 27h  
+WRITE           equ START_BIOSCODE + 2Ah  
+LISTST          equ START_BIOSCODE + 2Dh  
+SECTRN          equ START_BIOSCODE + 30h  

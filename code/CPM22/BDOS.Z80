@@ -1,8 +1,33 @@
-;**************************************************************
-;*
-;*                    B D O S   E N T R Y
-;*
-;**************************************************************
+;
+;       BDOS Version 2.2 February, 1980
+;
+;       Copyright (c) 1980
+;       Digital Research
+;       Box 579, Pacific Grove
+;       California, 93950
+;
+
+#include "MEMLOCS.Z80"
+		org START_BDOSCODE
+
+;
+;   Set control character equates.
+;
+CNTRLC	EQU	3			;control-c
+CNTRLE	EQU	05H			;control-e
+BS		EQU	08H			;backspace
+TAB		EQU	09H			;tab
+LF		EQU	0AH			;line feed
+FF		EQU	0CH			;form feed
+CR		EQU	0DH			;carriage return
+CNTRLP	EQU	10H			;control-p
+CNTRLR	EQU	12H			;control-r
+CNTRLS	EQU	13H			;control-s
+CNTRLU	EQU	15H			;control-u
+CNTRLX	EQU	18H			;control-x
+CNTRLZ	EQU	1AH			;control-z (end-of-file mark)
+DEL		EQU	7FH			;rubout
+
 
 ;
 ;   Note that the following six bytes must match those at
@@ -2463,63 +2488,59 @@ WTSPECL:CALL	AUTOSEL		;select proper drive.
 ;*
 ;**************************************************************
 ;
-EMPTYFCB: DEFB	0E5H		;empty directory segment indicator.
-WRTPRT:	DEFW	0		;write protect status for all 16 drives.
-LOGIN:	DEFW	0		;drive active word (1 bit per drive).
-USERDMA:DEFW	080H		;user's dma address (defaults to 80h).
+EMPTYFCB: 	DEFB	0E5H	;empty directory segment indicator.
+WRTPRT:		DEFW	0		;write protect status for all 16 drives.
+LOGIN:		DEFW	0		;drive active word (1 bit per drive).
+USERDMA:	DEFW	080H	;user's dma address (defaults to 80h).
 ;
 ;   Scratch areas from parameter block.
 ;
-SCRATCH1: DEFW	0		;relative position within dir segment for file (0-3).
-SCRATCH2: DEFW	0		;last selected track number.
-SCRATCH3: DEFW	0		;last selected sector number.
+SCRATCH1: 	DEFW	0		;relative position within dir segment for file (0-3).
+SCRATCH2: 	DEFW	0		;last selected track number.
+SCRATCH3: 	DEFW	0		;last selected sector number.
 ;
 ;   Disk storage areas from parameter block.
 ;
-DIRBUF:	DEFW	0		;address of directory buffer to use.
-DISKPB:	DEFW	0		;contains address of disk parameter block.
-CHKVECT:DEFW	0		;address of check vector.
-ALOCVECT: DEFW	0		;address of allocation vector (bit map).
+DIRBUF:		DEFW	0		;address of directory buffer to use.
+DISKPB:		DEFW	0		;contains address of disk parameter block.
+CHKVECT:	DEFW	0		;address of check vector.
+ALOCVECT: 	DEFW	0		;address of allocation vector (bit map).
 ;
 ;   Parameter block returned from the bios.
 ;
-SECTORS:DEFW	0		;sectors per track from bios.
-BLKSHFT:DEFB	0		;block shift.
-BLKMASK:DEFB	0		;block mask.
-EXTMASK:DEFB	0		;extent mask.
-DSKSIZE:DEFW	0		;disk size from bios (number of blocks-1).
-DIRSIZE:DEFW	0		;directory size.
-ALLOC0:	DEFW	0		;storage for first bytes of bit map (dir space used).
-ALLOC1:	DEFW	0
-OFFSET:	DEFW	0		;first usable track number.
-XLATE:	DEFW	0		;sector translation table address.
+SECTORS:	DEFW	0		;sectors per track from bios.
+BLKSHFT:	DEFB	0		;block shift.
+BLKMASK:	DEFB	0		;block mask.
+EXTMASK:	DEFB	0		;extent mask.
+DSKSIZE:	DEFW	0		;disk size from bios (number of blocks-1).
+DIRSIZE:	DEFW	0		;directory size.
+ALLOC0:		DEFW	0		;storage for first bytes of bit map (dir space used).
+ALLOC1:		DEFW	0
+OFFSET:		DEFW	0		;first usable track number.
+XLATE:		DEFW	0		;sector translation table address.
 ;
 ;
-CLOSEFLG: DEFB	0		;close flag (=0ffh is extent written ok).
-RDWRTFLG: DEFB	0		;read/write flag (0ffh=read, 0=write).
-FNDSTAT:DEFB	0		;filename found status (0=found first entry).
-MODE:	DEFB	0		;I/o mode select (0=random, 1=sequential, 2=special random).
-EPARAM:	DEFB	0		;storage for register (E) on entry to bdos.
-RELBLOCK: DEFB	0		;relative position within fcb of block number written.
-COUNTER:DEFB	0		;byte counter for directory name searches.
-SAVEFCB:DEFW	0,0		;save space for address of fcb (for directory searches).
-BIGDISK:DEFB	0		;if =0 then disk is > 256 blocks long.
-AUTO:	DEFB	0		;if non-zero, then auto select activated.
-OLDDRV:	DEFB	0		;on auto select, storage for previous drive.
-AUTOFLAG: DEFB	0		;if non-zero, then auto select changed drives.
-SAVNXT:	DEFB	0		;storage for next record number to access.
-SAVEXT:	DEFB	0		;storage for extent number of file.
-SAVNREC:DEFW	0		;storage for number of records in file.
-BLKNMBR:DEFW	0		;block number (physical sector) used within a file or logical sect
-LOGSECT:DEFW	0		;starting logical (128 byte) sector of block (physical sector).
-FCBPOS:	DEFB	0		;relative position within buffer for fcb of file of interest.
-FILEPOS:DEFW	0		;files position within directory (0 to max entries -1).
-;
-;   Disk directory buffer checksum bytes. One for each of the
+CLOSEFLG: 	DEFB	0		;close flag (=0ffh is extent written ok).
+RDWRTFLG: 	DEFB	0		;read/write flag (0ffh=read, 0=write).
+FNDSTAT:	DEFB	0		;filename found status (0=found first entry).
+MODE:		DEFB	0		;I/o mode select (0=random, 1=sequential, 2=special random).
+EPARAM:		DEFB	0		;storage for register (E) on entry to bdos.
+RELBLOCK: 	DEFB	0		;relative position within fcb of block number written.
+COUNTER:	DEFB	0		;byte counter for directory name searches.
+SAVEFCB:	DEFW	0,0		;save space for address of fcb (for directory searches).
+BIGDISK:	DEFB	0		;if =0 then disk is > 256 blocks long.
+AUTO:		DEFB	0		;if non-zero, then auto select activated.
+OLDDRV:		DEFB	0		;on auto select, storage for previous drive.
+AUTOFLAG: 	DEFB	0		;if non-zero, then auto select changed drives.
+SAVNXT:		DEFB	0		;storage for next record number to access.
+SAVEXT:		DEFB	0		;storage for extent number of file.
+SAVNREC:	DEFW	0		;storage for number of records in file.
+BLKNMBR:	DEFW	0		;block number (physical sector) used within a file or logical sect
+LOGSECT:	DEFW	0		;starting logical (128 byte) sector of block (physical sector).
+FCBPOS:		DEFB	0		;relative position within buffer for fcb of file of interest.
+FILEPOS:	DEFW	0		;files position within directory (0 to max entries -1).
+;	
+;   Disk	 directory buffer checksum bytes. One for each of the
 ; 16 possible drives.
 ;
-CKSUMTBL: DEFB	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-;
-;   Extra space ?
-;
-	DEFB	0,0,0,0
+CKSUMTBL: 	DEFB	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0

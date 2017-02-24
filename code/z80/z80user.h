@@ -91,7 +91,7 @@ extern "C" {
 
 typedef struct MACHINE {
   Z80_STATE state;
-  unsigned char memory[CPMMEMORY * 1024];
+  unsigned char memory[CPMMEMORY];
   int is_done;
 } MACHINE;
 

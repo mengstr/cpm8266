@@ -1,0 +1,85 @@
+;
+;	SECOND STAGE BOOTLOADER FOR CPM8266
+;	Copyright (c) 2017 Mats Engstrom, SmallRoomLabs
+;
+;	Some parts are from the original skeletal BIOS code
+;   Copyright (c) 1980 Digital Research
+;
+
+#include "MEMLOCS.Z80"
+		org 100h
+
+;
+; Command codes that are sent to the emulator via a OUT (xxx),A instruction
+; to handle the BIOS low level console & disk I/O emulation
+;
+EMU_EXIT	equ	00h
+EMU_CONOUT	equ	01h
+EMU_LIST	equ	02h
+EMU_PUNCH	equ	03h
+EMU_CONIN	equ	04h
+EMU_CONST	equ	05h
+EMU_SETDMA	equ	06h
+EMU_SETTRK	equ	07h
+EMU_SETSEC	equ	08h
+EMU_HOME	equ	09h
+EMU_SETDSK	equ	0Ah
+EMU_READ	equ	0Bh
+EMU_WRITE	equ	0Ch
+
+	LD	BC,2				; B=TRACK 0, C=SECTOR 2
+	LD	D,52				; D=# SECTORS TO LOAD
+	LD	HL,START_CCPCODE	; HL=BASE TRANSFER ADDRESS
+
+LoadSector	
+; INSERT INLINE CODE AT THIS POINT TO READ ONE 128 BYTE SECTOR FROM THE
+; TRACK GIVEN IN REGISTER B, SECTOR GIVEN IN REGISTER C, INTO THE ADDRESS
+; GIVEN BY <HL> BRANCH TO LOCATION "COLD" IF A READ ERROR OCCURS
+
+	LD		(tmpbc),BC		; Save BC
+
+	OUT		(EMU_SETSEC),A	; arg is C,  data in C
+
+	LD 		C,0
+	OUT		(EMU_SETDSK),A	; arg is C,  data=0
+
+	LD 		C,B
+	OUT		(EMU_SETTRK),A	; arg is C,  data in B
+
+	LD		B,H
+	LD 		C,L
+	OUT		(EMU_SETDMA),A	; arg is BC, data in HL
+
+	OUT		(EMU_READ),A	; No args
+	
+	LD 		C,'.'
+	OUT		(EMU_CONOUT),A	; arg is C
+
+	LD		BC,(tmpbc)		; Restore BC
+
+
+; GO TO NEXT SECTOR IF LOAD IS INCOMPLETE
+	DEC	D					; SECTS=SECTS-1
+	JP	Z,Done				; All sectors loaded
+
+; MORE SECTORS TO LOAD
+	LD	SP,128				; 128 BYTES PER SECTOR
+	ADD	HL,SP				; HL=HL+128
+	INC	C					; SECTOR=SECTOR+1
+	LD	A,C
+	CP	27					; LAST SECTOR OF TRACK?
+	JP	C,LoadSector		; NO, GO READ ANOTHER
+
+;END OF TRACK, INCREMENT TO NEXT TRACK
+	LD	C,1					; SECTOR=1
+	INC	B					; TRACK=TRACK+1
+	JP	LoadSector			; FOR ANOTHER GROUP
+
+;	done with the load, Exit back to emulator
+Done
+	LD 		C,'D'
+	OUT		(EMU_CONOUT),A	; arg is C
+Done1
+	JP	 Done1
+
+tmpbc	ds 	1				; Holding area for register BC
