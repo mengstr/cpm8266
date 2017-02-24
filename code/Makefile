@@ -140,47 +140,30 @@ serial :
 	minicom -b -D $(ESPPORT) $(EMULATIONBAUD)
 #	screen $(ESPPORT) $(EMULATIONBAUD)
 
-
 define WRITEDISK =
 writedisk$(1) :
-#	address=$(shell n=$$(printf "%d\n" \'$(1)); printf "0x%06x" $$(( ($$n-64)*262144 )); )
-	@echo "[UPLOAD]" disks/DISK_$(1).DSK to $(shell n=$$(printf "%d\n" \'$(1)); printf "0x%06x" $$(( ($$n-64)*262144 )); )
-	@$(ESPTOOL) \
-	-p $(ESPPORT) \
-	-b $(FLASHBAUD) \
-	write_flash $(shell n=$$(printf "%d\n" \'$(1)); printf "0x%06x" $$(( ($$n-64)*262144 )); ) \
-		disks/DISK_$(1).DSK \
-	$(FLASHPARAM) > /dev/null
+	@$(eval address := $(shell n=$$(printf "%d\n" \'$(1)); printf "0x%06x" $$(( ($$n-64)*$(2) )); ) )
+	@echo "[UPLOAD]" disks/DISK_$(1).DSK to $(address)
+	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash $(address) disks/DISK_$(1).DSK $(FLASHPARAM) > /dev/null
 endef
-
 
 define READDISK =
 readdisk$(1) :
-#	address=$(shell n=$$(printf "%d\n" \'$(1)); printf "0x%06x" $$(( ($$n-64)*262144 )); )
-	@echo "[DOWNLOAD]" disks/DISK_$(1).DSK from $(shell n=$$(printf "%d\n" \'$(1)); printf "0x%06x" $$(( ($$n-64)*262144 )); )
-	@$(ESPTOOL) \
-	-p $(ESPPORT) \
-	-b $(FLASHBAUD) \
-	read_flash \
-		$(shell n=$$(printf "%d\n" \'$(1)); printf "0x%06x" $$(( ($$n-64)*262144 )); ) \
-		262144 \
-		disks/DISK_$(1).DSK \
-	> /dev/null
+	@$(eval address := $(shell n=$$(printf "%d\n" \'$(1)); printf "0x%06x" $$(( ($$n-64)*$(2) )); ) )
+	@echo "[DOWNLOAD]" disks/DISK_$(1).DSK from $(address)
+	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) read_flash $(address) $(2) disks/DISK_$(1).DSK > /dev/null
 endef
 
-$(foreach DSK,$(DISKS),$(eval $(call WRITEDISK,$(DSK))))
-$(foreach DSK,$(DISKS),$(eval $(call READDISK,$(DSK))))
+$(foreach DSK,$(DISKS), \
+	$(eval $(call WRITEDISK,$(DSK), $(DISKBLOCK))); \
+	$(eval $(call  READDISK,$(DSK), $(DISKBLOCK))); \
+)
 
-writealldisks : writediskA writediskB writediskC writediskC writediskD \
-				writediskE writediskF writediskG writediskH writediskI \
-				writediskJ writediskK writediskL writediskM writediskN \
-				writediskO
+WRITEDISKTARGETS=$(foreach DSK,$(DISKS), writedisk$(DSK) )
+READDISKTARGETS=$(foreach DSK,$(DISKS), writedisk$(DSK) )
 
-readalldisks : 	readdiskA readdiskB readdiskC readdiskC readdiskD \
-				readdiskE readdiskF readdiskG readdiskH readdiskI \
-				readdiskJ readdiskK readdiskL readdiskM readdiskN \
-				readdiskO
-
+writealldisks : $(WRITEDISKTARGETS)
+readalldisks  : $(READDISKTARGETS)
 
 clean :
 	@rm -rf $(FW1) $(FW2)
