@@ -8,15 +8,11 @@
 #include "uart_dev.h"
 #include "uart_register.h"
 
-
 #define RODATA_ATTR  __attribute__((section(".irom.text"))) __attribute__((aligned(4)))
 #define ROMSTR_ATTR  __attribute__((section(".irom.text.romstr"))) __attribute__((aligned(4)))
 
-
 static const char z80code[] RODATA_ATTR = {
-//  #include "hex/CPM22.data"
   #include "hex/boot.data"
-//#include "hex/zexdoc.data"
 };
 
 #include "z80/z80emu.h"
@@ -199,16 +195,13 @@ int main() {
     if (cmd == '?') {
       printf("EMON v0.2\n");
       printf("\td ADR [LEN] - Hexdump LEN bytes of memory starting at ADR\n");
-      printf("\tD ADR [LEN] - Intel hexdump LEN bytes of memory starting at "
-             "ADR\n");
+      printf("\tD ADR [LEN] - Intel hexdump LEN bytes of memory starting at ADR\n");
       printf("\tL [OFFSET]  - Load an Intel hexdump into memory with OFFSET\n");
       printf("\tm ADR       - Modify memory contents starting at ADR\n");
       printf("\tr [REG VAL] - Display all registers, or set REG to VAL\n");
       printf("\tg [ADR]     - Start execution at PC or [ADR]\n");
-      printf(
-          "\ts [NUM]     - Single step 1 or [NUM] instructions, print once\n");
-      printf("\tS [NUM]     - Single step 1 or [NUM] instructions, print every "
-             "step\n");
+      printf("\ts [NUM]     - Single step 1 or [NUM] instructions, print once\n");
+      printf("\tS [NUM]     - Single step 1 or [NUM] instructions, print every step\n");
       continue;
     }
 
@@ -235,7 +228,6 @@ int main() {
       uint16_t bios=0x100; //ccp+0x1600;
       uint8_t const *p=z80code;
  
-//      ets_memcpy(machine.memory + ccp, z80code, sizeof(z80code));
       printf("Patching in data into z80 %04x..%04x reading from flash %p (%p)\n",ccp,ccp+sizeof(z80code),z80code,p);
       for (uint16_t i=0; i<sizeof(z80code); i++) {
         machine.memory[ccp+i]=readRomByte(p++);

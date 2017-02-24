@@ -184,7 +184,7 @@ readalldisks : 	readdiskA readdiskB readdiskC readdiskC readdiskD \
 
 clean :
 	@rm -rf $(FW1) $(FW2)
-	@rm -rf hex/CPM22.data
+	@rm -rf hex/*.*
 	@rm -rf {.,nosdk,z80,disasm}/*.{data,s,o,i,elf,res,map,bin,lst,out,bak}
 	@rm -rf {.,nosdk,z80,disasm}/*~
 	@$(MAKE) --no-print-directory -C CPM22 clean

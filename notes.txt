@@ -79,3 +79,8 @@ wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
 wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwrwrrrwwwwwrwwwwwrrrrrrrrrrrrrrrr
 r
 
+B: ZEXALL   COM : ZEXDOC   COM
+b>ZEXDOCrrrrrrrrrrrrrrrrrrr
+Z80 instruction exerciser
+<adc,sbc> hl,<bc,de,hl,sp>.
+
