@@ -4,13 +4,13 @@
 	CPMRM	=	/usr/bin/cpmrm
 	NEWDISK	=	printf '%*s' 256256 | tr ' ' $(E5) >
 
-all:	DISK_A.DSK DISK_B.DSK DISK_C.DSK DISK_D.DSK DISK_E.DSK DISK_F.DSK \
-        DISK_G.DSK DISK_H.DSK DISK_I.DSK DISK_J.DSK DISK_K.DSK DISK_L.DSK \
-        DISK_M.DSK DISK_N.DSK DISK_O.DSK DISK_P.DSK 
+all:	DISK_A.DSK DISK_B.DSK DISK_C.DSK DISK_D.DSK DISK_E.DSK \
+        DISK_F.DSK DISK_G.DSK DISK_H.DSK DISK_I.DSK DISK_J.DSK \
+        DISK_K.DSK DISK_L.DSK DISK_M.DSK DISK_N.DSK DISK_O.DSK 
 
 define HANDLEDISK =
 DISK_$(1).DSK: $(wildcard $(1)/*.*)
-	@echo "[MAKEDISK $(1)]" 
+	@echo "[MAKEDISK] DISK_$(1).DSK" 
 	@$(NEWDISK) DISK_$(1).DSK
 	@touch -t 197001010000 DISK_$(1).DSK
 	@touch $(1)/DUMMY.FIL
@@ -20,11 +20,9 @@ DISK_$(1).DSK: $(wildcard $(1)/*.*)
 	@$(CPMRM) DISK_$(1).DSK 0:DUMMY.FIL
 endef
 
-DISKS	=	A B C D E F G H I J K L M N O P
+DISKS	=	A B C D E F G H I J K L M N O
 $(foreach DSK,$(DISKS),$(eval $(call HANDLEDISK,$(DSK))))
-
-
         
 clean:
-	rm -rf *.DSK
+	@rm -rf *.DSK
 		
