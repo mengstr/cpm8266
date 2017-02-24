@@ -233,7 +233,7 @@ int main() {
     if (cmd == '1') {
       uint16_t ccp=0x100; //1024*(CPMMEMORY-8);
       uint16_t bios=0x100; //ccp+0x1600;
-      uint8_t *p=z80code;
+      uint8_t const *p=z80code;
  
 //      ets_memcpy(machine.memory + ccp, z80code, sizeof(z80code));
       printf("Patching in data into z80 %04x..%04x reading from flash %p (%p)\n",ccp,ccp+sizeof(z80code),z80code,p);
