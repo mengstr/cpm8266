@@ -11,6 +11,8 @@
 #define RODATA_ATTR  __attribute__((section(".irom.text"))) __attribute__((aligned(4)))
 #define ROMSTR_ATTR  __attribute__((section(".irom.text.romstr"))) __attribute__((aligned(4)))
 
+volatile uint32_t KEEPMEHERE __attribute__((section(".irom.text"))) = 0xDEADBEEF;
+
 static const char z80code[] RODATA_ATTR = {
   #include "hex/boot.data"
 };
@@ -64,24 +66,20 @@ static uint8_t flashBuf[FLASHBLOCKSIZE];
 //
 //
 //
-void ICACHE_FLASH_ATTR ReadDiskBlock(void *buf, uint8_t sectorNo,
+void ICACHE_FLASH_ATTR ReadDiskBlock(uint16_t mdest, uint8_t sectorNo,
                                      uint8_t trackNo, uint8_t diskNo) {
-  if (diskNo > DISKCOUNT - 1)
-    diskNo = DISKCOUNT - 1;
-  if (trackNo > (TRACKSPERDISK - 1))
-    trackNo = TRACKSPERDISK - 1;
-  if (sectorNo > (SECTORSPERTRACK - 1))
-    sectorNo = SECTORSPERTRACK - 1;
+
+  if (diskNo > (DISKCOUNT - 1))          diskNo = DISKCOUNT - 1;
+  if (trackNo > (TRACKSPERDISK - 1))     trackNo = TRACKSPERDISK - 1;
+  if (sectorNo > (SECTORSPERTRACK - 1))  sectorNo = SECTORSPERTRACK - 1;
 
   uint32_t lba = SECTORSPERTRACK * trackNo + sectorNo;
-  uint32_t flashloc =
-      DISKFLASHOFFSET + DISKFLASHSIZE * diskNo + SECTORSIZE * lba;
+  uint32_t flashloc = DISKFLASHOFFSET + DISKFLASHSIZE * diskNo + SECTORSIZE * lba;
   uint16_t myFlashSectorNo = flashloc / FLASHBLOCKSIZE;
 
 #ifdef DEBUG
-  printf("(read Sec=%d, Trk=%d Dsk=%d) LBA=%d myFlashSectorNo=%04X "
-         "flashSectorNo=%04X  \n",
-         sectorNo, trackNo, diskNo, lba, myFlashSectorNo, flashSectorNo);
+  printf("(read Sec=%d, Trk=%d Dsk=%d) LBA=%d myFlashSectorNo=%04X flashSectorNo=%04X  \n",
+           sectorNo, trackNo, diskNo, lba, myFlashSectorNo, flashSectorNo);
 #endif
 
   if (myFlashSectorNo != flashSectorNo) {
@@ -89,12 +87,12 @@ void ICACHE_FLASH_ATTR ReadDiskBlock(void *buf, uint8_t sectorNo,
     SPIUnlock();
     flashSectorNo = myFlashSectorNo;
 #ifdef DEBUG
-    printf("(FLASH READ sector %04X %08X\n", flashSectorNo,
-           flashSectorNo * FLASHBLOCKSIZE);
+    printf("(FLASH READ sector %04X %08X\n", flashSectorNo, flashSectorNo * FLASHBLOCKSIZE);
 #endif
-  printf("r");
-    SPIRead(flashSectorNo * FLASHBLOCKSIZE, (uint32_t *)flashBuf,
-            FLASHBLOCKSIZE);
+#ifdef DEBUG1
+    printf("r");
+#endif
+    SPIRead(flashSectorNo * FLASHBLOCKSIZE, (uint32_t *)flashBuf, FLASHBLOCKSIZE);
     Cache_Read_Enable(0, 0, 1);
   }
 
@@ -103,34 +101,30 @@ void ICACHE_FLASH_ATTR ReadDiskBlock(void *buf, uint8_t sectorNo,
   printf("(fl=0x%04X\n", fl);
 #endif
   for (uint8_t i = 0; i < SECTORSIZE; i++) {
-    ((uint8_t *)buf)[i] = flashBuf[fl + i];
+    machine.memory[mdest+i] = flashBuf[fl + i];
   }
 
 #ifdef DEBUG
-  HexDump(z80_dma, 128, false);
+  HexDump(mdest, 128, false);
 #endif
 }
 
 //
 //
 //
-void ICACHE_FLASH_ATTR WriteDiskBlock(void *buf, uint8_t sectorNo,
+void ICACHE_FLASH_ATTR WriteDiskBlock(uint16_t msrc, uint8_t sectorNo,
                                       uint8_t trackNo, uint8_t diskNo) {
-  if (diskNo > DISKCOUNT - 1)
-    diskNo = DISKCOUNT - 1;
-  if (trackNo > (TRACKSPERDISK - 1))
-    trackNo = TRACKSPERDISK - 1;
-  if (sectorNo > (SECTORSPERTRACK - 1))
-    sectorNo = SECTORSPERTRACK - 1;
+
+  if (diskNo > (DISKCOUNT - 1))          diskNo = DISKCOUNT - 1;
+  if (trackNo > (TRACKSPERDISK - 1))     trackNo = TRACKSPERDISK - 1;
+  if (sectorNo > (SECTORSPERTRACK - 1))  sectorNo = SECTORSPERTRACK - 1;
 
   uint32_t lba = SECTORSPERTRACK * trackNo + sectorNo;
-  uint32_t flashloc =
-      DISKFLASHOFFSET + DISKFLASHSIZE * diskNo + SECTORSIZE * lba;
+  uint32_t flashloc = DISKFLASHOFFSET + DISKFLASHSIZE * diskNo + SECTORSIZE * lba;
   uint16_t myFlashSectorNo = flashloc / FLASHBLOCKSIZE;
 
 #ifdef DEBUG
-  printf("(read Sec=%d, Trk=%d Dsk=%d) LBA=%d myFlashSectorNo=%04X "
-         "flashSectorNo=%04X  \n",
+  printf("(read Sec=%d, Trk=%d Dsk=%d) LBA=%d myFlashSectorNo=%04X flashSectorNo=%04X\n",
          sectorNo, trackNo, diskNo, lba, myFlashSectorNo, flashSectorNo);
 #endif
 
@@ -139,32 +133,44 @@ void ICACHE_FLASH_ATTR WriteDiskBlock(void *buf, uint8_t sectorNo,
   if (myFlashSectorNo != flashSectorNo) {
     flashSectorNo = myFlashSectorNo;
 #ifdef DEBUG
-    printf("(FLASH READ(for erase/write) sector %04X %08X\n", flashSectorNo,
-           flashSectorNo * FLASHBLOCKSIZE);
+    printf("(FLASH READ(for erase/write) sector %04X %08X\n", flashSectorNo, flashSectorNo * FLASHBLOCKSIZE);
 #endif
-    SPIRead(flashSectorNo * FLASHBLOCKSIZE, (uint32_t *)flashBuf,
-            FLASHBLOCKSIZE);
+    SPIRead(flashSectorNo * FLASHBLOCKSIZE, (uint32_t *)flashBuf, FLASHBLOCKSIZE);
   }
 #ifdef DEBUG
-  printf("(FLASH ERASE/WRITE sector %04X %08X\n", flashSectorNo,
-         flashSectorNo * FLASHBLOCKSIZE);
+  printf("(FLASH ERASE/WRITE sector %04X %08X\n", flashSectorNo, flashSectorNo * FLASHBLOCKSIZE);
 #endif
   uint16_t fl = flashloc % FLASHBLOCKSIZE;
 #ifdef DEBUG
   printf("(fl=0x%04X\n", fl);
 #endif
   for (uint8_t i = 0; i < SECTORSIZE; i++) {
-    flashBuf[fl + i] = ((uint8_t *)buf)[i];
+    flashBuf[fl + i] = machine.memory[msrc+i];
   }
   printf("w");
   SPIEraseSector(flashSectorNo);
-  SPIWrite(flashSectorNo * FLASHBLOCKSIZE, (uint32_t *)flashBuf,
-           FLASHBLOCKSIZE);
+  SPIWrite(flashSectorNo * FLASHBLOCKSIZE, (uint32_t *)flashBuf, FLASHBLOCKSIZE);
   Cache_Read_Enable(0, 0, 1);
 
 #ifdef DEBUG
-  HexDump(z80_dma, 128, false);
+  HexDump(msrc, 128, false);
 #endif
+}
+
+
+//
+//
+//
+void Execute(bool canbreak) {
+  machine.is_done = 0;
+  printf("Starting excution at 0x%04X\n", machine.state.pc);
+  do {
+    Z80Emulate(&machine.state, 1, &machine);
+    if (canbreak && (GetKey(false) == BREAKKEY)) {
+      break;
+    }
+  } while (!machine.is_done);
+  printf("\n");
 }
 
 
@@ -199,9 +205,19 @@ int main() {
       printf("\tL [OFFSET]  - Load an Intel hexdump into memory with OFFSET\n");
       printf("\tm ADR       - Modify memory contents starting at ADR\n");
       printf("\tr [REG VAL] - Display all registers, or set REG to VAL\n");
-      printf("\tg [ADR]     - Start execution at PC or [ADR]\n");
+      printf("\tg [ADR]     - Start execution at PC or [ADR], can break with `\n");
+      printf("\tG [ADR]     - Start execution at PC or [ADR]\n");
       printf("\ts [NUM]     - Single step 1 or [NUM] instructions, print once\n");
       printf("\tS [NUM]     - Single step 1 or [NUM] instructions, print every step\n");
+      printf("\tB           - Load D0/T0/S0 to 0x0000 and execute\n");
+      continue;
+    }
+
+    if (cmd=='B') {
+      // Read first sector at first track first disk to memory 0x0000
+      ReadDiskBlock(0x0000, 0, 0, 0);	
+      machine.state.pc = 0x0000;
+      Execute(true);
       continue;
     }
 
@@ -222,21 +238,6 @@ int main() {
       continue;
     }
 
-
-    if (cmd == '1') {
-      uint16_t ccp=0x100; //1024*(CPMMEMORY-8);
-      uint16_t bios=0x100; //ccp+0x1600;
-      uint8_t const *p=z80code;
- 
-      printf("Patching in data into z80 %04x..%04x reading from flash %p (%p)\n",ccp,ccp+sizeof(z80code),z80code,p);
-      for (uint16_t i=0; i<sizeof(z80code); i++) {
-        machine.memory[ccp+i]=readRomByte(p++);
-      }
-      machine.state.pc = bios;
-      ShowAllRegisters();
-      continue;
-    }
-
     //
     // Load INTEL Hex into memory
     //
@@ -253,16 +254,10 @@ int main() {
     //
     if (TOLOWER(cmd) == 'g') {
       uint32_t pc = getHexNum(&line);
-      if (pc != NONUM)
+      if (pc != NONUM) {
         machine.state.pc = pc;
-      machine.is_done = 0;
-      printf("Starting excution at 0x%04X\n", machine.state.pc);
-      do {
-        Z80Emulate(&machine.state, 1, &machine);
-        if (cmd == 'g' && GetKey(false) == BREAKKEY)
-          break;
-      } while (!machine.is_done);
-      printf("\n");
+      }
+      Execute((cmd=='g'));  
       continue;
     }
 
@@ -549,7 +544,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     printf("(READ D:%d T:%d S:%d)\n", z80_dsk, z80_trk, z80_sec);
 #endif
 
-    ReadDiskBlock(&(m->memory[z80_dma]), z80_sec, z80_trk, z80_dsk);
+    ReadDiskBlock(z80_dma, z80_sec, z80_trk, z80_dsk);
     m->state.registers.byte[Z80_A] = 0x00;
 
     break;
@@ -565,7 +560,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
 #ifdef DEBUG
     printf("(WRITE)\n");
 #endif
-    WriteDiskBlock(&(m->memory[z80_dma]), z80_sec, z80_trk, z80_dsk);
+    WriteDiskBlock(z80_dma, z80_sec, z80_trk, z80_dsk);
     m->state.registers.byte[Z80_A] = 0x00;
     break;
 

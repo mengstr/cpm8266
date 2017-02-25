@@ -40,18 +40,25 @@ void SHA1Update(SHA1_CTX *context, const uint8 *data, size_t len);
 void SHA1Final(uint8 digest[SHA1_HASH_LEN], SHA1_CTX *context);
 void SHA1Transform(uint32 state[5], const uint8 buffer[64]);
 
-// SPI_FLASH_SEC_SIZE      4096
+#define SPI_FLASH_SEC_SIZE      4096
 
-void SPIEraseSector(uint16 sec);
-void SPIEraseArea(uint32 start, uint32 len); // Doesn't work?
-void SPIEraseBlock(uint16 blk);
-void SPIWrite(uint32 des_addr, uint32_t *src_addr, uint32_t size);
-void SPIRead(uint32 src_addr, uint32_t *des_addr, uint16_t size);
-void SPILock(uint16_t sec); //??? I don't use this?
-void SPIUnlock();           //??? I don't use this? -> Seems to crash.
+typedef enum {
+    SPI_FLASH_RESULT_OK,
+    SPI_FLASH_RESULT_ERR,
+    SPI_FLASH_RESULT_TIMEOUT
+} SpiFlashOpResult;
 
-extern SpiFlashChip
-    *flashchip; // don't forget: flashchip->chip_size = 0x01000000;
+
+
+uint32_t SPIEraseSector(uint16 sec);
+uint32_t SPIEraseArea(uint32 start, uint32 len); // Doesn't work?
+uint32_t SPIEraseBlock(uint16 blk);
+SpiFlashOpResult SPIWrite(uint32 des_addr, uint32_t *src_addr, uint32_t size);
+SpiFlashOpResult SPIRead(uint32 src_addr, uint32_t *des_addr, uint16_t size);
+uint32_t SPILock(uint16_t sec); //??? I don't use this?
+uint32_t SPIUnlock();           //??? I don't use this? -> Seems to crash.
+
+extern SpiFlashChip *flashchip; // don't forget: flashchip->chip_size = 0x01000000;
 
 /*
                 flashchip->chip_size = 0x01000000;

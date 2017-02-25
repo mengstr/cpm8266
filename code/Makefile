@@ -15,8 +15,8 @@ DISKS		=  A B C D E F G H I J K L M N O
 export CPMMEMORY =  65536
 
 TARGET	 	=  image
+FW0 		=  $(TARGET).elf-0x00000.bin
 FW1 		=  $(TARGET).elf-0x10000.bin
-FW2 		=  $(TARGET).elf-0x00000.bin
 
 ZASM		=  /usr/local/bin/zasm
 XXD			=  /usr/bin/xxd
@@ -39,7 +39,7 @@ SRCS		=  main.c uart.c monitor.c utils.c disasm/disasm.c z80/z80emu.c nosdk/star
 OBJS		=  main.o uart.o monitor.o utils.o disasm/disasm.o z80/z80emu.o nosdk/startup.o nosdk/nosdk8266.o
 
 
-.PHONY: all full disks clean
+.PHONY: all full disks clean 
 
 all: bins flash serial
 
@@ -121,9 +121,9 @@ CPM22/BDOS.bin :
 CPM22/CCP.bin :
 	@$(MAKE) --no-print-directory -C CPM22 CCP.bin
 
-flash : $(FW1) $(FW2)
-	@echo "[UPLOAD]" $(FW1) $(FW2)
-	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x00000 $(FW2) 0x10000 $(FW1) $(FLASHPARAM) > /dev/null
+flash : $(FW0) $(FW1)
+	@echo "[UPLOAD]" $(FW0) $(FW1)
+	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x00000 $(FW0) 0x10000 $(FW1) $(FLASHPARAM) > /dev/null
 
 disks :
 	@$(MAKE) --no-print-directory -C disks clean all
