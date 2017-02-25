@@ -11,7 +11,6 @@
 		org START_CCPCODE
 
 TFCB	EQU	5CH				; default file control block.
-TBASE	EQU	100H			; transiant program storage area.
 PATTRN2 EQU START_BDOSCODE	; The serial no is at the first 6 bytes of BDOS
 ;
 ;   Set control character equates.
@@ -32,7 +31,14 @@ CNTRLZ	EQU	1AH			;control-z (end-of-file mark)
 DEL		EQU	7FH			;rubout
 
 ;
-CBASE:	
+; The CBASE label should normally be set here, but we have already set
+; it in the MEMLOCS.Z80 include. Check that the address set for the 
+; label is correctly set and halt compile if it's wrong.
+;
+#if $ != CBASE
+CBASE EQU BAD_ADDRESS	; Halt assembly 
+#endif
+
 	JP	COMMAND		;execute command processor (ccp).
 	JP	CLEARBUF	;entry to empty input buffer before starting ccp.
 

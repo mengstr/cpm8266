@@ -36,7 +36,17 @@ DEL		EQU	7FH			;rubout
 PATTRN2:DEFB	0,22,0,0,0,0	;(* serial number bytes *).
 ;
 ;
-FBASE:	JP	FBASE1
+
+;
+; The FBASE label should normally be set here, but we have already set
+; it in the MEMLOCS.Z80 include. Check that the address set for the 
+; label is correctly set and halt compile if it's wrong.
+;
+#if $ != FBASE
+FBASE EQU BAD_ADDRESS	; Halt assembly 
+#endif
+	JP	FBASE1
+
 ;
 ;   Bdos error table.
 ;

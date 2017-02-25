@@ -9,6 +9,11 @@ START_BIOSCODE	equ	MEM - 0800h - 0380h - 0380h
 START_BDOSCODE	equ	MEM - 0800h - 0380h - 0380h - 0E00h
 START_CCPCODE	equ	MEM - 0800h - 0380h - 0380h - 0E00h - 0800h
 
+
+TBASE	EQU	100H			    ; TPA - Transient Program storage Area
+CBASE   EQU START_CCPCODE	    ; Used for sanity checks
+FBASE   EQU START_BDOSCODE+6    ; Used for sanity checks
+
 ;
 ; Areas in ZERO PAGE MEMORY
 ;

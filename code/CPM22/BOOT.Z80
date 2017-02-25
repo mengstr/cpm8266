@@ -7,7 +7,7 @@
 ;
 
 #include "MEMLOCS.Z80"
-		org 100h
+		org 0000h
 
 ;
 ; Command codes that are sent to the emulator via a OUT (xxx),A instruction
@@ -52,15 +52,12 @@ LoadSector
 
 	OUT		(EMU_READ),A	; No args
 	
-	LD 		C,'.'
-	OUT		(EMU_CONOUT),A	; arg is C
-
 	LD		BC,(tmpbc)		; Restore BC
 
 
 ; GO TO NEXT SECTOR IF LOAD IS INCOMPLETE
 	DEC	D					; SECTS=SECTS-1
-	JP	Z,Done				; All sectors loaded
+	JP	Z,BOOT				; All sectors loaded, start CP/M
 
 ; MORE SECTORS TO LOAD
 	LD	SP,128				; 128 BYTES PER SECTOR
@@ -75,11 +72,6 @@ LoadSector
 	INC	B					; TRACK=TRACK+1
 	JP	LoadSector			; FOR ANOTHER GROUP
 
-;	done with the load, Exit back to emulator
-Done
-	LD 		C,'D'
-	OUT		(EMU_CONOUT),A	; arg is C
-Done1
-	JP	 Done1
+;	done with the load
 
 tmpbc	ds 	1				; Holding area for register BC
