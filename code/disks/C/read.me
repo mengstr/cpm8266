@@ -1,0 +1,181 @@
+
+                  Welcome to TURBO PASCAL Version 3.0!
+                  ------------------------------------
+
+    In  spite  of all efforts,  some errors have found their way into
+    the new TURBO 3.0 manual.    This file contains all the necessary
+    corrections and additions, and we apologize for any inconvenience
+    this may cause you.
+
+    Please make a working  copy of your TURBO disk and store the ori-
+    ginal in a safe  place.  For help  making a backup  copy,  please
+    refer to appendix M of the TURBO PASCAL Reference Manual.
+
+    NOTE∫† YouÚ† TURBœ† PASCAÃ disÎ haÛ beeÓ pre-installe‰† foÚ† youÚ ç
+††††MicrobeÂ disÎ system¨ pa˘ nÔ attentioÓ tÔ thÂ manuaÏ witË regardÛ ç
+††††to installing TURBO PASCAL.
+
+
+              *******************************************
+              *                                         *
+              *   Need help  with TURBO?  Please  see   *
+              *   Appendix N in your Reference Manual   *
+              *   for answers to common questions.      *
+              *                                         *
+              *******************************************
+
+
+                         -------------------
+
+
+       Contents of the READ.ME File
+       ----------------------------
+    1. CORRECTIONS to the 3.0 Reference Manual        [ All versions ]
+    2. OMMISSIONS from the 3.0 Reference Manual       [ All versions ]
+    3. New FEATURES                                   [ CP/M-80      ]
+    4. ADDITIONAL FILE LIST                           [ CP/M-80      ]
+
+
+                         -------------------
+
+
+                             CORRECTIONS
+                             -----------
+
+
+Page 253 - MOV AL,[BP-1]
+------------------------
+     The correct statement is:  MOV AL,[BP+4]
+
+
+Page 293 - TURBO-BCD will compile and run any program
+-----------------------------------------------------
+     Well - almost. The Real functions Sin, Cos, ArcTan, Ln, Exp,
+     and Sqrt and the pre-declared constant Pi are not  available
+     in  TURBOBCD.ä
+
+                         -------------------
+
+
+                              OMISSIONS
+                              ---------
+
+
+User Written Error Handlers
+---------------------------
+     In  Turbo Pascal 3.0 you may write your own error  handler,
+     which  is  called in case of an I/O or Run-time  error.  The
+     procedure must have the following header:
+
+          procedure Error(ErrNo, ErrAddr: Integer);
+
+     The  name of the  procedure  and its  parameters  are  unim-
+     portant,  as  long   as  it  is a procedure with  two  value
+     parameters  of  type Integer.
+
+     The value passed in ErrNo is the error type and number.  The
+     most significant byte,  i.e. "Hi(ErrNo)", contains the error
+     type,  and  the least significant byte,   i.e.  "Lo(ErrNo)",
+     contains the error number (see Appendix F or G in the  Turbo
+     Pascal Manual).
+
+     The following error types are defined:
+
+          0   User Break (Ctrl-C).
+          1   I/O error.
+          2   Run-time error.
+
+     In  case  of  a user interrupt (Ctrl-C),   the low  byte  of
+     "ErrNo" is always 1.  "ErrAddr" contains the address (offset
+     in Code Segment for 16 bit versions) of the error.
+
+     To  activate the error handler,   assign its offset  address
+     to  the standard variable "ErrorPtr", i.e.
+
+          ErrorPtr:=Ofs(Error);  { 16 bit }  or
+          ErrorPtr:=Addr(Error); {  8 bit }
+
+     There are no limits to what an error handler may  do.  Typi-
+     cally  it will close all open files,   output an error  mes-
+     sage, and call the Halt  standard procedure to terminate the
+     program.   If  an  error handler returns,   i.e.  if it does
+     not  call  Halt,   or  if an error occurs  within  an  error
+     handler,   Turbo Pascal will itself output the error message
+     and terminate the program.
+
+
+
+
+                         -------------------ä
+
+                NEW FEATURES OF CP/M-80 IMPLEMENTATION OF
+                                TURBO 3.0
+                             - AN OVERVIEW -
+                -----------------------------------------
+
+Inline
+------
+     A constant identifier used in an INLINE statement does  not
+     always generate two bytes of code.
+
+Files
+-----
+     New FIB formats.
+     Optional 4th parameter on Blockread/Write returns number of
+       blocks actually read.
+     SeekEoln function.
+     SeekEof function.
+
+
+Misc.
+-----
+     Exit procedure       -  To exit the current block
+     OvrDrive procedure   -  To specify the drive on which to find overlays
+     ParamCount function  -  Gives number of characters in the command buffer
+     ParamStr function    -  Gives the string of characters in the command line
+
+Overlays
+--------
+
+     Overlay  files  are  opened and closed every time  they  are
+     accessed.  Therefore,  there is never a need to specifically
+     close  an  overlay file.
+
+     The  Y compiler directive is no longer  supported.  Instead,
+     the   OvrPath (MS-DOS) or OvrDrive (CP/M)  standard   proce-
+     dures   may  be  used to specify the drive and  subdirectory
+     in which overlay files reside.
+
+     Please note that run-time error F0 indicates that your over-
+     lay file is missing or is called recursively.    (This error
+     number is omitted from the Reference  Manual but is included
+     elsewhere in this file.)
+
+
+                         -------------------
+
+                       TURBO PASCAL Version 3.0
+                              CP/M-80
+                        Additional File List
+
+     In addition to the list  of files  mentioned in  Chapter 1 of
+     your TURBO Reference Manual, the following files are included
+     on your TURBO disk:ä
+     Sample programs
+     ---------------
+     LISTER   PAS    - simple program to list your Pascal source
+     CMDLIN   PAS    - get parameters from the command line
+
+     MC       PAS    - sample spreadsheet program - MAIN MODULE
+     MC-MOD00 INC    - sample spreadsheet program - INCLUDE MODULE 00
+     MC-MOD01 INC    - sample spreadsheet program - INCLUDE MODULE 01
+     MC-MOD02 INC    - sample spreadsheet program - INCLUDE MODULE 02
+     MC-MOD03 INC    - sample spreadsheet program - INCLUDE MODULE 03
+     MC-MOD04 INC    - sample spreadsheet program - INCLUDE MODULE 04
+     MC-MOD05 INC    - sample spreadsheet program - INCLUDE MODULE 05
+     MC       HLP    - spreadsheet help file
+     MCDEMO   MCS    - spreadsheet data file (not for use with TURBO-87)
+
+     ---------------------------------------------------------------------
+
+
