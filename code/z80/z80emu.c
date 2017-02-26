@@ -2050,8 +2050,8 @@ emulate_next_instruction:
                                 int     e;
                                 
                                 Z80_FETCH_BYTE(pc, e);
-                                e = (char) e;
-                                pc += e + 1;
+                                int8_t e1 = (char) e;
+                                pc += e1 + 1;
 
                                 elapsed_cycles += 8;
 
@@ -2066,8 +2066,8 @@ emulate_next_instruction:
                                 if (DD(Q(opcode))) {
                                 
                                         Z80_FETCH_BYTE(pc, e);
-                                        e = (char) e;
-                                        pc += e + 1;
+                                        int8_t e1 = (char) e;
+                                        pc += e1 + 1;
 
                                         elapsed_cycles += 8;
 
@@ -2100,11 +2100,9 @@ emulate_next_instruction:
                                 int     e;
                                 
                                 if (--B) {
-                                
                                         Z80_FETCH_BYTE(pc, e);
-                                        e = (char) e;
-                                        pc += e + 1;
-
+                                        int8_t e1 = (int8_t) e;
+                                         pc += e1 + 1;
                                         elapsed_cycles += 9;
 
                                 } else {

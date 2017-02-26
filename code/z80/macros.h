@@ -68,7 +68,7 @@
 #define READ_D(d)                                                       \
 {                                                                       \
         Z80_FETCH_BYTE(pc, (d));                                        \
-        (d) = (char) (d);                                               \
+        (d) = (signed char) (d);                                        \
         pc++;                                                           \
         elapsed_cycles += 3;                                            \
 }
