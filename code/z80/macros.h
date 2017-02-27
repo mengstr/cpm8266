@@ -309,7 +309,7 @@
 {                                                                       \
         int     c;                                                      \
                                                                         \
-        c = (x) >> 7;                                                   \
+        c = ((x) >> 7) & 0x01;                                          \
         (x) = ((x) << 1) | c;                                           \
         F = SZYXP_FLAGS_TABLE[(x) & 0xff] | c;                          \
 }
@@ -318,6 +318,7 @@
 {                                                                       \
         int     c;                                                      \
                                                                         \
+        c = ((x) >> 7) & 0x01;                                          \
         c = (x) >> 7;                                                   \
         (x) = ((x) << 1) | (F & Z80_C_FLAG);                            \
         F = SZYXP_FLAGS_TABLE[(x) & 0xff] | c;                          \
@@ -345,7 +346,7 @@
 {                                                                       \
         int     c;                                                      \
                                                                         \
-        c = (x) >> 7;                                                   \
+        c = ((x) >> 7) & 0x01;                                          \
         (x) <<= 1;                                                      \
         F = SZYXP_FLAGS_TABLE[(x) & 0xff] | c;                          \
 }
@@ -354,7 +355,7 @@
 {                                                                       \
         int     c;                                                      \
                                                                         \
-        c = (x) >> 7;                                                   \
+        c = ((x) >> 7) & 0x01;                                          \
         (x) = ((x) << 1) | 0x01;                                        \
         F = SZYXP_FLAGS_TABLE[(x) & 0xff] | c;                          \
 }
@@ -364,7 +365,7 @@
         int     c;                                                      \
                                                                         \
         c = (x) & 0x01;                                                 \
-        (x) = ((char) (x)) >> 1;                                        \
+        (x) = ((signed char) (x)) >> 1;                                        \
         F = SZYXP_FLAGS_TABLE[(x) & 0xff] | c;                          \
 }
         
