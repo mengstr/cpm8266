@@ -26,6 +26,9 @@ static const char z80code[] RODATA_ATTR = {
 #include "monitor.h"
 #include "utils.h"
 
+// 01=    02=r/w    04=bios/bdos  08=
+const uint8_t DBG = 0x02;
+
 MACHINE machine;
 
 uint16_t z80_dma = 0x80;
@@ -77,39 +80,23 @@ void ICACHE_FLASH_ATTR ReadDiskBlock(uint16_t mdest, uint8_t sectorNo,
   uint32_t flashloc = DISKFLASHOFFSET + DISKFLASHSIZE * diskNo + SECTORSIZE * lba;
   uint16_t myFlashSectorNo = flashloc / FLASHBLOCKSIZE;
 
-#ifdef DEBUG
-  printf(
-      "(read Sec=%d, Trk=%d Dsk=%d) LBA=%d myFlashSectorNo=%04X "
-      "flashSectorNo=%04X  \n",
-      sectorNo, trackNo, diskNo, lba, myFlashSectorNo, flashSectorNo);
-#endif
+  if (DBG & 1) printf("(read Sec=%d, Trk=%d Dsk=%d) LBA=%d myFlashSectorNo=%04X flashSectorNo=%04X  \n", sectorNo, trackNo, diskNo, lba, myFlashSectorNo, flashSectorNo);
 
   if (myFlashSectorNo != flashSectorNo) {
     Cache_Read_Disable();
     SPIUnlock();
     flashSectorNo = myFlashSectorNo;
-#ifdef DEBUG
-    printf("(FLASH READ sector %04X %08X\n", flashSectorNo,
-           flashSectorNo * FLASHBLOCKSIZE);
-#endif
-#ifdef DEBUG1
-    printf("r");
-#endif
+    if (DBG & 1) printf("(FLASH READ sector %04X %08X\n", flashSectorNo, flashSectorNo * FLASHBLOCKSIZE);
+    if (DBG & 2) printf("r");
     SPIRead(flashSectorNo * FLASHBLOCKSIZE, (uint32_t *)flashBuf, FLASHBLOCKSIZE);
     Cache_Read_Enable(0, 0, 1);
   }
 
   uint16_t fl = flashloc % FLASHBLOCKSIZE;
-#ifdef DEBUG
-  printf("(fl=0x%04X\n", fl);
-#endif
+  if (DBG & 1) printf("(fl=0x%04X\n", fl);
   for (uint8_t i = 0; i < SECTORSIZE; i++) {
     machine.memory[mdest + i] = flashBuf[fl + i];
   }
-
-#ifdef DEBUG
-  HexDump(mdest, 128, false);
-#endif
 }
 
 //
@@ -125,40 +112,96 @@ void ICACHE_FLASH_ATTR WriteDiskBlock(uint16_t msrc, uint8_t sectorNo,
   uint32_t flashloc = DISKFLASHOFFSET + DISKFLASHSIZE * diskNo + SECTORSIZE * lba;
   uint16_t myFlashSectorNo = flashloc / FLASHBLOCKSIZE;
 
-#ifdef DEBUG
-  printf(
-      "(read Sec=%d, Trk=%d Dsk=%d) LBA=%d myFlashSectorNo=%04X flashSectorNo=%04X\n",
-      sectorNo, trackNo, diskNo, lba, myFlashSectorNo, flashSectorNo);
-#endif
+  if (DBG & 1) printf("(read Sec=%d, Trk=%d Dsk=%d) LBA=%d myFlashSectorNo=%04X flashSectorNo=%04X\n", sectorNo, trackNo, diskNo, lba, myFlashSectorNo, flashSectorNo);
 
   Cache_Read_Disable();
   SPIUnlock();
   if (myFlashSectorNo != flashSectorNo) {
     flashSectorNo = myFlashSectorNo;
-#ifdef DEBUG
-    printf("(FLASH READ(for erase/write) sector %04X %08X\n",
-           flashSectorNo, flashSectorNo * FLASHBLOCKSIZE);
-#endif
+    if (DBG & 1) printf("(FLASH READ(for erase/write) sector %04X %08X\n", flashSectorNo, flashSectorNo * FLASHBLOCKSIZE);
     SPIRead(flashSectorNo * FLASHBLOCKSIZE, (uint32_t *)flashBuf, FLASHBLOCKSIZE);
   }
-#ifdef DEBUG
-  printf("(FLASH ERASE/WRITE sector %04X %08X\n", flashSectorNo, flashSectorNo * FLASHBLOCKSIZE);
-#endif
+  if (DBG & 1) printf("(FLASH ERASE/WRITE sector %04X %08X\n", flashSectorNo, flashSectorNo * FLASHBLOCKSIZE);
   uint16_t fl = flashloc % FLASHBLOCKSIZE;
-#ifdef DEBUG
-  printf("(fl=0x%04X\n", fl);
-#endif
+  if (DBG & 1) printf("(fl=0x%04X\n", fl);
   for (uint8_t i = 0; i < SECTORSIZE; i++) {
     flashBuf[fl + i] = machine.memory[msrc + i];
   }
-  printf("w");
+  if (DBG & 2) printf("w");
   SPIEraseSector(flashSectorNo);
   SPIWrite(flashSectorNo * FLASHBLOCKSIZE, (uint32_t *)flashBuf, FLASHBLOCKSIZE);
   Cache_Read_Enable(0, 0, 1);
+}
 
-#ifdef DEBUG
-  HexDump(msrc, 128, false);
-#endif
+
+//
+//
+//
+void DebugBiosBdos() {
+  switch (machine.state.pc) {
+    case 0xF100: printf("(BIOS BOOT)"); break;
+    case 0xF103: printf("(BIOS WBOOT)"); break;
+    case 0xF106: printf("(BIOS CONST)"); break;
+    case 0xF109: printf("(BIOS CONIN)"); break;
+    case 0xF10C: printf("(BIOS CONOUT)"); break;
+    case 0xF10F: printf("(BIOS LIST)"); break;
+    case 0xF112: printf("(BIOS PUNCH)"); break;
+    case 0xF115: printf("(BIOS READER)"); break;
+    case 0xF118: printf("(BIOS HOME)"); break;
+    case 0xF11B: printf("(BIOS SELDSK)"); break;
+    case 0xF11E: printf("(BIOS SETTRK)"); break;
+    case 0xF121: printf("(BIOS SETSEC)"); break;
+    case 0xF124: printf("(BIOS SETDMA)"); break;
+    case 0xF127: printf("(BIOS READ)"); break;
+    case 0xF12A: printf("(BIOS WRITE)"); break;
+    case 0xF12D: printf("(BIOS LISTST)"); break;
+    case 0xF130: printf("(BIOS SECTRN)"); break;
+    case 0xE311:  // BDOS ENTRY POINTS
+      switch (machine.state.registers.byte[Z80_C]) {
+        case 0: printf("(BDOS WBOOT)"); break;
+        case 1: printf("(BDOS GETCON)"); break;
+        case 2: printf("(BDOS OUTCON)"); break;
+        case 3: printf("(BDOS GETRDR)"); break;
+        case 4: printf("(BDOS PUNCH)"); break;
+        case 5: printf("(BDOS LIST)"); break;
+        case 6: printf("(BDOS DIRCIO %02x)", machine.state.registers.byte[Z80_E]); break;
+        case 7: printf("(BDOS GETIOB)"); break;
+        case 8: printf("(BDOS SETIOB)"); break;
+        case 9: printf("(BDOS PRTSTR)"); break;
+        case 10: printf("(BDOS RDBUFF)"); break;
+        case 11: printf("(BDOS GETCSTS)"); break;
+        case 12: printf("(BDOS GETVER)"); break;
+        case 13: printf("(BDOS RSTDSK)"); break;
+        case 14: printf("(BDOS SETDSK)"); break;
+        case 15: printf("(BDOS OPENFIL)"); break;
+        case 16: printf("(BDOS CLOSEFIL)"); break;
+        case 17: printf("(BDOS GETFST)"); break;
+        case 18: printf("(BDOS GETNXT)"); break;
+        case 19: printf("(BDOS DELFILE)"); break;
+        case 20: printf("(BDOS READSEQ)"); break;
+        case 21: printf("(BDOS WRTSEQ)"); break;
+        case 22: printf("(BDOS FCREATE)"); break;
+        case 23: printf("(BDOS RENFILE)"); break;
+        case 24: printf("(BDOS GETLOG)"); break;
+        case 25: printf("(BDOS GETCRNT)"); break;
+        case 26: printf("(BDOS PUTDMA)"); break;
+        case 27: printf("(BDOS GETALOC)"); break;
+        case 28: printf("(BDOS WRTPRTD)"); break;
+        case 29: printf("(BDOS GETROV)"); break;
+        case 30: printf("(BDOS SETATTR)"); break;
+        case 31: printf("(BDOS GETPARM)"); break;
+        case 32: printf("(BDOS GETUSER)"); break;
+        case 33: printf("(BDOS RDRANDOM)"); break;
+        case 34: printf("(BDOS WTRANDOM)"); break;
+        case 35: printf("(BDOS FILESIZE)"); break;
+        case 36: printf("(BDOS SETRAN)"); break;
+        case 37: printf("(BDOS LOGOFF)"); break;
+        case 38: printf("(BDOS RTN)"); break;
+        case 39: printf("(BDOS RTN)"); break;
+        case 40: printf("(BDOS WTSPECL)"); break;
+        default: printf("(BDOS C=%d)", machine.state.registers.byte[Z80_C]); break;
+      }
+  }
 }
 
 
@@ -170,73 +213,7 @@ void Execute(bool canbreak) {
   printf("Starting excution at 0x%04X\n", machine.state.pc);
   do {
     Z80Emulate(&machine.state, 1, &machine);
-#ifdef DEBUG
-    switch (machine.state.pc) {
-      case 0xF100: printf("(BIOS BOOT)"); break;
-      case 0xF103: printf("(BIOS WBOOT)"); break;
-      case 0xF106: printf("(BIOS CONST)"); break;
-      case 0xF109: printf("(BIOS CONIN)"); break;
-      case 0xF10C: printf("(BIOS CONOUT)"); break;
-      case 0xF10F: printf("(BIOS LIST)"); break;
-      case 0xF112: printf("(BIOS PUNCH)"); break;
-      case 0xF115: printf("(BIOS READER)"); break;
-      case 0xF118: printf("(BIOS HOME)"); break;
-      case 0xF11B: printf("(BIOS SELDSK)"); break;
-      case 0xF11E: printf("(BIOS SETTRK)"); break;
-      case 0xF121: printf("(BIOS SETSEC)"); break;
-      case 0xF124: printf("(BIOS SETDMA)"); break;
-      case 0xF127: printf("(BIOS READ)"); break;
-      case 0xF12A: printf("(BIOS WRITE)"); break;
-      case 0xF12D: printf("(BIOS LISTST)"); break;
-      case 0xF130: printf("(BIOS SECTRN)"); break;
-      case 0xE311:  // BDOS ENTRY POINTS
-        switch (machine.state.registers.byte[Z80_C]) {
-          case 0: printf("(BDOS WBOOT)"); break;
-          case 1: printf("(BDOS GETCON)"); break;
-          case 2: printf("(BDOS OUTCON)"); break;
-          case 3: printf("(BDOS GETRDR)"); break;
-          case 4: printf("(BDOS PUNCH)"); break;
-          case 5: printf("(BDOS LIST)"); break;
-          case 6: printf("(BDOS DIRCIO %02x)", machine.state.registers.byte[Z80_E]); break;
-          case 7: printf("(BDOS GETIOB)"); break;
-          case 8: printf("(BDOS SETIOB)"); break;
-          case 9: printf("(BDOS PRTSTR)"); break;
-          case 10: printf("(BDOS RDBUFF)"); break;
-          case 11: printf("(BDOS GETCSTS)"); break;
-          case 12: printf("(BDOS GETVER)"); break;
-          case 13: printf("(BDOS RSTDSK)"); break;
-          case 14: printf("(BDOS SETDSK)"); break;
-          case 15: printf("(BDOS OPENFIL)"); break;
-          case 16: printf("(BDOS CLOSEFIL)"); break;
-          case 17: printf("(BDOS GETFST)"); break;
-          case 18: printf("(BDOS GETNXT)"); break;
-          case 19: printf("(BDOS DELFILE)"); break;
-          case 20: printf("(BDOS READSEQ)"); break;
-          case 21: printf("(BDOS WRTSEQ)"); break;
-          case 22: printf("(BDOS FCREATE)"); break;
-          case 23: printf("(BDOS RENFILE)"); break;
-          case 24: printf("(BDOS GETLOG)"); break;
-          case 25: printf("(BDOS GETCRNT)"); break;
-          case 26: printf("(BDOS PUTDMA)"); break;
-          case 27: printf("(BDOS GETALOC)"); break;
-          case 28: printf("(BDOS WRTPRTD)"); break;
-          case 29: printf("(BDOS GETROV)"); break;
-          case 30: printf("(BDOS SETATTR)"); break;
-          case 31: printf("(BDOS GETPARM)"); break;
-          case 32: printf("(BDOS GETUSER)"); break;
-          case 33: printf("(BDOS RDRANDOM)"); break;
-          case 34: printf("(BDOS WTRANDOM)"); break;
-          case 35: printf("(BDOS FILESIZE)"); break;
-          case 36: printf("(BDOS SETRAN)"); break;
-          case 37: printf("(BDOS LOGOFF)"); break;
-          case 38: printf("(BDOS RTN)"); break;
-          case 39: printf("(BDOS RTN)"); break;
-          case 40: printf("(BDOS WTSPECL)"); break;
-          default: printf("(BDOS C=%d)",(machine.state.registers.byte[Z80_C]); break
-        }
-        break;
-    }
-#endif
+    if (DBG & 4) DebugBiosBdos();
     if (canbreak && (GetKey(false) == BREAKKEY)) break;
   } while (!machine.is_done);
   printf("\n");
@@ -282,6 +259,9 @@ int main() {
       continue;
     }
 
+    //
+    //
+    //
     if (cmd == 'B') {
       // Read first sector at first track first disk to memory 0x0000
       ReadDiskBlock(0x0000, 0, 0, 0);
@@ -290,17 +270,9 @@ int main() {
       continue;
     }
 
-    if (cmd == '+') {
-      biostrace = 1;
-      printf("Biostrace enabled\n");
-      continue;
-    }
-    if (cmd == '-') {
-      biostrace = 0;
-      printf("Biostrace disabled\n");
-      continue;
-    }
-
+    //
+    //
+    //
     if (cmd == '!') {
       breakatbios = CONIN;
       printf("Break at CONSOLE IN enabled\n");
@@ -411,29 +383,24 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
   uint8_t arg = m->memory[m->state.pc];
   uint8_t argp1 = m->memory[m->state.pc + 1];
 
-#ifdef DEBUG
-//   printf("opcode=%04x val=%04x instr=%04x arg-1=%02x arg=%02x arg+1=%02x
-//   \n",opcode,val,instr,argm1,arg,argp1);
-#endif
-
   switch (arg) {
     case EXIT:
-      if (biostrace) printf("{EX}");
+      if (DBG & 8) printf("{EX}");
       machine.is_done = 1;
       break;
 
     case CONOUT:
-      if (biostrace) printf("{CO}");
+      if (DBG & 8) printf("{CO}");
       printf("%c", C);
       break;
 
     case LIST:
-      if (biostrace) printf("{LO}");
+      if (DBG & 8) printf("{LO}");
       printf("%c", C);
       break;
 
     case PUNCH:
-      if (biostrace) printf("{PO}");
+      if (DBG & 8) printf("{PO}");
       printf("%c", C);
       break;
 
@@ -442,7 +409,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		character is ready, wait until a character is typed before
     //		returning.
     case CONIN:
-      if (biostrace) printf("{CI}");
+      if (DBG & 8) printf("{CI}");
       m->state.registers.byte[Z80_A] = GetKey(true);
       if (breakatbios == CONIN) {
         machine.is_done = 1;
@@ -457,7 +424,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		character is ready to read and 00H in register A if no
     //		console characters are ready.
     case CONST:
-      if (biostrace) printf("{CS}");
+      if (DBG & 8) printf("{CS}");
       if (GetRxCnt() == 0) {
         m->state.registers.byte[Z80_A] = 0x00;
       } else {
@@ -473,7 +440,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     // value should be returned if LIST status is not implemented
     //
     case LISTST:
-      if (biostrace) printf("{LS}");
+      if (DBG & 8) printf("{LS}");
       m->state.registers.byte[Z80_A] = 0x00;
       break;
 
@@ -484,7 +451,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     // ASCII CTRL-Z(1AH).
     //
     case READER:
-      if (biostrace) printf("{RI}");
+      if (DBG & 8) printf("{RI}");
       m->state.registers.byte[Z80_A] = 0x1A;
       break;
 
@@ -501,10 +468,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		at the selected DMA address for the memory buffer during
     //		the subsequent read or write operations.
     case SETDMA:
-      if (biostrace) printf("{SD}");
-#ifdef DEBUG
-      printf("(SETDMA %04x)\n", BC);
-#endif
+      if (DBG & 8) printf("{SD}");
       z80_dma = BC;
       break;
 
@@ -518,10 +482,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		standard floppy disk drives and 0- 65535 for nonstandard
     //		disk subsystems.
     case SETTRK:
-      if (biostrace) printf("{ST}");
-#ifdef DEBUG
-      printf("(SETTRK B=%d C=%d)\n", B, C);
-#endif
+      if (DBG & 8) printf("{ST}");
       z80_trk = BC & 0xFF;
       break;
 
@@ -532,10 +493,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		information to the controller at this point or delay sector
     //		selection until a read or write operation occurs.
     case SETSEC:
-      if (biostrace) printf("{SS}");
-#ifdef DEBUG
-      printf("(SETSEC B=%d C=%d)\n", B, C);
-#endif
+      if (DBG & 8) printf("{SS}");
       z80_sec = BC - 1;
       break;
 
@@ -546,10 +504,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		controller does not support this feature, the HOME call is
     //		translated into a call to SETTRK with a parameter of 0.
     case HOME:
-      if (biostrace) printf("{HO}");
-#ifdef DEBUG
-      printf("(HOME)\n");
-#endif
+      if (DBG & 8) printf("{HO}");
       z80_trk = 0;
       break;
 
@@ -577,10 +532,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		if this is the first occurrence of the drive select since
     //		the last cold or warm start
     case SELDSK:
-      if (biostrace) printf("{SD}");
-#ifdef DEBUG
-      printf("(SELDSK)\n");
-#endif
+      if (DBG & 8) printf("{SD}");
       z80_dsk = C & 0x0F;
       break;
 
@@ -603,11 +555,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		SECTOR. The operator then has the option of pressing a
     //		carriage return to ignore the error, or CTRL-C to abort.
     case READ:
-      if (biostrace) printf("{RD}");
-#ifdef DEBUG
-      printf("(READ D:%d T:%d S:%d)\n", z80_dsk, z80_trk, z80_sec);
-#endif
-
+      if (DBG & 8) printf("{RD}");
       ReadDiskBlock(z80_dma, z80_sec, z80_trk, z80_dsk);
       m->state.registers.byte[Z80_A] = 0x00;
 
@@ -620,10 +568,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		codes given in the READ command are returned in register A,
     //		with error recovery attempts as described above.
     case WRITE:
-      if (biostrace) printf("{WR}");
-#ifdef DEBUG
-      printf("(WRITE)\n");
-#endif
+      if (DBG & 8) printf("{WR}");
       WriteDiskBlock(z80_dma, z80_sec, z80_trk, z80_dsk);
       m->state.registers.byte[Z80_A] = 0x00;
       break;
@@ -632,5 +577,5 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
       printf("\nINVALID argument to IN/OUT, ARG=0x%02x PC=%04x\n", arg, m->state.pc);
       machine.is_done = 1;
   }
-  if (biostrace) printf("\n");
+  if (DBG & 8) printf("\n");
 }
