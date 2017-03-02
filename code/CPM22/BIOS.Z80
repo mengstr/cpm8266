@@ -1,19 +1,18 @@
 ;
-;	CBIOS FOR CPM8266
-;	Copyright (c) 2017 Mats Engstrom, SmallRoomLabs
+; CBIOS FOR CPM8266
+; Copyright (c) 2017 Mats Engstrom, SmallRoomLabs
 ;
-;	Some parts are from the original skeletal BIOS code
-;   Copyright (c) 1980 Digital Research
-;
+; Some parts are from the original skeletal BIOS code
+; Copyright (c) 1980 Digital Research
 ;
 
 #include "MEMLOCS.Z80"
-		org START_BIOSCODE
+	org	START_BIOSCODE
 
 vers	equ	22				;version 2.2
 
-buff	equ		TBUFF
-cdisk	equ		TDRIVE
+; buff	equ	TBUFF
+; cdisk	equ	TDRIVE
 
 ;
 ; Command codes that are sent to the emulator via a OUT (xxx),A instruction
@@ -34,58 +33,48 @@ EMU_READ	equ	0Bh
 EMU_WRITE	equ	0Ch
 
 ;
-;	perform following functions
+; perform following functions
 ;-----------------------------------------------
-;	*boot		Cold start
-;	*wboot		Warm start (save i/o byte)
-;				(boot and wboot are the same for mds)
-;	*const		Console status
-;				reg-a = 00 if no character ready
-;				reg-a = ff if character ready
-;	*conin		Console character in (result in reg-a)
-;	*conOUT		Console character out (char in reg-c)
-;	*list		List out (char in reg-c)
-;	*punch		Punch out (char in reg-c)
-;	*reader		Paper tape reader in (result to reg-a)
-;	*home		Move to track 00
+; boot		Cold start
+; wboot		Warm start (save i/o byte)
+; const		Console status
+;			reg-a = 00 if no character ready
+;			reg-a = ff if character ready
+; conin		Console character in (result in reg-a)
+; conOUT	Console character out (char in reg-c)
+; list		List out (char in reg-c)
+; punch		Punch out (char in reg-c)
+; reader	Paper tape reader in (result to reg-a)
+; home		Move to track 00
 ;
-;	(The following calls set-up the io parameter block for the
-;	mds, which is used to perform subsequent reads and writes)
-;	*seldsk		Select disk given by reg-c (0,1,2...)
-;	*settrk		Set track address (0,...76) for subsequent read/write
-;	*setsec		Set sector address (1,...,26) for subsequent read/write
-;	*setdma		Set subsequent dma address (initially 80h)
+; seldsk	Select disk given by reg-c (0,1,2...)
+; settrk	Set track address (0...76) for subsequent read/write
+; setsec	Set sector address (1...26) for subsequent read/write
+; setdma	Set subsequent dma address (initially 80h)
 ;
-;	(Read and write assume previous calls to set up the io parameters)
-;	*read		Read track/sector to preset dma address
-;	*write		Write track/sector from preset dma address
-
-;	jump vector for indiviual routines
-
-BOOT:	JP		boot
-WBOOT:	JP		wboot
-CONST:	JP		const
-CONIN:	JP		conin
-CONOUT:	JP		conout
-LIST:	JP		list
-PUNCH:	JP		punch
-READER:	JP		reader
-HOME:	JP		home
-SELDSK:	JP		seldsk
-SETTRK:	JP		settrk
-SETSEC:	JP		setsec
-SETDMA:	JP		setdma
-READ:	JP		read
-WRITE:	JP		write
-LISTST:	JP		listst	;list status
-SECTRN:	JP		sectran
-
-
-;
-; Fixed data tables for four-drive standard ibm-compatible 8" disks
-; No translations
+;		(Read and write assume previous calls to set up paras)
+; read		Read track/sector to preset dma address
+; write		Write track/sector from preset dma address
 ;
 
+; Jump vectors for indiviual routines
+BOOT:	JP	boot
+WBOOT:	JP	wboot
+CONST:	JP	const
+CONIN:	JP	conin
+CONOUT:	JP	conout
+LIST:	JP	list
+PUNCH:	JP	punch
+READER:	JP	reader
+HOME:	JP	home
+SELDSK:	JP	seldsk
+SETTRK:	JP	settrk
+SETSEC:	JP	setsec
+SETDMA:	JP	setdma
+READ:	JP	read
+WRITE:	JP	write
+LISTST:	JP	listst
+SECTRN:	JP	sectran
 
 ;
 ; XLT	Address of the logical-to-physical translation vector, if used for
@@ -95,54 +84,50 @@ SECTRN:	JP		sectran
 ;		same translate tables.
 ;
 ; 0000	Scratch pad value for use within the BDOS.
-;
 ; 0000	Scratch pad value for use within the BDOS.
-;
 ; 0000	Scratch pad value for use within the BDOS.
-;
 ; DIRBUF Address of a 128-byte scratch pad area for directory operations
 ;		within BDOS. All DPHs address the same scratch pad area.
-;
 ; DPB	Address of a disk parameter block for this drive. Drives with
 ;		identical disk characteristics address the same disk parameter block.
-;
 ; CSV	Address of a scratch pad area used for software check for changed
 ;		disks. This address is different for each DPH.
-;
 ; ALV	Address of a scratch pad area used by the BDOS to keep disk storage
 ;		allocation information. This address is different for each DPH.
 ;
 
-ndisks	equ		15	; We have 15 disks drives (A..O) in this system
-
-dpbase:	       ; XLT    Scratch DIRBUF DPB    CSV    ALV
-	defw	trans, 0,0,0,  dirbf, dpblk, chk00, all00	; Disk A
-	defw	trans, 0,0,0,  dirbf, dpblk, chk01, all01	; Disk B
-	defw	trans, 0,0,0,  dirbf, dpblk, chk02, all02	; Disk C
-	defw	trans, 0,0,0,  dirbf, dpblk, chk03, all03	; Disk D
-	defw	trans, 0,0,0,  dirbf, dpblk, chk04, all04	; Disk E
-	defw	trans, 0,0,0,  dirbf, dpblk, chk05, all05	; Disk F
-	defw	trans, 0,0,0,  dirbf, dpblk, chk06, all06	; Disk G
-	defw	trans, 0,0,0,  dirbf, dpblk, chk07, all07	; Disk H
-	defw	trans, 0,0,0,  dirbf, dpblk, chk08, all08	; Disk I
-	defw	trans, 0,0,0,  dirbf, dpblk, chk09, all09	; Disk J
-	defw	trans, 0,0,0,  dirbf, dpblk, chk10, all10	; Disk K
-	defw	trans, 0,0,0,  dirbf, dpblk, chk11, all11	; Disk L
-	defw	trans, 0,0,0,  dirbf, dpblk, chk12, all12	; Disk M
-	defw	trans, 0,0,0,  dirbf, dpblk, chk13, all13	; Disk N
-	defw	trans, 0,0,0,  dirbf, dpblk, chk14, all14	; Disk O
-
-; Sector translate vector
-trans:
-	defm	 1,  7, 13, 19	;sectors  1,  2,  3,  4
-	defm	25,  5, 11, 17	;sectors  5,  6,  7,  6
-	defm	23,  3,  9, 15	;sectors  9, 10, 11, 12
-	defm	21,  2,  8, 14	;sectors 13, 14, 15, 16
-	defm	20, 26,  6, 12	;sectors 17, 18, 19, 20
-	defm	18, 24,  4, 10	;sectors 21, 22, 23, 24
-	defm	16, 22			;sectors 25, 26
-
 ;
+; Fixed data tables for fifteen standard ibm-compatible 8" disks
+;
+
+ndisks	equ	15	; We have 15 disks drives (A..O) in this system
+
+;		XLT   Scratch  DIRBUF DPB    CSV    ALV
+dpbase:	defw	trans, 0,0,0,  dirbf, dpblk, chkA, allA	; Disk A
+	defw	trans, 0,0,0,  dirbf, dpblk, chkB, allB	; Disk B
+	defw	trans, 0,0,0,  dirbf, dpblk, chkC, allC	; Disk C
+	defw	trans, 0,0,0,  dirbf, dpblk, chkD, allD	; Disk D
+	defw	trans, 0,0,0,  dirbf, dpblk, chkE, allE	; Disk E
+	defw	trans, 0,0,0,  dirbf, dpblk, chkF, allF	; Disk F
+	defw	trans, 0,0,0,  dirbf, dpblk, chkG, allG	; Disk G
+	defw	trans, 0,0,0,  dirbf, dpblk, chkH, allH	; Disk H
+	defw	trans, 0,0,0,  dirbf, dpblk, chkI, allI	; Disk I
+	defw	trans, 0,0,0,  dirbf, dpblk, chkJ, allJ	; Disk J
+	defw	trans, 0,0,0,  dirbf, dpblk, chkK, allK	; Disk K
+	defw	trans, 0,0,0,  dirbf, dpblk, chkL, allL	; Disk L
+	defw	trans, 0,0,0,  dirbf, dpblk, chkM, allM	; Disk M
+	defw	trans, 0,0,0,  dirbf, dpblk, chkN, allN	; Disk N
+	defw	trans, 0,0,0,  dirbf, dpblk, chkO, allO	; Disk O
+
+; Sector translate vectors
+trans:	defm	 1,  7, 13, 19	; Sectors  1,  2,  3,  4
+	defm	25,  5, 11, 17	; Sectors  5,  6,  7,  6
+	defm	23,  3,  9, 15	; Sectors  9, 10, 11, 12
+	defm	21,  2,  8, 14	; Sectors 13, 14, 15, 16
+	defm	20, 26,  6, 12	; Sectors 17, 18, 19, 20
+	defm	18, 24,  4, 10	; Sectors 21, 22, 23, 24
+	defm	16, 22		; Sectors 25, 26
+
 ;
 ; *SPT	Total number of sectors per track.
 ;
@@ -166,9 +151,10 @@ trans:
 ; *OFF	Number of reserved tracks at the beginning of the disk.
 ;
 
-; Disk parameter block for all disks.
-dpblk:
-	defw	26	; SPT - sectors per track
+;
+; Disk parameter block common for all disks.
+;
+dpblk:	defw	26	; SPT - sectors per track
 	defm	3	; BSH - block shift factor
 	defm	7	; BLM - block mask
 	defm	0	; EXM - null mask
@@ -179,349 +165,281 @@ dpblk:
 	defw	0	; CKS - check size
 	defw	2	; OFF - track offset
 
-CR		equ	0dh			;carriage return
-LF		equ	0ah			;line feed
 
-signon:					;signon message: xxk cp/m vers y.y
-	db	CR,LF,LF
+signon:	db	CR,LF,LF
 	db	RAMSIZEK/10+'0',RAMSIZEK%10+'0'
-	db	'k CP/M vers '
+	db	'K CP/M v'
 	db	vers/10+'0','.',vers%10+'0'
+	db	CR,LF
+	db	'cpm8266 - SmallRoomLabs'
 	db	CR,LF,0
 
-;
+bootmsg:db	CR,LF,'wboot',CR,LF,0
+
 ;****************************************************************************
 ; BOOT
+; Print signon message and go to ccp
 ;****************************************************************************
-boot:						;print signon message and go to ccp
-	LD		SP,buff+80h		;
-							;	 TODO set iobyte
-	LD		HL,signon		;
-	CALL	prmsg			;print message
-	XOR	A					;clear accumulator
-	LD		(cdisk),A		;set initially to disk a
-	JP		gocpm			;go to cp/m
+boot:	LD	SP,TBUFF	;
+	LD	HL,signon	; Print cold boot message
+	CALL	prmsg
+	XOR	A		; Clear accumulator
+	LD	(TDRIVE),A	; Set Disk A, User 0 as default
+	LD	(IOBYTE),A	;
+	JP	gocpm		; Go to cp/m
 
-;
 ;****************************************************************************
 ; WBOOT
+; loader on track 0, sector 1, which will be skipped for warm read cp/m
+; from disk assuming there is a 128 byte cold start start.
 ;****************************************************************************
-wboot:						; loader on track 0, sector 1, which will be
-							; skipped for warm read cp/m from disk -
-							; assuming there is a 128 byte cold start start.
-;
-	LD		SP,buff			; using dma - thus 80 thru ff available for stack
-;
-;	LD		C,retry			; max retries;
-;	PUSH	BC
-;wboot0:						; enter here on error retries
-;	LD		BC,cpmb			; set dma address to start of disk system
-;	CALL	setdma
-;	LD		C,0				;boot from drive 0
-;	CALL	seldsk
-;	LD		C,0				;
-;	CALL	settrk			;start with track 0
-;	LD		C,2				;start reading sector 2
-;	CALL	setsec
-;;
-;;	read sectors, count nsects to zero
-;	POP	BC				; 10-error count
-;	LD		B,nsects		;
-;
-;rdsec:						;read next sector
-;	PUSH	BC				; save sector count
-;	CALL	read
-;	JP		NZ,booterr		; retry if errors occur
-;	LD		HL,(iod)		; increment dma address
-;	LD		DE,128			; sector size
-;	ADD		HL,DE			; incremented dma address in hl
-;	LD		B,H				;
-;	LD		C,L				; ready for call to set dma
-;	CALL	setdma
-;	LD		A,(ios)			;sector number just read
-;	CP		26				;read last sector?
-;	JP		C,rd1
-;	must be sector 26, zero and go to next track
-;	LD		A,(iot)			;get track to register a
-;	INC	A
-;	LD		C,A				;ready for call
-;	CALL	settrk
-;	XOR		A				;clear sector number
-;rd1:INC		A				;to next sector
-;	LD		C,A				;ready for call
-;	CALL	setsec
-;	POP		BC				;recall sector count
-;	DEC	B				;done?
-;	JP		NZ,rdsec
-;
-;	done with the load, reset default buffer address
+wboot:	LD	SP,TBUFF	; using dma - thus 80 thru ff available for stack
+	LD	BC,2			; B=TRACK 0, C=SECTOR 2
+	LD	D,44			; D=# SECTORS TO LOAD
+	LD	HL,START_CCPCODE	; HL=BASE TRANSFER ADDRESS
+LoadSector:
+	PUSH	BC			; Save BC
+	OUT	(EMU_SETSEC),A		; arg is C,  data in C
+	LD	C,0
+	OUT	(EMU_SETDSK),A		; arg is C,  data=0
+	LD	C,B
+	OUT	(EMU_SETTRK),A		; arg is C,  data in B
+	LD	B,H
+	LD	C,L
+	OUT	(EMU_SETDMA),A		; arg is BC, data in HL
+	OUT	(EMU_READ),A		; No args
+	POP	BC			; Restore BC
+	; GO TO NEXT SECTOR IF LOAD IS INCOMPLETE
+	DEC	D			; SECTS=SECTS-1
+	JP	Z,wbdone		; All sectors loaded, done here
+	; MORE SECTORS TO LOAD
+	LD	SP,128			; 128 BYTES PER SECTOR
+	ADD	HL,SP			; HL=HL+128
+	INC	C			; SECTOR=SECTOR+1
+	LD	A,C
+	CP	27			; LAST SECTOR OF TRACK?
+	JP	C,LoadSector		; NO, GO READ ANOTHER
+	;END OF TRACK, INCREMENT TO NEXT TRACK
+	LD	C,1			; SECTOR=1
+	INC	B			; TRACK=TRACK+1
+	JP	LoadSector		; FOR ANOTHER GROUP
 
-gocpm:						;(enter here from cold start boot)
-;	set default buffer address to 80h
-	LD		BC,buff
+wbdone:	LD	HL,bootmsg		; Print warm boot message
+	CALL	prmsg
+
+gocpm:	;(enter here from cold & warm start boots)
+	LD	BC,TBUFF		; Set default buffer address to 80h
 	CALL	setdma
-;
+
 ;	reset monitor entry points
-	LD		A,0C3h			; C3h is the Z80 instruction JP
+	LD	A,0C3h		; C3h is the Z80 instruction JP
 
-	LD		(0),A			; Patch in a JP to ...
-	LD		HL,WBOOT		; ... WBOOT at ....
-	LD		(1),HL			; ... location 0000
+	LD	(0),A		; Patch in a JP to ...
+	LD	HL,WBOOT	; ... WBOOT at ....
+	LD	(1),HL		; ... location 0000
 
-	LD		(5),A			; Patch in a JP to ...
-	LD		HL,START_BDOSCODE+6	; ... the BDOS entry at ...
-	LD		(6),HL			; ... location 0005
+	LD	(5),A		; Patch in a JP to ...
+	LD	HL,START_BDOSCODE+6 ; ... the BDOS entry at ...
+	LD	(6),HL		; ... location 0005
 
-	LD		A,(cdisk)		; last logged disk number
-	LD		C,A				;send to ccp to log it in
-	JP		START_CCPCODE
+	LD	A,(TDRIVE)	; last logged disk number
+	LD	C,A		;send to ccp to log it in
 
-;
-;	error condition occurred, print message and retry
-;booterr:
-;	POP		BC				;recall counts
-;	DEC	C
-;	JP		Z,booter0
-;;	try again
-;	PUSH	BC
-;	JP		wboot0
-;
-booter0:
-;	otherwise too many retries
-;	LD		HL,bootmsg
-;	CALL	prmsg
-;	OUT		(EMU_EXIT), A		; Exit from emulator
-;
-;bootmsg:
-;	db	'?boot',0
+	JP	START_CCPCODE	; Finally goto the CCP and start CP/M
 
-;
-;
 ;****************************************************************************
 ; CONST
+; Console status to reg-a
 ;****************************************************************************
-const:						;console status to reg-a
-	OUT		(EMU_CONST),A
+const:	OUT	(EMU_CONST),A
 	RET
-;
+
 ;****************************************************************************
 ; CONIN
 ; Console character input to A
 ;****************************************************************************
-conin:
-	OUT		(EMU_CONIN),A
+conin	OUT	(EMU_CONIN),A
 	RET
 
-
-;
 ;****************************************************************************
 ; CONOUT
 ; Console device output character in A
 ;****************************************************************************
-conout:	
-	OUT		(EMU_CONOUT),A
+conout:
+	OUT	(EMU_CONOUT),A
 	RET
 
-;
 ;****************************************************************************
 ; LIST
 ; List device output character in A
 ;****************************************************************************
-list:
-	OUT		(EMU_LIST),A
+list:	OUT	(EMU_LIST),A
 	RET
 
-
-;
 ;****************************************************************************
 ; LISTST
 ; Return list status in A
 ;****************************************************************************
-listst:
-	XOR		A
-	RET							;always not ready
+listst:	XOR	A	; Always not ready
+	RET
 
-;
 ;****************************************************************************
 ; PUNCH
 ; Punch device output character in A
 ;****************************************************************************
-punch:							
-	OUT		(EMU_PUNCH),A
+punch:	OUT	(EMU_PUNCH),A
 	RET
 
-;
 ;****************************************************************************
 ; READER
 ; Reader character input to A
 ;****************************************************************************
-reader:
-	RET					; TODO
+reader:		; TODO
+	RET
 
 ;
 ;****************************************************************************
 ; HOME
 ; Move disk to home position
 ;****************************************************************************
-home:
-	OUT		(EMU_HOME),A
+home:	OUT	(EMU_HOME),A
 	RET
 
-;
 ;****************************************************************************
 ; SELDSK
 ; Select disk given by register C
 ;****************************************************************************
-seldsk:
-	LD		HL,0000h		;return 0000 if error
-	LD		A,C
-	CP		ndisks			;too large?
-	RET		NC				;leave HL = 0000
+seldsk:	LD	HL,0000h	; Return 0000 if error
+	LD	A,C
+	CP	ndisks		; Too large?
+	RET	NC		; Leave HL = 0000
 
-	OUT		(EMU_SETDSK),A
+	OUT	(EMU_SETDSK),A
 
-	LD		L,C
-	LD		H,0				;HL=disk number
-	ADD		HL,HL			;*2
-	ADD		HL,HL			;*4
-	ADD		HL,HL			;*8
-	ADD		HL,HL			;*16
-	LD		DE,dpbase
-	ADD		HL,DE	;HL=disk header table address
+	LD	L,C
+	LD	H,0		; HL=disk number
+	ADD	HL,HL		; *2
+	ADD	HL,HL		; *4
+	ADD	HL,HL		; *8
+	ADD	HL,HL		; *16
+	LD	DE,dpbase
+	ADD	HL,DE		; HL=disk header table address
 	RET
 
-
-;
 ;****************************************************************************
 ; SETTRK
 ; Set track address given by C
 ;****************************************************************************
-settrk:						
-	LD		HL,iot				; update interal variabe...
-	LD		(HL),C
-	OUT		(EMU_SETTRK),A		; ...and send to emulator
+settrk:	LD	HL,iot		; Update interal variabe...
+	LD	(HL),C
+	OUT	(EMU_SETTRK),A	; ...and send to emulator
 	RET
 
-;
 ;****************************************************************************
 ; SETSEC
 ; Set sector number given by C
 ;****************************************************************************
-setsec:	
-	LD		HL,ios				; update interal variabe...
-	LD		(HL),C
-	OUT		(EMU_SETSEC),A		; ...and send to emulator
+setsec:	LD	HL,ios		; Ppdate interal variabe...
+	LD	(HL),C
+	OUT	(EMU_SETSEC),A	; ...and send to emulator
 	RET
 
-;
 ;****************************************************************************
 ; SECTRAN
 ; Translate sector BC using table at DE
 ;****************************************************************************
-sectran:
-	LD		A,D				;do we have a translation table?
-	OR		E
-	JP		NZ,SECT1		;yes, translate
-	LD		L,C				;no, return untranslated
-	LD		H,B				;in HL
-	INC		L				;sector no. start with 1
-	RET		NZ
-	INC		H
+sectran:LD	A,D		; Do we have a translation table?
+	OR	E
+	JP	NZ,SECT1	; Yes, translate
+	LD	L,C		; No, return untranslated
+	LD	H,B		; in HL
+	INC	L		; Sector no. start with 1
+	RET	NZ
+	INC	H
 	RET
-SECT1:	
-	EX		DE,HL		;HL=.trans
-	ADD		HL,BC			;HL=.trans(sector)
-	LD		L,(HL)			;L = trans(sector)
-	LD		H,0				;HL= trans(sector)
-	RET					;with value in HL
+SECT1:	EX	DE,HL		; HL=.trans
+	ADD	HL,BC		; HL=.trans(sector)
+	LD	L,(HL)		; L = trans(sector)
+	LD	H,0		; HL= trans(sector)
+	RET			; with value in HL
 
-
-;
 ;****************************************************************************
 ; SETDMA
 ; set dma address given by regs b,c
 ;****************************************************************************
-setdma:	
-	LD		L,C
-    LD		H,B
-	LD		(iod),HL
-	OUT		(EMU_SETDMA),A
+setdma:	LD	L,C
+	LD	H,B
+	LD	(iod),HL
+	OUT	(EMU_SETDMA),A
 	RET
 
-
-;
 ;****************************************************************************
 ; READ
 ; read next disk record (disk/trk/sec/dma set)
 ;****************************************************************************
-read:
-	OUT		(EMU_READ),A
-	RET					; may have error set in A
+read:	OUT	(EMU_READ),A
+	RET			; May have error set in A
 
-
-;
 ;****************************************************************************
 ; WRITE
 ;****************************************************************************
-write:						
-	OUT		(EMU_WRITE),A
-	RET					; may have error set
+write:	OUT	(EMU_WRITE),A
+	RET			; May have error set
+
 
 ;
+; Print message at HL until 0
 ;
-;	utility subroutines
-prmsg:	;print message at h,l to 0
-	LD		A,(HL)
-	OR		A	;zero?
-	RET		Z
-;	more to print
-	PUSH	HL
-	LD		C,A
+prmsg:	LD	A,(HL)
+	OR	A		; Check if got zero?
+	RET	Z		; If zero return to caller
+	PUSH	HL		; else print the character
+	LD	C,A
 	CALL	conout
-	POP		HL
-	INC		HL
-	JP		prmsg
+	POP	HL
+	INC	HL
+	JP	prmsg
 
 ;
 ; Data areas (must be in RAM)
 ;
 	org START_BIOSDATA
 
-iot		ds	1		;track number (was db offset)
-ios		ds	1		;sector number (was db 1)
-iod		ds	2		;io address (was dw buff)
+iot	ds	1	;track number (was db offset)
+ios	ds	1	;sector number (was db 1)
+iod	ds	2	;io address (was dw buff)
 
-dirbf	ds	128		;DIRECTORY ACCESS BUFFER
+dirbf	ds	128	;DIRECTORY ACCESS BUFFER
 
-chk00	ds	16		; A Drive
-all00	ds	31
-chk01	ds	16		; B Drive
-all01	ds	31
-chk02	ds	16		; C Drive
-all02	ds	31
-chk03	ds	16		; D Drive
-all03	ds	31
-chk04	ds	16		; E Drive
-all04	ds	31
-chk05	ds	16		; F Drive
-all05	ds	31
-chk06	ds	16		; G Drive
-all06	ds	31
-chk07	ds	16		; H Drive
-all07	ds	31
-chk08	ds	16		; I Drive
-all08	ds	31
-chk09	ds	16		; J Drive
-all09	ds	31
-chk10	ds	16		; K Drive
-all10	ds	31
-chk11	ds	16		; L Drive
-all11	ds	31
-chk12	ds	16		; M Drive
-all12	ds	31
-chk13	ds	16		; N Drive
-all13	ds	31
-chk14	ds	16		; O Drive
-all14	ds	31
+chkA	ds	16	; A Drive
+allA	ds	31
+chkB	ds	16	; B Drive
+allB	ds	31
+chkC	ds	16	; C Drive
+allC	ds	31
+chkD	ds	16	; D Drive
+allD	ds	31
+chkE	ds	16	; E Drive
+allE	ds	31
+chkF	ds	16	; F Drive
+allF	ds	31
+chkG	ds	16	; G Drive
+allG	ds	31
+chkH	ds	16	; H Drive
+allH	ds	31
+chkI	ds	16	; I Drive
+allI	ds	31
+chkJ	ds	16	; J Drive
+allJ	ds	31
+chkK	ds	16	; K Drive
+allK	ds	31
+chkL	ds	16	; L Drive
+allL	ds	31
+chkM	ds	16	; M Drive
+allM	ds	31
+chkN	ds	16	; N Drive
+allN	ds	31
+chkO	ds	16	; O Drive
+allO	ds	31
 
 

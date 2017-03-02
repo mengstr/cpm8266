@@ -10,9 +10,7 @@ XXD			=  /usr/bin/xxd
 FLAGSHEX	= --z80 -v0 -u -w -x
 FLAGSBIN	= --z80 -v0 -u -w -b
 
-
-all:	BOOT.bin BIOS.bin BDOS.bin CCP.bin
-
+all: BOOT.bin BIOS.bin BDOS.bin CCP.bin
 
 BOOT.bin: BOOT.Z80
 	@echo [ZASM] $<

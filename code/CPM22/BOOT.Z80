@@ -1,9 +1,9 @@
 ;
-;	SECOND STAGE BOOTLOADER FOR CPM8266
-;	Copyright (c) 2017 Mats Engstrom, SmallRoomLabs
+; SECOND STAGE BOOTLOADER FOR CPM8266
+; Copyright (c) 2017 Mats Engstrom, SmallRoomLabs
 ;
-;	Some parts are from the original skeletal BIOS code
-;   Copyright (c) 1980 Digital Research
+; Some parts are from the original skeletal BIOS code
+; Copyright (c) 1980 Digital Research
 ;
 
 #include "MEMLOCS.Z80"
@@ -27,51 +27,51 @@ EMU_SETDSK	equ	0Ah
 EMU_READ	equ	0Bh
 EMU_WRITE	equ	0Ch
 
-	LD	BC,2				; B=TRACK 0, C=SECTOR 2
-	LD	D,52				; D=# SECTORS TO LOAD
+	LD	BC,2			; B=TRACK 0, C=SECTOR 2
+	LD	D,51			; D=# SECTORS TO LOAD
 	LD	HL,START_CCPCODE	; HL=BASE TRANSFER ADDRESS
 
-LoadSector	
+LoadSector
 ; INSERT INLINE CODE AT THIS POINT TO READ ONE 128 BYTE SECTOR FROM THE
 ; TRACK GIVEN IN REGISTER B, SECTOR GIVEN IN REGISTER C, INTO THE ADDRESS
 ; GIVEN BY <HL> BRANCH TO LOCATION "COLD" IF A READ ERROR OCCURS
 
-	LD		(tmpbc),BC		; Save BC
+	LD	(tmpbc),BC		; Save BC
 
-	OUT		(EMU_SETSEC),A	; arg is C,  data in C
+	OUT	(EMU_SETSEC),A		; arg is C,  data in C
 
-	LD 		C,0
-	OUT		(EMU_SETDSK),A	; arg is C,  data=0
+	LD 	C,0
+	OUT	(EMU_SETDSK),A		; arg is C,  data=0
 
-	LD 		C,B
-	OUT		(EMU_SETTRK),A	; arg is C,  data in B
+	LD 	C,B
+	OUT	(EMU_SETTRK),A		; arg is C,  data in B
 
-	LD		B,H
-	LD 		C,L
-	OUT		(EMU_SETDMA),A	; arg is BC, data in HL
+	LD	B,H
+	LD 	C,L
+	OUT	(EMU_SETDMA),A		; arg is BC, data in HL
 
-	OUT		(EMU_READ),A	; No args
-	
-	LD		BC,(tmpbc)		; Restore BC
+	OUT	(EMU_READ),A		; No args
+
+	LD	BC,(tmpbc)		; Restore BC
 
 
 ; GO TO NEXT SECTOR IF LOAD IS INCOMPLETE
-	DEC	D					; SECTS=SECTS-1
-	JP	Z,BOOT				; All sectors loaded, start CP/M
+	DEC	D			; SECTS=SECTS-1
+	JP	Z,BOOT			; All sectors loaded, start CP/M
 
 ; MORE SECTORS TO LOAD
-	LD	SP,128				; 128 BYTES PER SECTOR
-	ADD	HL,SP				; HL=HL+128
-	INC	C					; SECTOR=SECTOR+1
+	LD	SP,128			; 128 BYTES PER SECTOR
+	ADD	HL,SP			; HL=HL+128
+	INC	C			; SECTOR=SECTOR+1
 	LD	A,C
-	CP	27					; LAST SECTOR OF TRACK?
+	CP	27			; LAST SECTOR OF TRACK?
 	JP	C,LoadSector		; NO, GO READ ANOTHER
 
 ;END OF TRACK, INCREMENT TO NEXT TRACK
-	LD	C,1					; SECTOR=1
-	INC	B					; TRACK=TRACK+1
-	JP	LoadSector			; FOR ANOTHER GROUP
+	LD	C,1			; SECTOR=1
+	INC	B			; TRACK=TRACK+1
+	JP	LoadSector		; FOR ANOTHER GROUP
 
 ;	done with the load
 
-tmpbc	ds 	1				; Holding area for register BC
+tmpbc	ds 	1			; Holding area for register BC
