@@ -1,11 +1,10 @@
 /* z80emu.c
  * Z80 processor emulator. 
  *
- * Copyright (c) 2012, 2016 Lin Ke-Fong
+ * Copyright (c) 2012-2017 Lin Ke-Fong
  *
  * This code is free, do whatever you want with it.
  */
-
 #include "c_types.h"
 #include "esp8266_auxrom.h"
 #include "esp8266_rom.h"
@@ -15,13 +14,11 @@
 #include "nosdk8266.h"
 
 
-
 #include "z80emu.h"
 #include "z80user.h"
 #include "instructions.h"
 #include "macros.h"
 #include "tables.h"
-
 
 /* Indirect (HL) or prefixed indexed (IX + d) and (IY + d) memory operands are
  * encoded using the 3 bits "110" (0x06).
@@ -87,13 +84,12 @@ static const int OVERFLOW_TABLE[4] = {
 
 };
 
-static int ICACHE_FLASH_ATTR emulate (
-                        Z80_STATE * state, 
+static int	emulate (Z80_STATE * state, 
 			int opcode,
 			int elapsed_cycles, int number_cycles,
 			void *context);
 
-void ICACHE_FLASH_ATTR Z80Reset (Z80_STATE *state)
+void Z80Reset (Z80_STATE *state)
 {
         int     i;
         
@@ -162,9 +158,7 @@ void ICACHE_FLASH_ATTR Z80Reset (Z80_STATE *state)
         state->fd_register_table[14] = &state->registers.word[Z80_IY];        
 }
 
-
-
-int ICACHE_FLASH_ATTR Z80Interrupt (Z80_STATE *state, int data_on_bus, void *context)
+int Z80Interrupt (Z80_STATE *state, int data_on_bus, void *context)
 {
         state->status = 0;
         if (state->iff1) {
@@ -221,7 +215,7 @@ int ICACHE_FLASH_ATTR Z80Interrupt (Z80_STATE *state, int data_on_bus, void *con
                 return 0;
 }
 
-int ICACHE_FLASH_ATTR Z80NonMaskableInterrupt (Z80_STATE *state, void *context)
+int Z80NonMaskableInterrupt (Z80_STATE *state, void *context)
 {
 	int	elapsed_cycles;
 
@@ -239,16 +233,16 @@ int ICACHE_FLASH_ATTR Z80NonMaskableInterrupt (Z80_STATE *state, void *context)
         return elapsed_cycles + 11;
 }
 
-
-
-int ICACHE_FLASH_ATTR Z80Emulate (Z80_STATE *state, int number_cycles, void *context)
+int Z80Emulate (Z80_STATE *state, int number_cycles, void *context)
 {
         int     elapsed_cycles, pc, opcode;
+
         state->status = 0;
 	elapsed_cycles = 0;
 	pc = state->pc;
         Z80_FETCH_BYTE(pc, opcode);
         state->pc = pc + 1;
+
         return emulate(state, opcode, elapsed_cycles, number_cycles, context);
 }
 
@@ -256,8 +250,7 @@ int ICACHE_FLASH_ATTR Z80Emulate (Z80_STATE *state, int number_cycles, void *con
  * needed by Z80Interrupt() for interrupt mode 0.
  */
 
-
-static int ICACHE_FLASH_ATTR emulate (Z80_STATE * state, 
+static int emulate (Z80_STATE * state, 
 	int opcode, 
 	int elapsed_cycles, int number_cycles, 
 	void *context)
@@ -470,6 +463,7 @@ emulate_next_instruction:
                         /* 16-bit load group. */
 
                         case LD_RR_NN: {
+
                                 READ_NN(RR(P(opcode)));
                                 break;
 
@@ -1511,7 +1505,7 @@ emulate_next_instruction:
                                         int     d;
 
                                         Z80_FETCH_BYTE(pc, d);
-                                        d = ((char) d) + HL_IX_IY;
+                                        d = ((signed char) d) + HL_IX_IY;
 
                                         READ_BYTE(d, x);
                                         RLC(x);
@@ -1555,7 +1549,7 @@ emulate_next_instruction:
                                         int     d;
 
                                         Z80_FETCH_BYTE(pc, d);
-                                        d = ((char) d) + HL_IX_IY;
+                                        d = ((signed char) d) + HL_IX_IY;
 
                                         READ_BYTE(d, x);
                                         RL(x);
@@ -1598,7 +1592,7 @@ emulate_next_instruction:
                                         int     d;
 
                                         Z80_FETCH_BYTE(pc, d);
-                                        d = ((char) d) + HL_IX_IY;
+                                        d = ((signed char) d) + HL_IX_IY;
 
                                         READ_BYTE(d, x);
                                         RRC(x);
@@ -1641,7 +1635,7 @@ emulate_next_instruction:
                                         int     d;
 
                                         Z80_FETCH_BYTE(pc, d);
-                                        d = ((char) d) + HL_IX_IY;
+                                        d = ((signed char) d) + HL_IX_IY;
 
                                         READ_BYTE(d, x);
                                         RR_INSTRUCTION(x);
@@ -1684,7 +1678,7 @@ emulate_next_instruction:
                                         int     d;
 
                                         Z80_FETCH_BYTE(pc, d);
-                                        d = ((char) d) + HL_IX_IY;
+                                        d = ((signed char) d) + HL_IX_IY;
 
                                         READ_BYTE(d, x);
                                         SLA(x);
@@ -1727,7 +1721,7 @@ emulate_next_instruction:
                                         int     d;
 
                                         Z80_FETCH_BYTE(pc, d);
-                                        d = ((char) d) + HL_IX_IY;
+                                        d = ((signed char) d) + HL_IX_IY;
 
                                         READ_BYTE(d, x);
                                         SLL(x);
@@ -1770,7 +1764,7 @@ emulate_next_instruction:
                                         int     d;
 
                                         Z80_FETCH_BYTE(pc, d);
-                                        d = ((char) d) + HL_IX_IY;
+                                        d = ((signed char) d) + HL_IX_IY;
 
                                         READ_BYTE(d, x);
                                         SRA(x);
@@ -1813,7 +1807,7 @@ emulate_next_instruction:
                                         int     d;
 
                                         Z80_FETCH_BYTE(pc, d);
-                                        d = ((char) d) + HL_IX_IY;
+                                        d = ((signed char) d) + HL_IX_IY;
 
                                         READ_BYTE(d, x);
                                         SRL(x);
@@ -1891,7 +1885,7 @@ emulate_next_instruction:
                                 } else {
 
                                         Z80_FETCH_BYTE(pc, d);
-                                        d = ((char) d) + HL_IX_IY;
+                                        d = ((signed char) d) + HL_IX_IY;
 
                                         pc += 2;
 
@@ -1941,7 +1935,7 @@ emulate_next_instruction:
                                         int     d;
 
                                         Z80_FETCH_BYTE(pc, d);
-                                        d = ((char) d) + HL_IX_IY;
+                                        d = ((signed char) d) + HL_IX_IY;
 
                                         READ_BYTE(d, x);
                                         x |= 1 << Y(opcode);
@@ -1984,7 +1978,7 @@ emulate_next_instruction:
                                         int     d;
 
                                         Z80_FETCH_BYTE(pc, d);
-                                        d = ((char) d) + HL_IX_IY;
+                                        d = ((signed char) d) + HL_IX_IY;
 
                                         READ_BYTE(d, x);
                                         x &= ~(1 << Y(opcode));
@@ -2050,8 +2044,7 @@ emulate_next_instruction:
                                 int     e;
                                 
                                 Z80_FETCH_BYTE(pc, e);
-                                int8_t e1 = (char) e;
-                                pc += e1 + 1;
+                                pc += ((signed char) e) + 1;
 
                                 elapsed_cycles += 8;
 
@@ -2066,8 +2059,7 @@ emulate_next_instruction:
                                 if (DD(Q(opcode))) {
                                 
                                         Z80_FETCH_BYTE(pc, e);
-                                        int8_t e1 = (char) e;
-                                        pc += e1 + 1;
+                                        pc += ((signed char) e) + 1;
 
                                         elapsed_cycles += 8;
 
@@ -2100,9 +2092,10 @@ emulate_next_instruction:
                                 int     e;
                                 
                                 if (--B) {
+                                
                                         Z80_FETCH_BYTE(pc, e);
-                                        int8_t e1 = (int8_t) e;
-                                         pc += e1 + 1;
+                                        pc += ((signed char) e) + 1;
+
                                         elapsed_cycles += 9;
 
                                 } else {

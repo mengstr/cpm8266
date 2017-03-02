@@ -1,7 +1,7 @@
 /* macros.h
  * Helper macros definitions.
  *
- * Copyright (c) 2012-2016 Lin Ke-Fong
+ * Copyright (c) 2012-2017 Lin Ke-Fong
  *
  * This code is free, do whatever you want with it.
  */
@@ -68,7 +68,7 @@
 #define READ_D(d)                                                       \
 {                                                                       \
         Z80_FETCH_BYTE(pc, (d));                                        \
-        (d) = (signed char) (d);                                        \
+        (d) = (signed char) (d);					\
         pc++;                                                           \
         elapsed_cycles += 3;                                            \
 }
@@ -309,7 +309,7 @@
 {                                                                       \
         int     c;                                                      \
                                                                         \
-        c = ((x) >> 7) & 0x01;                                          \
+        c = (x) >> 7;                                                   \
         (x) = ((x) << 1) | c;                                           \
         F = SZYXP_FLAGS_TABLE[(x) & 0xff] | c;                          \
 }
@@ -318,7 +318,6 @@
 {                                                                       \
         int     c;                                                      \
                                                                         \
-        c = ((x) >> 7) & 0x01;                                          \
         c = (x) >> 7;                                                   \
         (x) = ((x) << 1) | (F & Z80_C_FLAG);                            \
         F = SZYXP_FLAGS_TABLE[(x) & 0xff] | c;                          \
@@ -346,7 +345,7 @@
 {                                                                       \
         int     c;                                                      \
                                                                         \
-        c = ((x) >> 7) & 0x01;                                          \
+        c = (x) >> 7;                                                   \
         (x) <<= 1;                                                      \
         F = SZYXP_FLAGS_TABLE[(x) & 0xff] | c;                          \
 }
@@ -355,7 +354,7 @@
 {                                                                       \
         int     c;                                                      \
                                                                         \
-        c = ((x) >> 7) & 0x01;                                          \
+        c = (x) >> 7;                                                   \
         (x) = ((x) << 1) | 0x01;                                        \
         F = SZYXP_FLAGS_TABLE[(x) & 0xff] | c;                          \
 }
@@ -365,7 +364,7 @@
         int     c;                                                      \
                                                                         \
         c = (x) & 0x01;                                                 \
-        (x) = ((signed char) (x)) >> 1;                                        \
+        (x) = ((signed char) (x)) >> 1;  				\
         F = SZYXP_FLAGS_TABLE[(x) & 0xff] | c;                          \
 }
         
