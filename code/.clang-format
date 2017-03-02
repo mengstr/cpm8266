@@ -1,0 +1,11 @@
+BasedOnStyle: Google
+AllowShortBlocksOnASingleLine: true
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: true
+AllowShortLoopsOnASingleLine: true
+AlignTrailingComments: true
+ColumnLimit: 0
+MaxEmptyLinesToKeep: 2
+SpaceBeforeAssignmentOperators: true
+SpacesInParentheses: false

@@ -84,3 +84,175 @@ b>ZEXDOCrrrrrrrrrrrrrrrrrrr
 Z80 instruction exerciser
 <adc,sbc> hl,<bc,de,hl,sp>.
 
+
+----------------------------------------------------------------------------- 
+
+46734978649 cycle(s) emulated.
+For a Z80 running at 4.00MHz, that would be 11683 second(s) or 3.25 hour(s).
+Zexall took 173 seconds  on Intel Atom CPU N570 @ 1.66GHz
+
+----------------------------------------------------------------------------- 
+TIME START 11:42 - DEFAULT ESP SPEED
+                                                                                
+b>zexall                                                                        
+Z80 instruction exerciser                                                       
+<adc,sbc> hl,<bc,de,hl,sp>....  OK                                              
+add hl,<bc,de,hl,sp>..........  OK                                              
+add ix,<bc,de,ix,sp>..........  OK                                              
+add iy,<bc,de,iy,sp>..........  OK                                              
+aluop a,nn....................  OK                                              
+aluop a,<b,c,d,e,h,l,(hl),a>..  OK                                              
+aluop a,<ixh,ixl,iyh,iyl>.....  OK                                              
+aluop a,(<ix,iy>+1)...........  OK                                              
+bit n,(<ix,iy>+1).............  OK                                              
+bit n,<b,c,d,e,h,l,(hl),a>....  OK                                              
+cpd<r>........................  OK                                              
+cpi<r>........................  OK                                              
+<daa,cpl,scf,ccf>.............  OK                                              
+<inc,dec> a...................  OK                                              
+<inc,dec> b...................  OK                                              
+<inc,dec> bc..................  OK                                              
+<inc,dec> c...................  OK                                              
+<inc,dec> d...................  OK                                              
+<inc,dec> de..................  OK                                              
+<inc,dec> e...................  OK                                              
+<inc,dec> h...................  OK                                              
+<inc,dec> hl..................  OK                                              
+<inc,dec> ix..................  OK                                              
+<inc,dec> iy..................  OK                                              
+<inc,dec> l...................  OK                                              
+<inc,dec> (hl)................  OK                                              
+<inc,dec> sp..................  OK                                              
+<inc,dec> (<ix,iy>+1).........  OK                                              
+<inc,dec> ixh.................  OK                                              
+<inc,dec> ixl.................  OK                                              
+<inc,dec> iyh.................  OK                                              
+<inc,dec> iyl.................  OK                                              
+ld <bc,de>,(nnnn).............  OK                                              
+ld hl,(nnnn)..................  OK                                              
+ld sp,(nnnn)..................  OK                                              
+ld <ix,iy>,(nnnn).............  OK                                              
+ld (nnnn),<bc,de>.............  OK                                              
+ld (nnnn),hl..................  OK                                              
+ld (nnnn),sp..................  OK                                              
+ld (nnnn),<ix,iy>.............  OK                                              
+ld <bc,de,hl,sp>,nnnn.........  OK                                              
+ld <ix,iy>,nnnn...............  OK                                              
+ld a,<(bc),(de)>..............  OK                                              
+ld <b,c,d,e,h,l,(hl),a>,nn....  OK                                              
+ld (<ix,iy>+1),nn.............  OK                                              
+ld <b,c,d,e>,(<ix,iy>+1)......  OK                                              
+ld <h,l>,(<ix,iy>+1)..........  OK                                              
+ld a,(<ix,iy>+1)..............  OK                                              
+ld <ixh,ixl,iyh,iyl>,nn.......  OK                                              
+ld <bcdehla>,<bcdehla>........  OK                                              
+ld <bcdexya>,<bcdexya>........  OK                                              
+ld a,(nnnn) / ld (nnnn),a.....  OK                                              
+ldd<r> (1)....................  OK                                              
+ldd<r> (2)....................  OK                                              
+ldi<r> (1)....................  OK                                              
+ldi<r> (2)....................  OK                                              
+neg...........................  OK                                              
+<rrd,rld>.....................  OK                                              
+<rlca,rrca,rla,rra>...........  OK                                              
+shf/rot (<ix,iy>+1)...........  ERROR **** crc expected:710034cb found:cb127686 
+shf/rot <b,c,d,e,h,l,(hl),a>..  ERROR **** crc expected:a4255833 found:b5821b2b 
+<set,res> n,<bcdehl(hl)a>.....  OK                                              
+<set,res> n,(<ix,iy>+1).......  OK                                              
+ld (<ix,iy>+1),<b,c,d,e>......  OK                                              
+ld (<ix,iy>+1),<h,l>..........  OK                                              
+ld (<ix,iy>+1),a..............  OK                                              
+ld (<bc,de>),a................  OK                                              
+Tests complete�                                                                 
+TIME END 15:44
+----------------------------------------------------------------------------- 
+                                                                        
+
+
+
+
+----------------------------------------------------------------------------- 
+TIME START 16:24 - 320? MHz ESP SPEED
+
+b>zexall
+Z80 instruction exerciser
+<adc,sbc> hl,<bc,de,hl,sp>....  OK
+add hl,<bc,de,hl,sp>..........  OK
+add ix,<bc,de,ix,sp>..........  OK
+add iy,<bc,de,iy,sp>..........  OK
+aluop a,nn....................  OK
+aluop a,<b,c,d,e,h,l,(hl),a>..  OK
+aluop a,<ixh,ixl,iyh,iyl>.....  OK
+aluop a,(<ix,iy>+1)...........  OK
+bit n,(<ix,iy>+1).............  OK
+bit n,<b,c,d,e,h,l,(hl),a>....  OK
+cpd<r>........................  OK
+cpi<r>........................  OK
+<daa,cpl,scf,ccf>.............  OK
+<inc,dec> a...................  OK
+<inc,dec> b...................  OK
+<inc,dec> bc..................  OK
+<inc,dec> c...................  OK
+<inc,dec> d...................  OK
+<inc,dec> de..................  OK
+<inc,dec> e...................  OK
+<inc,dec> h...................  OK
+<inc,dec> hl..................  OK
+<inc,dec> ix..................  OK
+<inc,dec> iy..................  OK
+<inc,dec> l...................  OK
+<inc,dec> (hl)................  OK
+<inc,dec> sp..................  OK
+<inc,dec> (<ix,iy>+1).........  OK
+<inc,dec> ixh.................  OK
+<inc,dec> ixl.................  OK
+<inc,dec> iyh.................  OK
+<inc,dec> iyl.................  OK
+ld <bc,de>,(nnnn).............  OK
+ld hl,(nnnn)..................  OK
+ld sp,(nnnn)..................  OK
+ld <ix,iy>,(nnnn).............  OK
+ld (nnnn),<bc,de>.............  OK
+ld (nnnn),hl..................  OK
+ld (nnnn),sp..................  OK
+ld (nnnn),<ix,iy>.............  OK
+ld <bc,de,hl,sp>,nnnn.........  OK
+ld <ix,iy>,nnnn...............  OK
+ld a,<(bc),(de)>..............  OK
+ld <b,c,d,e,h,l,(hl),a>,nn....  OK
+ld (<ix,iy>+1),nn.............  OK
+ld <b,c,d,e>,(<ix,iy>+1)......  OK
+ld <h,l>,(<ix,iy>+1)..........  OK
+ld a,(<ix,iy>+1)..............  OK
+ld <ixh,ixl,iyh,iyl>,nn.......  OK
+ld <bcdehla>,<bcdehla>........  OK
+ld <bcdexya>,<bcdexya>........  OK
+ld a,(nnnn) / ld (nnnn),a.....  OK
+ldd<r> (1)....................  OK
+ldd<r> (2)....................  OK
+ldi<r> (1)....................  OK
+ldi<r> (2)....................  OK
+neg...........................  OK
+<rrd,rld>.....................  OK
+<rlca,rrca,rla,rra>...........  OK
+shf/rot (<ix,iy>+1)...........  ERROR **** crc expected:710034cb found:cb127686
+shf/rot <b,c,d,e,h,l,(hl),a>..  ERROR **** crc expected:a4255833 found:b5821b2b
+<set,res> n,<bcdehl(hl)a>.....  OK
+<set,res> n,(<ix,iy>+1).......  OK
+ld (<ix,iy>+1),<b,c,d,e>......  OK
+ld (<ix,iy>+1),<h,l>..........  OK
+ld (<ix,iy>+1),a..............  OK
+ld (<bc,de>),a................  OK
+Tests complete�
+
+TIME END 18:25
+----------------------------------------------------------------------------- 
+
+
+http://www.seasip.info/Cpm/bdosfunc.html
+
+
+https://github.com/NF6X/zmac
+
+
+                        
