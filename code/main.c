@@ -7,6 +7,7 @@
 #include "uart.h"
 #include "uart_dev.h"
 #include "uart_register.h"
+#include "gpio16.h"
 
 #define RODATA_ATTR __attribute__((section(".irom.text"))) __attribute__((aligned(4)))
 #define ROMSTR_ATTR __attribute__((section(".irom.text.romstr"))) __attribute__((aligned(4)))
@@ -27,7 +28,7 @@ static const char z80code[] RODATA_ATTR = {
 #include "utils.h"
 
 // 01=    02=r/w    04=bios/bdos  08=
-const uint8_t DBG = 0x02;
+const uint8_t DBG = 0x00;
 
 MACHINE machine;
 
@@ -79,21 +80,23 @@ void ICACHE_FLASH_ATTR ReadDiskBlock(uint16_t mdest, uint8_t sectorNo,
   uint32_t lba = SECTORSPERTRACK * trackNo + sectorNo;
   uint32_t flashloc = DISKFLASHOFFSET + DISKFLASHSIZE * diskNo + SECTORSIZE * lba;
   uint16_t myFlashSectorNo = flashloc / FLASHBLOCKSIZE;
-
+  uint16_t fl = flashloc % FLASHBLOCKSIZE;
+  if (DBG & 1) printf("(fl=0x%04X\n", fl);
+ 
   if (DBG & 1) printf("(read Sec=%d, Trk=%d Dsk=%d) LBA=%d myFlashSectorNo=%04X flashSectorNo=%04X  \n", sectorNo, trackNo, diskNo, lba, myFlashSectorNo, flashSectorNo);
-
+ 
   if (myFlashSectorNo != flashSectorNo) {
     Cache_Read_Disable();
     SPIUnlock();
     flashSectorNo = myFlashSectorNo;
     if (DBG & 1) printf("(FLASH READ sector %04X %08X\n", flashSectorNo, flashSectorNo * FLASHBLOCKSIZE);
-    if (DBG & 2) printf("r");
     SPIRead(flashSectorNo * FLASHBLOCKSIZE, (uint32_t *)flashBuf, FLASHBLOCKSIZE);
+    if (DBG & 2) printf("R");
     Cache_Read_Enable(0, 0, 1);
+  } else {
+    if (DBG & 2) printf("r");
   }
 
-  uint16_t fl = flashloc % FLASHBLOCKSIZE;
-  if (DBG & 1) printf("(fl=0x%04X\n", fl);
   for (uint8_t i = 0; i < SECTORSIZE; i++) {
     machine.memory[mdest + i] = flashBuf[fl + i];
   }
@@ -104,6 +107,7 @@ void ICACHE_FLASH_ATTR ReadDiskBlock(uint16_t mdest, uint8_t sectorNo,
 //
 void ICACHE_FLASH_ATTR WriteDiskBlock(uint16_t msrc, uint8_t sectorNo,
                                       uint8_t trackNo, uint8_t diskNo) {
+
   if (diskNo > (DISKCOUNT - 1)) diskNo = DISKCOUNT - 1;
   if (trackNo > (TRACKSPERDISK - 1)) trackNo = TRACKSPERDISK - 1;
   if (sectorNo > (SECTORSPERTRACK - 1)) sectorNo = SECTORSPERTRACK - 1;
@@ -128,8 +132,10 @@ void ICACHE_FLASH_ATTR WriteDiskBlock(uint16_t msrc, uint8_t sectorNo,
     flashBuf[fl + i] = machine.memory[msrc + i];
   }
   if (DBG & 2) printf("w");
+  gpio16_output_set(0);	
   SPIEraseSector(flashSectorNo);
   SPIWrite(flashSectorNo * FLASHBLOCKSIZE, (uint32_t *)flashBuf, FLASHBLOCKSIZE);
+  gpio16_output_set(1);	
   Cache_Read_Enable(0, 0, 1);
 }
 
@@ -227,8 +233,15 @@ int main() {
   char *line;
 
   nosdk8266_init();
-  InitUart();
+
+  //  PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U,FUNC_GPIO0);
+  //  PIN_DIR_OUTPUT=_BV(0);
+  gpio16_output_conf();
+  gpio16_output_set(1);	// PIN_OUT_SET=_BV(0);
+
   ets_delay_us(250000);
+  InitUart();
+
   printf("\n");
 
   Z80Reset(&machine.state);

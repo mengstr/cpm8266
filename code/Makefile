@@ -35,13 +35,13 @@ CFLAGS		=  -std=c99 -flto -Os -g -Iinclude -nostdlib -mno-serialize-volatile -ml
 CFLAGS		:= $(CFLAGS) -DMAIN_MHZ=$(MAIN_MHZ) -DEMULATIONBAUD=$(EMULATIONBAUD) -DCPMMEMORY=$(CPMMEMORY)
 #CFLAGS		:= $(CFLAGS) -DDEBUG
 LDFLAGS		=  -T ld/linkerscript.ld -T ld/addresses.ld
-SRCS		=  main.c uart.c monitor.c utils.c disasm/disasm.c z80/z80emu.c nosdk/startup.S nosdk/nosdk8266.c
-OBJS		=  main.o uart.o monitor.o utils.o disasm/disasm.o z80/z80emu.o nosdk/startup.o nosdk/nosdk8266.o
+SRCS		=  main.c uart.c monitor.c utils.c gpio16.c disasm/disasm.c z80/z80emu.c nosdk/startup.S nosdk/nosdk8266.c
+OBJS		=  main.o uart.o monitor.o utils.o gpio16.o disasm/disasm.o z80/z80emu.o nosdk/startup.o nosdk/nosdk8266.o
 
 
 .PHONY: all full disks clean 
 
-all: bins flash serial
+all: bins flash serialm
 
 full: clean bins disks systemdiskA writealldisks flash
 
@@ -66,6 +66,10 @@ utils.o: utils.c utils.h
 	@$(GCC) $(CFLAGS) -o $@ -c $<
 
 monitor.o: monitor.c monitor.h
+	@echo [CC] $<
+	@$(GCC) $(CFLAGS) -o $@ -c $<
+
+gpio16.o: gpio16.c gpio16.h
 	@echo [CC] $<
 	@$(GCC) $(CFLAGS) -o $@ -c $<
 
@@ -136,9 +140,14 @@ systemdiskA : CPM22/BOOT.bin CPM22/BIOS.bin CPM22/BDOS.bin CPM22/CCP.bin
 	@$(DD) of=disks/DISK_A.DSK if=CPM22/BIOS.bin seek=5760 count=896  $(DDFLAGS)
 
 
-serial :
+serialp :
+	putty -load cpm8266 -sercfg $(EMULATIONBAUD)
+
+serialm :
 	minicom -b -D $(ESPPORT) $(EMULATIONBAUD)
-#	screen $(ESPPORT) $(EMULATIONBAUD)
+
+serials :
+	screen $(ESPPORT) $(EMULATIONBAUD)
 
 define WRITEDISK =
 writedisk$(1) :
@@ -169,6 +178,6 @@ clean :
 	@rm -rf $(FW1) $(FW2)
 	@rm -rf hex/*.*
 	@rm -rf {.,nosdk,z80,disasm}/*.{data,s,o,i,elf,res,map,bin,lst,out,bak}
-	@rm -rf {.,nosdk,z80,disasm}/*~
+	@rm -rf {..,.,nosdk,z80,disasm}/*~
 	@$(MAKE) --no-print-directory -C CPM22 clean
 	@$(MAKE) --no-print-directory -C disks clean

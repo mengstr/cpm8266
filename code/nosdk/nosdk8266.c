@@ -8,11 +8,11 @@ extern UartDevice UartDev;
 
 #define sys_const_crystal_26m_en 48 // soc_param0: 0: 40MHz, 1: 26MHz, 2: 24MHz
 
-// volatile uint32_t *DPORT_BASEADDR = (volatile uint32_t *)0x3ff00000;
-// volatile uint32_t *PIN_BASE = (volatile uint32_t *)0x60000300;
-// volatile uint32_t *IO_BASE = (volatile uint32_t *)0x60000000;
-// volatile uint32_t *IOMUX_BASE = (volatile uint32_t *)0x60000800;
-// volatile uint32_t *SPI0_BASE = (volatile uint32_t *)0x60000200;
+ volatile uint32_t *DPORT_BASEADDR = (volatile uint32_t *)0x3ff00000;
+ volatile uint32_t *PIN_BASE = (volatile uint32_t *)0x60000300;
+ volatile uint32_t *IO_BASE = (volatile uint32_t *)0x60000000;
+ volatile uint32_t *IOMUX_BASE = (volatile uint32_t *)0x60000800;
+ volatile uint32_t *SPI0_BASE = (volatile uint32_t *)0x60000200;
 // volatile uint8_t *RTCRAM =
 //     (volatile uint8_t *)0x60001000; // Pointer to RTC Ram (1024 bytes)
 
