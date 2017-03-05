@@ -37,7 +37,6 @@ uint16_t z80_trk = 0x00;
 uint16_t z80_sec = 0x01;
 uint16_t z80_dsk = 0x00;
 uint8_t biostrace = 0;
-uint8_t breakatbios = 0;
 
 #define EXIT 0x00
 #define CONOUT 0x01
@@ -220,7 +219,7 @@ void Execute(bool canbreak) {
   do {
     Z80Emulate(&machine.state, 1, &machine);
     if (DBG & 4) DebugBiosBdos();
-    if (canbreak && (GetKey(false) == BREAKKEY)) break;
+//    if (canbreak && (GetKey(false) == BREAKKEY)) break;
   } while (!machine.is_done);
   printf("\n");
 }
@@ -284,15 +283,6 @@ int main() {
     }
 
     //
-    //
-    //
-    if (cmd == '!') {
-      breakatbios = CONIN;
-      printf("Break at CONSOLE IN enabled\n");
-      continue;
-    }
-
-    //
     // Load INTEL Hex into memory
     //
     if (cmd == 'L') {
@@ -339,7 +329,7 @@ int main() {
         // }
         Z80Emulate(&machine.state, 1, &machine);
         if (cmd == 'S') ShowAllRegisters();
-        if (GetKey(false) == BREAKKEY) break;
+//        if (GetKey(false) == BREAKKEY) break;
       }
       if (cmd == 's') ShowAllRegisters();
       continue;
@@ -424,12 +414,6 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     case CONIN:
       if (DBG & 8) printf("{CI}");
       m->state.registers.byte[Z80_A] = GetKey(true);
-      if (breakatbios == CONIN) {
-        machine.is_done = 1;
-        printf("CONIN bios break\n");
-        ShowAllRegisters();
-      }
-
       break;
 
     // CONST	You should sample the status of the currently assigned

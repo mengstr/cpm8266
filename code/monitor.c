@@ -15,8 +15,16 @@ extern MACHINE machine;
 // then 0x00 is returned
 //
 char ICACHE_FLASH_ATTR GetKey(bool wait) {
-  if (!wait && GetRxCnt() == 0) return 0x00;
-  return GetRxChar();
+  char ch;
+  if (wait) {
+    ch=GetRxChar();
+    return ch;
+  }
+  if (GetRxCnt() == 0) {
+    return 0x00;
+  }
+  ch=GetRxChar();
+  return ch;
 }
 
 //

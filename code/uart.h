@@ -4,6 +4,5 @@
 void InitUart(void);
 uint16_t GetRxCnt(void);
 uint8_t GetRxChar(void);
-void pbf(void);
 
 #endif

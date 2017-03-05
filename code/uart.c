@@ -39,9 +39,6 @@ uint8_t GetRxChar(void) {
   return rxBuf[rxR];
 }
 
-void pbf(void) {
-  //    printf("{%d/%d}",rxR,rxW);
-}
 
 //
 //
