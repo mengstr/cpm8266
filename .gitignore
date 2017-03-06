@@ -12,6 +12,9 @@
 *.elf
 *.lst
 *.pre
+*.zip
 
 # Some private folders
 private/
+tmp/
+sed80/

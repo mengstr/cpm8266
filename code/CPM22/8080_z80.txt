@@ -1,4 +1,4 @@
-			8080/Z80  Instruction  Set
+                        8080/Z80  Instruction  Set
 
 [Copyright 1985,1999,2002,2006,2009,2011,2012 Frank Durda IV,
 All Rights Reserved.
@@ -6,8 +6,8 @@ Mirroring of any material on this site in any form is expressly prohibited.
 Contact this address for use clearances: clearance at nemesis.lonestar.org
 Comments and queries to this address: web_software_2012 at nemesis.lonestar.org]
 
-	(A HTMLized version of this document is available at
-		 http://nemesis.lonestar.org)
+        (A HTMLized version of this document is available at
+                 http://nemesis.lonestar.org)
 
 
 8080/Z80  Instruction  Set
@@ -146,9 +146,9 @@ MVI	L,byte	LD	L,byte		2Ebyte		L <- byte
 
 MVI	M,byte	LD	(HL),byte	36byte	     (HL) <- byte
 ---		LD	(IX+index),byte	       (IX+index) <- byte
-					DD36index byte
+                                        DD36index byte
 ---		LD	(IY+index),byte	       (IY+index) <- byte
-					FD36index byte
+                                        FD36index byte
 STAX	B	LD	(BC),A		02	     (BC) <- A
 STAX	D	LD	(DE),A		12	     (DE) <- A
 
@@ -375,7 +375,7 @@ DAA		DAA			27		---
 CMA		CPL			2F		A <- NOT A
 STC		SCF			37		CF (Carry Flag) <- 1
 CMC		CCF			3F		CF (Carry Flag) <-
-							NOT CF
+                                                        NOT CF
 ---		NEG			ED44		A <- 0-A
 
 Rotate Instructions
@@ -521,10 +521,10 @@ PCHL		JP	(HL)		E9		PC <- HL
 ---		JR	NC,index	30index	      If NC, PC <- PC + index
 ---		JR	C,index		38index	      If  C, PC <- PC + index
 ---		DJNZ	index		10index	    B <- B - 1;
-						    If B > 0, PC <- PC + index
+                                                    If B > 0, PC <- PC + index
 
 CALL	address	CALL	address		CDaddress  (SP-1) <- PCh;(SP-2) <- PCl
-						   SP <- SP - 2;PX <- address
+                                                   SP <- SP - 2;PX <- address
 CNZ	address	CALL	NZ,address	C4address	If NZ, CALL address
 CZ	address	CALL	Z,address	CCaddress	If  Z, CALL address
 CNC	address	CALL	NC,address	D4address	If NC, CALL address
@@ -536,7 +536,7 @@ CM	address	CALL	M,address	FCaddress	If  M, CALL address
 
 
 RET		RET			C9	    PCl <- (SP);PCh <- (SP+1)
-							SP <- SP + 2
+                                                        SP <- SP + 2
 RNZ		RET	NZ		C0		If NZ, RET
 RZ		RET	Z		C8		If  Z, RET
 RNC		RET	NC		D0		If NC, RET
@@ -566,28 +566,28 @@ Stack Operation Instructions
 8080  Mnemonic	Z80  Mnemonic		Code		Operation
 
 PUSH	B	PUSH	BC		C5	(SP-2) <- C; (SP-1) <- B;
-						SP <- SP - 2
+                                                SP <- SP - 2
 PUSH	D	PUSH	DE		D5	(SP-2) <- E; (SP-1) <- D;
-						SP <- SP - 2
+                                                SP <- SP - 2
 PUSH	H	PUSH	HL		E5	(SP-2) <- L; (SP-1) <- H;
-						SP <- SP - 2
+                                                SP <- SP - 2
 PUSH	PSW	PUSH	AF		F5	(SP-2) <- Flags; (SP-1) <- A;
-						SP <- SP - 2
+                                                SP <- SP - 2
 ---		PUSH	IX		DDE5	(SP-2) <- IXl; (SP-1) <- IXh
-						SP <- SP - 2
+                                                SP <- SP - 2
 ---		PUSH	IY		FDE5	(SP-2) <- IYl; (SP-1) <- IYh
-						SP <- SP - 2
+                                                SP <- SP - 2
 
 POP	B	POP	BC		C1	B <- (SP+1); C <- (SP);
-						SP <- SP + 2
+                                                SP <- SP + 2
 POP	D	POP	DE		D1	D <- (SP+1); E <- (SP);
-						SP <- SP + 2
+                                                SP <- SP + 2
 POP	H	POP	HL		E1	H <- (SP+1); L <- (SP);
-						SP <- SP + 2
+                                                SP <- SP + 2
 POP	PSW	POP	AF		F1	A <- (SP+1); Flags <- (SP);
-						SP <- SP + 2
+                                                SP <- SP + 2
 ---		POP	IX		DDE1	IXh <- (SP+1); IXl <- (SP);
-						SP <- SP + 2
+                                                SP <- SP + 2
 ---		POP	IY		FDE1	IYh <- (SP+1); IYl <- (SP);
 
 
@@ -627,13 +627,13 @@ Data Transfer Instructions (Z80 Only)
 8080  Mnemonic	Z80  Mnemonic		Code		Operation
 
 ---		LDI			EDA0	(DE) <- (HL);HL <- HL+1
-						DE <- DE+1; BC <- BC-1
+                                                DE <- DE+1; BC <- BC-1
 ---		LDIR			EDB0	(DE) <- (HL);HL <- HL+1
-						DE <- DE+1; BC <- BC-1
+                                                DE <- DE+1; BC <- BC-1
 ---		LDD			EDA8	(DE) <- (HL);HL <- HL-1
-						DE <- DE-1; BC <- BC-1
+                                                DE <- DE-1; BC <- BC-1
 ---		LDDR			EDB8	(DE) <- (HL);HL <- HL-1
-						DE <- DE-1; BC <- BC-1
+                                                DE <- DE-1; BC <- BC-1
 
 Bit Manipulation Instructions (Z80 Only)
 

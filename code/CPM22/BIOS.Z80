@@ -170,11 +170,12 @@ signon:	db	CR,LF,LF
 	db	RAMSIZEK/10+'0',RAMSIZEK%10+'0'
 	db	'K CP/M v'
 	db	vers/10+'0','.',vers%10+'0'
-	db	CR,LF
-	db	'cpm8266 - SmallRoomLabs'
+	db	' ['
+	db	'cpm8266 v',VERSION/10+'0','.',VERSION%10+'0',' - SmallRoomLabs'
+	db	']'
 	db	CR,LF,0
 
-bootmsg:db	CR,LF,'wboot',CR,LF,0
+;bootmsg:db	CR,LF,'wboot',CR,LF,0
 
 ;****************************************************************************
 ; BOOT
@@ -224,8 +225,8 @@ LoadSector:
 	INC	B			; TRACK=TRACK+1
 	JP	LoadSector		; FOR ANOTHER GROUP
 
-wbdone:	LD	HL,bootmsg		; Print warm boot message
-	CALL	prmsg
+wbdone:	;LD	HL,bootmsg		; Print warm boot message
+	;CALL	prmsg
 
 gocpm:	;(enter here from cold & warm start boots)
 	LD	BC,TBUFF		; Set default buffer address to 80h

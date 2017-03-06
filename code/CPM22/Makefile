@@ -14,42 +14,50 @@ all: BOOT.bin BIOS.bin BDOS.bin CCP.bin
 
 BOOT.bin: BOOT.Z80
 	@echo [ZASM] $<
-	@echo "MEM EQU $(CPMMEMORY)" > MEMSIZE.Z80
+	@echo "MEM EQU $(CPMMEMORY)" > SETTINGS.Z80
+	@echo "VERSION EQU $(VERSION)" >> SETTINGS.Z80
 	@$(ZASM) $(FLAGSBIN) $< -o $@
 
 BOOT.hex: BOOT.Z80
 	@echo [ZASM] $<
-	@echo "MEM EQU $(CPMMEMORY)" > MEMSIZE.Z80
+	@echo "MEM EQU $(CPMMEMORY)" > SETTINGS.Z80
+	@echo "VERSION EQU $(VERSION)" >> SETTINGS.Z80
 	@$(ZASM) $(FLAGSHEX) $< -o $@
 
 BIOS.bin: BIOS.Z80
 	@echo [ZASM] $<
-	@echo "MEM EQU $(CPMMEMORY)" > MEMSIZE.Z80
+	@echo "MEM EQU $(CPMMEMORY)" > SETTINGS.Z80
+	@echo "VERSION EQU $(VERSION)" >> SETTINGS.Z80
 	@$(ZASM) $(FLAGSBIN) $< -o $@
 
 BIOS.hex: BIOS.Z80
 	@echo [ZASM] $<
-	@echo "MEM EQU $(CPMMEMORY)" > MEMSIZE.Z80
+	@echo "MEM EQU $(CPMMEMORY)" > SETTINGS.Z80
+	@echo "VERSION EQU $(VERSION)" >> SETTINGS.Z80
 	@$(ZASM) $(FLAGSHEX) $< -o $@
 
 BDOS.bin: BDOS.Z80
 	@echo [ZASM] $<
-	@echo "MEM EQU $(CPMMEMORY)" > MEMSIZE.Z80
+	@echo "MEM EQU $(CPMMEMORY)" > SETTINGS.Z80
+	@echo "VERSION EQU $(VERSION)" >> SETTINGS.Z80
 	@$(ZASM) $(FLAGSBIN) $< -o $@
 
 BDOS.hex: BDOS.Z80
 	@echo [ZASM] $<
-	@echo "MEM EQU $(CPMMEMORY)" > MEMSIZE.Z80
+	@echo "MEM EQU $(CPMMEMORY)" > SETTINGS.Z80
+	@echo "VERSION EQU $(VERSION)" >> SETTINGS.Z80
 	@$(ZASM) $(FLAGSHEX) $< -o $@
 
 CCP.bin: CCP.Z80
 	@echo [ZASM] $<
-	@echo "MEM EQU $(CPMMEMORY)" > MEMSIZE.Z80
+	@echo "MEM EQU $(CPMMEMORY)" > SETTINGS.Z80
+	@echo "VERSION EQU $(VERSION)" >> SETTINGS.Z80
 	@$(ZASM) $(FLAGSBIN) $< -o $@
 
 CCP.hex: CCP.Z80
 	@echo [ZASM] $<
-	@echo "MEM EQU $(CPMMEMORY)" > MEMSIZE.Z80
+	@echo "MEM EQU $(CPMMEMORY)" > SETTINGS.Z80
+	@echo "VERSION EQU $(VERSION)" >> SETTINGS.Z80
 	@$(ZASM) $(FLAGSHEX) $< -o $@
 
 clean :

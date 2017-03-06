@@ -13,14 +13,16 @@ DISKBLOCK	=  262144  # 0x40000
 DISKS		=  A B C D E F G H I J K L M N O
 
 export CPMMEMORY =  65536
+export VERSION	 =  01
 
 TARGET	 	=  image
 FW0 		=  $(TARGET).elf-0x00000.bin
 FW1 		=  $(TARGET).elf-0x10000.bin
 
+CPMCP		=  /usr/bin/cpmcp
 ZASM		=  /usr/local/bin/zasm
 XXD			=  /usr/bin/xxd
-CPMCP		=  /usr/bin/cpmcp
+ZIP			=  /usr/bin/zip
 DD			=  /bin/dd
 ESPTOOL		=  $(ESP8266SDK)/esptool/esptool.py
 BINS		=  $(ESP8266SDK)/xtensa-lx106-elf/bin
@@ -39,11 +41,20 @@ SRCS		=  main.c uart.c monitor.c utils.c gpio16.c disasm/disasm.c z80/z80emu.c n
 OBJS		=  main.o uart.o monitor.o utils.o gpio16.o disasm/disasm.o z80/z80emu.o nosdk/startup.o nosdk/nosdk8266.o
 
 
-.PHONY: all full disks clean 
+.PHONY: all full disks clean dist
 
-all: bins flash serialm
+all: bins flash
 
-full: clean bins disks systemdiskA writealldisks flash
+full: clean bins flash disks systemdiskA writealldisks
+
+erase:
+	@echo "[ERASING]"
+	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) erase_flash > /dev/null
+
+dist: erase full
+	@echo "[READING IMAGE]"
+	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) read_flash 0x00000 0x400000 dist/cpm8266_$(VERSION).bin > /dev/null
+	@$(ZIP) -j -9 dist/cpm8266_$(VERSION).zip dist/cpm8266_$(VERSION).bin dist/readme.txt > /dev/null
 
 bins: $(OBJS)
 	@echo [LINK]
@@ -51,7 +62,7 @@ bins: $(OBJS)
 	@$(SIZE) $(TARGET).elf
 	@nm -S -n $(TARGET).elf > $(TARGET).map
 	@$(OBJDUMP) -S $(TARGET).elf > $(TARGET).lst
-	@export PATH=$(BINS):$$PATH; $(ESPTOOL) elf2image $(TARGET).elf > /dev/null
+	@export PATH=$(BINS):$$PATH; $(ESPTOOL) elf2image $(TARGET).elf $(FLASHPARAM) > /dev/null
 
 main.o: main.c z80/z80emu.h z80/z80user.h hex/boot.data
 	@echo [CC] $<
@@ -101,7 +112,6 @@ z80/z80emu.o: z80/z80emu.c z80/z80emu.h
 	@echo [CC] $<
 	@$(GCC) $(CFLAGS) -o $@ -c $<
 
-
 nosdk/nosdk8266.o: nosdk/nosdk8266.c
 	@echo [CC] $<
 	@$(GCC) $(CFLAGS) -o $@ -c $<
@@ -132,13 +142,11 @@ flash : $(FW0) $(FW1)
 disks :
 	@$(MAKE) --no-print-directory -C disks clean all
 
-
 systemdiskA : CPM22/BOOT.bin CPM22/BIOS.bin CPM22/BDOS.bin CPM22/CCP.bin
 	@$(DD) of=disks/DISK_A.DSK if=CPM22/BOOT.bin seek=0    count=128  $(DDFLAGS)
 	@$(DD) of=disks/DISK_A.DSK if=CPM22/CCP.bin  seek=128  count=2048 $(DDFLAGS)
 	@$(DD) of=disks/DISK_A.DSK if=CPM22/BDOS.bin seek=2176 count=3584 $(DDFLAGS)
 	@$(DD) of=disks/DISK_A.DSK if=CPM22/BIOS.bin seek=5760 count=896  $(DDFLAGS)
-
 
 serialp :
 	putty -load cpm8266 -sercfg $(EMULATIONBAUD)
@@ -153,23 +161,23 @@ define WRITEDISK =
 writedisk$(1) :
 	@$(eval address := $(shell n=$$(printf "%d\n" \'$(1)); printf "0x%06x" $$(( ($$n-64)*$(2) )); ) )
 	@echo "[UPLOAD]" disks/DISK_$(1).DSK to $(address)
-	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash $(address) disks/DISK_$(1).DSK $(FLASHPARAM) > /dev/null
+	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash $(address) disks/DISK_$(1).DSK > /dev/null
 endef
 
 define READDISK =
 readdisk$(1) :
 	@$(eval address := $(shell n=$$(printf "%d\n" \'$(1)); printf "0x%06x" $$(( ($$n-64)*$(2) )); ) )
 	@echo "[DOWNLOAD]" disks/DISK_$(1).DSK from $(address)
-	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) read_flash $(address) $(2) disks/DISK_$(1).DSK > /dev/null
+	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) read_flash $(address) $(3) disks/DISK_$(1).DSK > /dev/null
 endef
 
 $(foreach DSK,$(DISKS), \
-	$(eval $(call WRITEDISK,$(DSK), $(DISKBLOCK))); \
-	$(eval $(call  READDISK,$(DSK), $(DISKBLOCK))); \
+	$(eval $(call WRITEDISK,$(DSK), $(DISKBLOCK), $(DISKSIZE))); \
+	$(eval $(call  READDISK,$(DSK), $(DISKBLOCK), $(DISKSIZE))); \
 )
 
 WRITEDISKTARGETS=$(foreach DSK,$(DISKS), writedisk$(DSK) )
-READDISKTARGETS=$(foreach DSK,$(DISKS), writedisk$(DSK) )
+READDISKTARGETS=$(foreach DSK,$(DISKS), readdisk$(DSK) )
 
 writealldisks : $(WRITEDISKTARGETS)
 readalldisks  : $(READDISKTARGETS)
@@ -177,7 +185,7 @@ readalldisks  : $(READDISKTARGETS)
 clean :
 	@rm -rf $(FW1) $(FW2)
 	@rm -rf hex/*.*
-	@rm -rf {.,nosdk,z80,disasm}/*.{data,s,o,i,elf,res,map,bin,lst,out,bak}
-	@rm -rf {..,.,nosdk,z80,disasm}/*~
+	@rm -rf {.,nosdk,z80,disasm,dist}/*.{data,s,o,i,elf,res,map,bin,lst,out,bak,zip}
+	@rm -rf {..,.,nosdk,z80,disasm,dist}/*~
 	@$(MAKE) --no-print-directory -C CPM22 clean
 	@$(MAKE) --no-print-directory -C disks clean
