@@ -34,7 +34,7 @@ AS			=  $(BINS)/xtensa-lx106-elf-as
 
 DDFLAGS		= status=none bs=1 conv=notrunc
 CFLAGS		=  -std=c99 -flto -Os -g -Iinclude -nostdlib -mno-serialize-volatile -mlongcalls
-CFLAGS		:= $(CFLAGS) -DMAIN_MHZ=$(MAIN_MHZ) -DEMULATIONBAUD=$(EMULATIONBAUD) -DCPMMEMORY=$(CPMMEMORY)
+CFLAGS		:= $(CFLAGS) -DMAIN_MHZ=$(MAIN_MHZ) -DVERSION=$(VERSION) -DEMULATIONBAUD=$(EMULATIONBAUD) -DCPMMEMORY=$(CPMMEMORY)
 #CFLAGS		:= $(CFLAGS) -DDEBUG
 LDFLAGS		=  -T ld/linkerscript.ld -T ld/addresses.ld
 SRCS		=  main.c uart.c monitor.c utils.c gpio16.c disasm/disasm.c z80/z80emu.c nosdk/startup.S nosdk/nosdk8266.c

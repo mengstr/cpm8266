@@ -225,6 +225,9 @@ void Execute(bool canbreak) {
 }
 
 
+
+
+
 //
 //
 //
@@ -241,7 +244,12 @@ int main() {
   ets_delay_us(250000);
   InitUart();
 
-  printf("\n");
+  uint32_t baud=AutoBaud();
+  uart_div_modify(UART0, (PERIPH_FREQ * 1000000) / baud);
+
+  printf("\n\ncpm8266 - Z80 Emulator and CP/M 2.2 system version %d.%d\n\n",VERSION/10,VERSION%10);
+  ets_delay_us(250000);
+  FlushUart();
 
   Z80Reset(&machine.state);
   machine.is_done = 0;

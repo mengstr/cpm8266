@@ -20,6 +20,47 @@ static volatile uint16_t rxR = 0;
 static volatile uint16_t rxW = 0;
 
 //
+// Reading a CR at 115k and 9600 baud gives the followin results
+//
+//                  Receiver @    Receiver @
+//                  115200 baud   9600 baud
+//
+// Sender at 115200 0D
+// Sender at 57600  E6 80
+// Sender at 38400  1C 00
+// Sender at 19200  E0 E0 00
+// Sender at 9600   00 00 00      0D
+// Sender at 4800                 E6 80
+// Sender at 2400                 78 00
+// Sender at 1200                 80 80 00
+// Sender at 300                  00 00 00
+//
+uint32_t AutoBaud(void) {
+  uint8_t v;
+  for (;;) {
+    uart_div_modify(UART0, (PERIPH_FREQ * 1000000) / 115200);
+    v=GetRxChar();  // Wait for one character received
+    if (v==0x0D) return 115200;
+    if (v==0xE6) return 57600;
+    if (v==0x1C) return 38400;
+    if (v==0xE0) return 19200;
+    ets_delay_us(50000); // Delay to trap possible additional chars
+    FlushUart();  
+    uart_div_modify(UART0, (PERIPH_FREQ * 1000000) / 9600);
+    v=GetRxChar();
+    if (v==0x0D) return 9600;
+    if (v==0xE6) return 4800;
+    if (v==0x78) return 2400;
+    if (v==0x80) return 1200;
+    if (v==0x00) return 300;
+    ets_delay_us(50000); // Delay to trap possible additional chars
+    FlushUart();  
+  }
+  return 0;
+}
+
+
+//
 //
 //
 uint16_t GetRxCnt(void) {
@@ -37,6 +78,15 @@ uint8_t GetRxChar(void) {
   while (!GetRxCnt()) continue;  // Wait for character to become available
   rxR = (rxR + 1) & (sizeof(rxBuf) - 1);
   return rxBuf[rxR];
+}
+
+
+//
+//
+//
+void FlushUart(void) {
+    while (GetRxCnt()) GetRxChar();
+
 }
 
 
