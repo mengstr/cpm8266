@@ -1,5 +1,11 @@
 // Place your settings in this file to overwrite default and user settings.
 {
     "C_Cpp.clang_format_style": "file",
-    "C_Cpp.clang_format_fallbackStyle": "none"
-    }
+    "C_Cpp.clang_format_fallbackStyle": "none",
+    "[z80-asm]": {
+        "editor.quickSuggestions": false,
+        "editor.wrappingColumn": 0,
+        "editor.rulers": [80]
+    } 
+
+}

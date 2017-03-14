@@ -13,6 +13,8 @@
 *.lst
 *.pre
 *.zip
+*.cap
+*.log
 
 # Some private folders
 private/

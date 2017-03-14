@@ -1,0 +1,2728 @@
+
+CP/M   Programmer's Reference Guide
+
+From: Paul Schlyter
+ Subject: Re: Apple// CP/M question 
+ Newsgroups: comp.sys.apple2
+ Date: 2000/11/15 
+
+
+
+The texts below may be of some interest to Apple CP/M users.  The
+first is a reference to standard CP/M-80 (up to ver 2.2) and the
+second is a reference of Apple (SoftCard) CP/M specific details.  These
+details mostly include BIOS details of course, but also some utility
+programs.  Also, Apple CP/M lacks the standard CP/M usilities SYSGEN
+and MOVCPM; instead there are CPM56.COM or CPM60.COM, and an /S option
+to FORMAT.COM.
+
+===========================================================================
+
+CP/M   ver 1.4 & 2.x        Programmer's Reference Guide
+========================================================
+
+
+BUILT-IN COMMANDS
+=================
+
+DIR                         Display file directory, current drive
+DIR d:                      Display file directory, designated drive
+DIR filename.typ            Search for file name, current drive
+DIR *.typ                   Display all files of named type, curr drive
+DIR filename.*              Display all types of designated filename
+DIR x????.*                 Display all filenames 5 characters long and
+                              starting with letter x
+
+TYPE filename.typ           Display ASCII file, current drive
+TYPE d:filename.typ         Display ASCII file, designated drive
+
+ERA filename.typ            Erase named file, current drive
+ERA *.*                     Erase all files, curr drv, ver 2.x curr user
+ERA *.typ                   Erase all files, current drive
+ERA d:filename.typ          Erase named file, designated drive
+ERA filename.*              Erase all types of named file, current drive
+
+REN nuname.typ=olname.typ   Rename file, current drive
+REN d:nuname.typ=olname.typ Rename file, designated drive
+
+SAVE n filename.typ         Save as named file, current drive
+SAVE n d:filename.typ       Save as named file, designated drive
+                              n pages (page = 256 bytes) starting at 100H
+
+d:                          Switch to designated drive, making it current drive
+                              V 1.4: A-D     V 2.x: A-P
+
+USER n                      Change user area (n=0 to 15)  (ver 2.x)
+
+
+
+TRANSIENT COMMANDS
+==================
+
+DDT                         Initiate Dynamic Debugging Tool
+DDT filename.typ            Initiate DDT and load named file
+
+ASM filename                Assemble named ASM file on current drive
+ASM d:filename              Assemble named ASM file on designated drive
+ASM filename.abc            Assemble named ASM file:
+                              a = source file drive
+                              b = HEX file destination drive (Z=skip)
+                              c = PRN file destination drive (X=console,Z=skip)
+
+LOAD filename               Make COM file from named HEX file on current drive
+LOAD d:filename             Make COM file from named HEX file on design. drive
+
+DUMP filename.typ           Display file in hex, current drive
+DUMP d:filename.typ         Display file in hex, designated drive
+
+MOVCPM                      Relocate and execute (max) KByte CP/M system
+MOVCPM n                    Relocate and execute n KByte CP/M system
+MOVCPM n *                  Create relocated image in RAM of n Kbyte
+                              CP/M system, ready for SYSGEN or SAVE
+MOVCPM * *                  Create relocated image in RAM of (max) Kbyte
+                              CP/M system, ready for SYSGEN or SAVE
+
+SYSGEN                      Initiate SYStem GENerate program
+
+SUBMIT filename parameters  Execute SUB file using optional parameter(s)
+
+XSUB                        Execute eXtended SUBmit program (V2.x)
+
+ED filename.typ             Execute EDitor to create or edit named file
+ED d:filename.typ           Execute EDitor to create or edit named file
+
+STAT                        Display STATus (R/W or R/O)  \/ current drive
+STAT d:                       and available disk space   /\ design. drive
+STAT DEV:                   Display DEVice assignments
+STAT VAL:                   Display VALid device assignments
+STAT DSK:                   Display DISK characteristics (V2.x)
+STAT USR:                   Display current USeR areas   (V2.x)
+STAT filename.typ $S        Display size of file (V2.x)
+STAT fiename.typ            Display file characteristics, current drive
+STAT d:filename.typ         Display file characteristics, designated drive
+STAT d:=R/O                 Change designated drive to Read-Only
+STAT filename.typ $R/O      Change named file to Read-Only (V2.x)
+STAT filename.typ $R/W      Change named file to Read-Write (V2.x)
+STAT filename.COM $SYS      Change named file to System file (V2.x)
+STAT filename.COM $DIR      Change named file to Directory file (V2.x)
+STAT gd:=pd:                Change general device (CON:,LST:,PUN:,RDR:)
+                              assignment of physical device (IOBYTE)
+
+
+PIP
+===
+
+Commands
+--------
+
+PIP                         Initiate Peripheral Interchange Program
+*d:=s:filename.typ          Copy named file from source drive to dest drive
+*d:nuname.*=s:olname.typ    Copy & rename from source drive to dest drive
+PIP d:=s:filename.typ       Initiate PIP and copy named file
+PIP d:=s:*.*                  from source drive  \/ all files
+PIP d:=s:filename.*                   to         || all named files
+PIP d:=s:*.typ                destination drive  /\ all files named type
+PIP LST:=filename.typ       Send named file to list device
+PIP PUN:=filename.typ       Send named file to punch device
+PIP CON:=filename.typ       Send named file to console device
+PIP filename.typ=RDR:       Copy data from reader device to named file
+
+*nuname.typ=aname.typ,bname.typ,cname.typ      ASCII copy & concatenate
+*nuname.typ=aname.typ,bname.typ                ASCII copy & concatenate
+*nuname.typ=aname.typ[X],bname.typ[X]          binary copy & concatenate
+
+PIP LST:=aname.typ,bname.typ       Send files in sequence to list device
+PIP LST:=s:aname.typ,s:bname.typ   Send files in sequence to list device
+
+PIP allows access to any logical and physical devices defined in the
+CP/M system.  Logical devices: CON: RDR: PUN: LST:
+Physical devices:  TTY: CRT: PTR: UR1: UR2: PTP: UP1: UP2: LPT: UL1:
+
+Special PIP devices (locations 109H to 1FFH are not used in the PIP
+image and can be replaced by used drivers using DDT)
+    NUL:    Send 40 NUL's (ASCII 00H) to the device
+            (can be issued at the end of punched output)
+    EOF:    Send a CP/M EOF (ASCII Ctrl-Z=1AH) to dest device
+            (sent automatically at end of ASCII transfers thru PIP)
+    INP:    Special PIP input source which can be patched into PIP:
+            PIP gets input from here by calling 103H, with data
+            returned at 109H)
+    OUT:    Special PIP output destination which can be patched into PIP:
+            PIP calls 106H with data to be output in C for each char.
+    PRN:    Same as LST: except that tabbs are expanded to every 8th
+            column, lines are numbered, and page ejects are inserted
+            every 60 lines with an initial eject (same as PIP options [t8np])
+
+
+Parameters
+----------
+
+example   *filename.typ=RDR:[B]
+
+[B]         - read data block until ^S (ctrl-S) character
+[Dn]        - delete characters past column n
+[E]         - echo all copy operations to console
+[F]         - remove form feeds
+[Gn]        - get file from user area n (V2.x)
+[H]         - check for proper HEX format
+[I]         - same as H plus ignores ":00"
+[L]         - change all upper case characters to lower case
+[N]         - add line numbers without leading zeros
+[N2]        - same as N plus leading zeros and a TAB after number
+[O]         - object file transfer; ignore end-of-file (Ctrl-Z)
+[P]         - insert form feed every 60 lines
+[Pn]        - insert form feed every n lines
+[Qstring^Z] - Quit copying after string is found
+[R]         - read SYS file (V2.x)
+[Sstring^Z] - Start copying when string is found
+[Tn]        - expand tab space to every n columns
+[U]         - change all lower case characters to upper case
+[V]         - verify copied data (destination must be disk file)
+[W]         - delete R/O files at destination (V2.x)
+[X]         - copy non-ACII files
+[Z]         - zero parity bit (hi bit) on all characters in file
+
+
+
+Keywords
+--------
+
+CON: CONsole device (defined in BIOS)
+EOF: send End-of-File (ASCII ^Z) to device
+INP: INPut source (pathced in PIP)
+LST: LiST device (defined in BIOS)
+NUL: send 40 NUL's to device
+OUT: OUTput destination (pathced in PIP)
+PRN: same as LST:; tabs every 8th char, number lines & page
+       ejects every 60 lines with initial eject
+PUN: PUNch device (defined in BIOS)
+RDR: ReaDeR device (defined in BIOS)
+
+
+
+COMMAND CONTROL CHARACTERS
+==========================
+
+Control char   ASCII code   Function
+
+  C               03h       Reboot - CP/M warm boot
+  E               05h       Start new line
+  H               08h       Backspace and delete (V2.x)
+  I               09h       Tab 8 columns
+  J               0Ah       Line feed
+  M               0Dh       Carriage return
+  P               10h       Printer on/Printer off
+  R               12h       Retype current line
+  S               13h       Stop display outout (any char except ^C restarts)
+  U               15h       Delete line
+  X               18h       Same as Û (V1.4)
+  Z               1Ah       End of console input (ED & PIP)
+delete/rubout     7Fh       Delete and display character (tape only)
+
+
+
+ASM
+===
+
+Conventions
+-----------
+
+line#  label  operation  operant  ;comment
+
+labels followed by colon      1-16 alphanumeric characters
+symbol (eq. EQU) no colon     first must be alpha, ? or .
+                              labels are case insensitive (treated as uppercase)
+                              $ is insignificant and can be inserted
+                              anywhere for readability
+
+
+Assembly Program Format  (space separates fields)
+
+[line#]  label:   opcode  oerand(s)          ;comment
+
+Constants
+A number of digits with a suffix:
+   B        binary
+   O or Q   octal
+   D        decimal (default)
+   H        hexadecimal
+
+Reserved words in operand fields
+
+The names of the 8080 registers are reserved, and produce the
+following values if encountered in the operand field:
+
+    A    7
+    B    0
+    C    1
+    D    2
+    E    3
+    H    4
+    L    5
+    M    6
+    SP   6
+    PSW  6
+
+Mnemonics for machine instructions are reserved and evaluate to
+their internal codes.  Instructions which require operands will
+get zeroes in their operand fields, e.g. MOV will produce 40H
+
+The symbol $ in the operand field evaulates to the address of
+the next instruction to generate, not including the instruction
+within the current logical line
+
+String constants are delimieted by an apostrophe ('), and a
+double apostrophe ('') will produce one apostrophe
+
+
+Operators (unsigned)
+
+a+b         a added to b
+a-b         difference between a and b
+ +b         0+b (unary addition)
+ -b         0-b (unary subtraction)
+a*b         a multiplied by b
+a/b         a divided by b (integer)
+a MOD b     remainder after a/b
+  NOT b     complement all b-bits
+a AND b     bit-by-bit AND of a and b
+a OR  b     bit-by-bit OR  of a and b
+a XOR b     bit-by-bit XOR of a and b
+a SHL b     shift a left b bits, end off, zero fill
+a SHR b     shift a right b bits, end off, zero fill
+
+
+Hierarcy of operations
+
+highest:  * / MOD SHL SHR
+          - +
+          NOT
+          AND
+          OR XOR
+
+
+
+Pseudo-ops
+
+ORG  const          Set program or data origin (Default=0)
+END  start          End program, optional address where excution begins
+
+EQU  const          Define symbol value (may not be changed)
+SET  const          Define symbol value (may be changed later)
+
+IF   const          Assemble block conditionally until ENDIF
+ENDIF               Terminate conditionala ssembly block
+
+DS   const          Define storage sace for later use
+DB byte[,byte...]   Define bytes as numeric or ASCII constants
+DW word[,word...]   Define words (two bytes)
+
+    const=constant  (true if bit 0 is 1, otherwise false)
+
+
+Error codes
+-----------
+
+D   Data error (element cannot be placed in data area)
+E   Expression error (ill-formed expression)
+L   Label error
+N   Not implemented
+O   Overflow (expression too complicated to compute)
+P   Phase error (label has different values on each pass)
+R   register error (specified value not compatible with op code)
+U   Undefined label (label does not exist)
+V   Vaue error (operand improper)
+
+Fatal errors
+------------
+
+NO SOURCE FILE PRESENT
+NO DIRECTORY SPACE
+SOURCE FILE NAME ERROR
+SOURCE FILE READ ERROR
+OUTPUT FILE WRITE ERROR
+CANNOT CLOSE FILE
+
+
+FILE TYPES
+==========
+
+ASC   ASCII text file, usually Basic source
+ASM   ASseMbly langaige file (source for ASM program)
+BAK   BAcKup copy file (created by editor)
+BAS   BASic source program file, usually tokenized
+COM   COMmand file (transient exeuctable program)
+DAT   DATa file
+DOC   DOCument file
+FOR   FORtran source program file
+INT   INTermediate Basic program file (executable)
+HEX   HEXadecimal format file (for LOAD program)
+LIB   Library file used by macro assembler
+PLI   PL/I source file
+PRN   PRiNt file (source and object produced by ASM)
+REL   RELocatable file
+SAV   System file (V2.x)
+SUB   SUBmit text file executed by SUBMIT program
+SYM   SID symbol file
+TEX   TEXt formatter source file
+XRF   Cross reference file
+$$$   Temporary file
+
+Filename - 8 characters maximum
+Filetype - 3 characters maximum
+
+Invalid filename and filetype characters
+        < > . , ; : = ? [ ]
+
+
+
+DDT COMMANDS
+============
+
+DDT
+DDT filename.HEX
+DDT filename.COM
+
+A sad               Assemble symbolic code; start at sad
+
+D                   Dump RAM to console from cad, 16 lines
+D sad               Dump RAM to console from sad, 16 lines
+D sad,ead           Dump RAM to console from sad thru ead
+
+F sad,ead,const     Fill RAM from sad thru ead with const
+
+G                   Start program exec. at saved PC
+G sad               Start program exec. at sad
+G sad,bp1           Start program exec. at sad and stop at bp1
+G sad,bp1,bp2       Start program exec. at sad and stop at bp1 or bp2
+G,bp1,bp2           Start program exec. at cad and stop at bp1 or bp2
+G0                  Jump to 0000H ==> exits DDT (equivalent to Ctrl-C)
+
+H a,b               Display hex a+b and a-b
+
+I filename          Set up FCB at 5CH for user code
+I filename.typ      Set up FCB at 5CH for R-command (HEX or COM file)
+
+L                   Disassemble RAM from cad, 12 lines
+L sad               Disassemble RAM from sad, 12 lines
+L sad,ead           Disassemble RAM from sad thru ead
+
+M sad,ead,nad       Move RAM block from sad thru ead to nad
+
+R                   Read file specified by I command to RAM
+R offset              at normal address + optional offset
+                    The R command requires a previos I command
+                    There is no W (write file) command, instead
+                    exit DDT (by G0 or Ctrl-C) and then use SAVE
+
+S sad               Examine and optionally alter RAM, byte by byte,
+                    starting at sad
+
+T                   Trace: execute 1 instruction  with register dump
+T n                 Trace: Execute n instructions with register dump
+
+U                   Untrace: same as T except that intermediate
+U n                 steps are not displayed
+
+X                   Examine register or flags, display format:
+                      CfZfMfEfIf A=bb B=dddd D=dddd H=dddd S=dddd P=dddd inst
+Xr                  Examine/change registers or flags
+                      C  Carry flag         (0/1)
+                      Z  Zero flag          (0/1)
+                      M  Sign flag          (0/1)
+                      E  Parity flag        (0/1)
+                      I  Aux Carry flag     (0/1)
+                      A  Accumulator        (0-FF)
+                      B  BC reg pair        (0-FFFF)
+                      D  DE reg pair        (0-FFFF)
+                      H  HL reg pair        (0-FFFF)
+                      S  Stack Pointer      (0-FFFF)
+                      P  Program Counter    (0-FFFF)
+
+
+    cad = current address
+    nad = new address
+    sad = start address
+    ead = end address
+
+    ? = error, can mean:
+          file cannot be opened
+          checksum error in HEX file
+          assembler(disassembler overlayed
+
+
+
+
+ED COMMANDS
+===========
+
+nA      Append n lines to buffer (n=0 - use haf of buffer)
+B       Move pointer to beginning of file
+-B      Move pointer to end of file
+nC      Move pointer forward n characters
+nD      Delete n characters forward
+E       End edit, close file, return to CP/M
+nFs     Find n'th occurence of string 's'
+H       End edit, move pointer to beginning of file
+I       Insert text at pointer until ^Z typed
+Is      Insert string at pointer
+nK      Kill n lines starting at pointer
+nL      Move pointer n lines
+nMx     Execute command string 'x' n times
+nNs     Global F-command  - until end of file
+O       Abort ED, start over with original file
+nP      List next n pages of 23 lines (n=0 - current page)
+Q       Quit without changing input file
+Rfn     Read fn.LIB into buffer at current pointer
+nSx^Zy  Substitute string 'y for next n forward occurrences of string 'x'
+nT      Type n lines
+U       Change lower case to upper case (next entry)
+V       Enable internal line number generation
+nW      Write n lines to output file, start at beginning of buffer
+nX      Write next n lines to file 'X$$$$$$$.LIB'
+nZ      Pause n/2 seconds (2 MHz)
+n       Move forward n lines
+<CR>    Move forward one line and type one line
+ -      Move backward
+n:x     Move to n line number and perform 'x' command
+:mx     Perform command 'x' from current line to line m
+n::mx   Move to n line number and perform command 'x' from 
+          current line to line m
+
+note:  "-" valid on all positioning and display commands
+       for backward movement (e.g. -nC)
+
+
+
+
+HOW TO OPEN UP A NEW USER AREA
+==============================
+
+Enter PIP wait for the * prompt.  Hit Return to go back to exit PIP.
+Now, enter the user area, say USER 1.  Type SAVE 28 PIP.COM and hit
+Return (SAVE 30 PIP.COM in CP/M 3).
+
+Now, PIP.COM is in your new user area, and you can copy any file
+into your area from area 0 by typing  PIP A:=<ufn>[G0] and Return.
+
+
+
+PATCHING THE CCP TO PERFORM ONE COMMAND AT EVERY WARM BOOT
+==========================================================
+
+The CCP stars with the instructions:
+
+        JMP     CCPSTART        ; Start the console processor
+        JMP     CCPCLEAR        ; Clear the initial command
+        DB      127             ; Maximum command length
+CL:     DB      0               ; Current command length
+        DB      '        '      ; 8 spaces
+        DB      '        '      ; 8 more spaces
+        DB      'COPYRIGHT...   ; Copyright notice
+
+Starting at CL, patch in the command, e.g.:
+
+CL:     DB      3               ; Current command length
+        DB      'DIR',0         ; DIR command, NUL terminated
+        DB      '    '          ; 4 spaces
+        DB      '        '      ; 8 more spaces
+        DB      'COPYRIGHT...   ; Copyright notice
+
+and add this to the CCP image on the system tracks of your disk
+(using MOVCPM, DDT and SYSTEM on most CP/M systems, or DDT amd
+CPM56K.COM or CPM60K.COM on Apple CP/M).  Now, after every warm boot
+the CCP will execute this command (in this example a 'DIR' command)
+
+
+
+BDOS FUNCTION CALLS
+===================
+
+
+
+Function no                         Value passed to BDOS    Value returned in
+  in C reg                          in DE (or E) regs       A or HL regs
+
+  Dec  Hex
+
+   0    00    System reset              --                      --
+   1    01    Console read              --                  A = char
+   2    02    Console write         E = char                    --
+   3    03    Reader read               --                  A = char
+   4    04    Punch write           E = char                    --
+   5    05    List write            E = char                    --
+   6    06    Direct console I/O    E = FFh (input)         A = char
+                    (V2.x)          E = char (output)           --
+   7    07    Get IOBYTE                --                  A = IOBYTE
+   8    08    Set IOBYTE            E = IOBYTE                  --
+   9    09    Print string          DE = string addr            --
+                string terminated by $, tabs are expanded as in func 2
+  10    0A    Read console buffer   DE = buffer addr        A = #chars in buffer
+                buffer: 1st byte = bufsize, 2nd byte = chars input
+  11    0B    Get console status        --               A = 00(not rdy)/FF(rdy)
+  12    0C    Lift head (V1.x)          --                      --
+              Get version (V2.x)        --                  HL = version no
+                                                             H: 0=CP/M, 1=MP/M
+                                                             L: 0=v1.4
+                                                                20H-22H=v2.x
+  13    0D    Reset disk**              --                      --
+  14    0E    Select disk           E = drive no                --
+                                      0=A, 1=B, ...0FH=P
+  15    0F    Open file             DE = FCB addr           A = dir code
+  16    10    Close file            DE = FCB addr           A = dir code
+  17    11    Search for first      DE = FCB addr           A = dir code
+  18    12    Search for next           --                  A = dir code
+  19    13    Delete file           DE = FCB addr           A = dir code
+  20    14    Read sequential       DE = FCB addr           A = ret code
+  21    15    Write sequential      DE = FCB addr           A = ret code
+  22    16    Create file           DE = FCB addr           A = dir code
+  23    17    Rename file           DE = old FCB addr       A = dir code
+  24    18    Get login vector          -- (V1.4)           HL = drive code
+  25    19    Get disk no               --                  A = curr disk no
+                                                             (0-15 for A-P)
+  26    1A    Set DMA addr          DE = DMA addr               --
+  27    1B    Get alloc vector          --                  HL = ava
+  28    1C    Write protect disk        --                      --
+  29    1D    Get R/O vector            --                  HL = R/O vect
+  30    1E    Set file attrib       DE = FCB addr           A = dir code
+  31    1F    Get addr disk params      --                  HL = dpba
+  32    20    Set user code         E = user code               --
+  32    20    Get user code         E = FFh                 A = curr user code
+  33    21    Read random           DE = ext. FCB addr      A = ret code ***
+  34    22    Write random          DE = ext. FCB addr      A = ret code ***
+  35    23    Compute file size     DE = ext. FCB addr      A = ret code
+  36    24    Set random record     DE = ext. FCB addr      A = ret code
+  37    25    Reset drive           DE = drive vector       A = 0
+  38    26    (unused)                  --                      --
+  39    27    (unused)                  --                      --
+  40    28    Write random          DE = FCB addr           A = ret code ***
+                with zero fill
+
+
+dir code:  directory code:
+           0FFH=failed (e.g. file not found, directory full)
+           0,1,2,3 = success: offset into current DMA buffer, which
+           contains a directory sector, where the FCB can be found
+
+ret code:  return code -- 0=success, non-zero=failed
+
+
+  *  V1.4 none
+ ** V1.4 initializes system and selects A: drive
+*** ret codes:
+    00 - no error
+    01 - reading unwritten data
+    03 - cannot close current extent
+    04 - seek to unwritten extent
+    05 - directory overflow (write only)
+    06 - seek past physical end of disk
+
+char = ASCII character
+addr = address
+dir  = directory code
+cdn  = current drive number (A=0, B=1, etc)
+dpba = disk parameter block address in CBIOS
+
+
+Function 9:  string is terminated with '$'
+
+Function 10:  Console buffer: 1st byte = max # chars in buffer (input)
+                              2nd byte = actual # chars in buffer (output)
+                              remaining bytes = buffer
+
+Function 12: CP/M version number: H=00 CP/M, H=01 MP/M
+                                  L=00 ver prior to 2.0
+                                  L=20,21,22... subsequent versions
+
+Function 13: Resets DMS address to BOOT+0080h
+
+Function 23: renames file in first 16 bytes of FCB to name in second
+             16 bytes in FCB
+
+Function 24: Returns a 16-bit value in HL - a 16-bit bit map where
+             the lowest bit represents A: and the highest bit P:
+             If the bit is set, that drive is present in the CP/M system
+
+Function 29: Returns a similar bit map as func 24, except that a set
+             bit marks a drive which is Read/Only.
+
+Function 33,34: the rn (Random Record No) must be set in the FCB prior to call
+
+Function 35: fills in the file size in rn.  If followed by a random write,
+             the file will be extended in length.  Not that the "file size"
+             merely is the last record # - "hole" in sparse files are not
+             accounted for
+
+Function 36: same as function 35 except that the current random record
+             position is stored in rn in FCB.
+
+Function 37: this function is buggy - avoid using it
+
+
+
+
+
+IOBYTE (0003H)
+==============
+
+     Device         LST:    PUN:    RDR:    CON:
+Bit position        7 6     5 4     3 2     1 0
+
+Dec   Binary
+
+ 0      00          TTY:    TTY:    TTY:    TTY:
+ 1      01          CRT:    PTP:    PTR:    CRT:
+ 2      02          LPT:    UP1:    UR1:    BAT:
+ 3      03          UL1:    UP2:    UR2:    UC1:
+
+TTY:    TeleTYpe
+CRT:    Cathode Ray Tube type terminal
+BAT:    BATch process (RDR=inut, LST=output)
+UC1:    User defined Console
+LPT:    Line Printer
+UL1:    User defined List device
+PTR:    Paper Tape Reader
+UR1:    User defined Reader device 1
+UR2:    User defined Reader device 2
+PTP:    Paper Tape Punch
+UP1:    User defined Punch device 1
+UP2:    User defined Punch device 2
+
+
+
+LOGIN BYTE (0004H)
+==================
+
+low  nibble  =  current drive (0=A, 1=B, etc)
+high nibble  =  current user (V2.x only)
+
+
+
+BIOS ENTRY POINTS
+=================
+
+ Hex     Vector    Function                    Value       Value
+ addr    name                                  passed      returned
+
+4A00H+b  BOOT      Cold start entry point        -         C=0
+4A03H+b  WBOOT     Warm start entry point        -         C=drv no
+4A06H+b  CONST     Check for console ready       -         A=const
+4A09H+b  CONIN     Read from console             -         A=char
+4A0CH+b  CONOUT    Write to console            C=char        -
+4A0FH+b  LIST      Write to list device        C=char        -
+4A12H+b  PUNCH     Write to punch device       C=char        -
+4A15H+b  READER    Read from reader device       -         A=char
+4A18H+b  HOME      Move head to track 0          -           -
+4A1BH+b  SELDSK    Select drive                C=drv no    HL=dph*, HL=0 for error
+4A1EH+b  SETTRK    Set track number            BC=trk no     -
+4A21H+b  SETSEC    Set sector number           BC=sec no     -
+4A24H+b  SETDMA    Set DMA address             BC=DMA        -
+4A27H+b  READ      Read selected sector          -         A=dskst
+4A2AH+b  WRITE     Write selected sector         -         A=dskst
+4A2DH+b* LOSTST    Get list status               -         A=lstst
+4A30H+b* SECTRAN   Sector translate            BC=lsecno   HL=physec
+                                            DE=smap
+
+BOOT: gets control after the cold start loader
+      Basic system initalization
+        Send sign-on message
+        Set IOBYTE
+        Set the WBOOT parameters
+        Jump to CCP at its entry point (at its first address 3400H+b)
+
+WBOOT: gets control after Ctrl-C or JP 0000 or CPU reset
+        Reload CP/M CCP and BDOS
+        Setup JMP WBOOT at 0000H-0002H (JMP 4A03H+b)
+        Set inital value of IOBYTE at 0003H
+        Set 0004H hi nibble = current user no, lo nibble = current drive no
+        Setup JMP BDOS at 0005H-0007H (JMP 3C06H+b)
+        Set C=current drive, then branch to CCP at 3400H+b
+
+
+const  = console status:  00=idle, FF=data avail
+
+dph = disk parameter/header address
+
+dskst = disk status:  00=OK, 01=error
+
+lstst = list status:  00=busy, FF=ready
+
+lsecno = logical sector number       \
+physec = physical sector number      | (standard skew factor = 6)
+smap = sector interlace map address  /
+
+char = 7-bit ASCII char with parity bit (=hi bit) zero
+
+drv no = drive number: 0=A, 1=B, etc, max 15=P
+trk no = track number (0-76 std CP/M floppy, 0-65535 non-standard)
+sec no = sector number (1-25 std CP/M floppy, 1-65535 non-standard)
+DMA = DMA address (default 0080H)
+
+*  = not used in V1.4
+** = contents of location 0002Hz
+
+
+
+FILE CONTROL BLOCK (FCB)
+========================
+
+Byte      Function
+offset
+
+ 0        dr     Drive code (0=current, 1=A, 2=B, ...., 16=P)
+ 1-8      f1-f8  File name, hi but = 0
+ 9-11     t1-t3  File type + status (hi bits)
+                   t1: 1=R/O  t2: 1=SYS  t3:  1=archived
+ 12       ex     Current extent number
+ 13       s1     reserved   (V1.4: not used)
+ 14       s2     =0 on BDOS call to Open/Make/Search  (v1.4: always 0)
+ 16       rc     extent record count: 0-127
+ 16-31    d0-dn  Disk map
+ 32       cr     Current record for R/W
+ 33-35    rn     Random record number, 0-65535, overflow into 3rd byte
+
+
+MEMORY ALLOCATION
+=================
+
+V1.4:  b = memsize-16K
+0000   - 00FF     System scratch area
+0100   - 28FF+b   TPA (Transient Program Area) - COM file area
+2900+b - 30FF+b   CCP - Console COmmand Processor
+3100+b - 3DFF+b   BDOS
+3E00+b - 3FFF+b   CBIOS
+
+V2.2:  b = memsize-20K
+0000   - 00FF     System scratch area
+0100   - 33FF+b   TPA (Transient Program Area) - COM file area
+3400+b - 3BFF+b   CCP - Console COmmand Processor
+3C00+b - 49FF+b   BDOS
+4A00+b - 4FFF+b   CBIOS
+
+
+System scratch area, "page zero":
+
+00 - 02     Jump to BIOS warm start entry point
+03          IOBYTE
+04          Login byte: Login drive number, current user number
+05 - 07     Jump to BDOS
+08 - 37     Reserved; interrupt vectors & future use
+38 - 3A     RST7 - used by DDT and SID programs, contains JMP into DDT/SID
+3B - 3F     Reserved for interrupt vector
+40 - 4F     Scratch area for CBIOS; unused by distribution version of CP/M
+50 - 5B     Not used, reserved
+5C - 7C     Default FCB (File Control Block) area
+7D - 7F     Optional Default Random Record Position (V2.x)
+80 - FF     Default DMA buffer area (128 bytes) for disk I/O
+            Also filled with CCP commandline at the start of a program
+
+
+
+CP/M STANDARD DISK FORMAT (8" SSSD)
+===================================
+
+Media:  8" soft-sectored floppy-disk single density (IBM 3740 standard)
+Tracks: 77, numbered 0 thru 76
+Sectors/track: 26 (numbered 1 thru 26)
+Bytes/sector: 128 data bytes (one logical record)
+Storage/disk: 256256 bytes (77*26*128)
+File size: any number of sectors from zero to capacity of disk
+Extent: 1 kBytes - 8 sectors (smallest file space allocated)
+Skew:  6 sectors standard (space between consecutive physical sectors
+         on track):
+       1-7-13-19-25-5-11-17-23-3-9-15-21-2-8-14-20-26-6-12-18-24-4-10-16-22
+
+System: Track 0 & 1 (optional)
+        Track 0 sector 1: boot loader
+        Track 0 sectors 2-26:  CCP & BDOS
+        Track 1 sectors 1-17:  CCP & BDOS
+        Track 1 sectors 18-26: CBIOS
+
+Directory: Track 2:
+            16 sectors typical
+            32 bytes/entry
+            64 entries typical
+            extents 0 and 1
+
+User file area: Remaining sectors on Track 2 and 3 to 76, extents 2
+and above
+
+A Standard CP/M 8" SSSD floppy contains:
+
+Track#  Sector# Page#   Mem address     CP/M module name
+
+  00      01            (boot addr)     Cold start loader
+
+  00      02     00      3400H+b            CCP
+  00      03      .      3480H+b            CCP
+  00      04     01      3500H+b            CCP
+  00      05      .      3580H+b            CCP
+  00      06     02      3600H+b            CCP
+  00      07      .      3680H+b            CCP
+  00      08     03      3700H+b            CCP
+  00      09      .      3780H+b            CCP
+  00      10     04      3800H+b            CCP
+  00      11      .      3880H+b            CCP
+  00      12     05      3900H+b            CCP
+  00      13      .      3980H+b            CCP
+  00      14     06      3A00H+b            CCP
+  00      15      .      3A80H+b            CCP
+  00      16     07      3B00H+b            CCP
+  00      17      .      3B80H+b            CCP
+
+  00      18     08      3C00H+b            BDOS
+  00      19      .      3C80H+b            BDOS
+  00      20     09      3D00H+b            BDOS
+  00      21      .      3D80H+b            BDOS
+  00      22     10      3E00H+b            BDOS
+  00      23      .      3E80H+b            BDOS
+  00      24     11      3F00H+b            BDOS
+  00      25      .      3F80H+b            BDOS
+  00      26     12      4000H+b            BDOS
+  01      01      .      4080H+b            BDOS
+  01      02     13      4100H+b            BDOS
+  01      03      .      4180H+b            BDOS
+  01      04     14      4200H+b            BDOS
+  01      05      .      4280H+b            BDOS
+  01      06     15      4300H+b            BDOS
+  01      07      .      4380H+b            BDOS
+  01      08     16      4400H+b            BDOS
+  01      09      .      4480H+b            BDOS
+  01      10     17      4500H+b            BDOS
+  01      11      .      4580H+b            BDOS
+  01      12     18      4600H+b            BDOS
+  01      13      .      4680H+b            BDOS
+  01      14     19      4700H+b            BDOS
+  01      15      .      4780H+b            BDOS
+  01      16     20      4800H+b            BDOS
+  01      17      .      4880H+b            BDOS
+  01      18     21      4900H+b            BDOS
+  01      19      .      4980H+b            BDOS
+
+  01      20     22      4A00H+b            BIOS
+  01      21      .      4A80H+b            BIOS
+  01      22     23      4B00H+b            BIOS
+  01      23      .      4B80H+b            BIOS
+  01      24     24      4C00H+b            BIOS
+  01      25      .      4C80H+b            BIOS
+  01      26     25      4D00H+b            BIOS
+
+  02    01-08                          Directory block 1
+  02    09-16                          Directory block 2
+  02    17-26                               Data
+03-76   01-26                               Data
+
+
+
+
+DISK PARAMETER TABLES
+=====================
+
+Each disk drive has an associated 16-byte (8-word) DPH - Disk Parameter
+Header, containing:
+
+Offset      Contents
+------      --------
+ 00H         XLT        Addr of logical-to-physical sector translation vector
+                        or 0000H of no translation (i.e. they are the same)
+                        Disk drives with identical sector skew factors
+                        share the same table
+ 02H         0000H      \
+ 04H         0000H      |  Scratchpad values for use within BDOS
+ 06H         0000H      /   (initial value unimportant)
+ 08H         DIRBUF     Addr of scratchpad 128-byte directory buffer.
+                        All DPH's share the same DIRBUF.
+ 0AH         DPB        Addr of Disk Parameter Block for this drive
+ 0CH         CSV        Addr of scratchpad area used for software check for
+                        changed disks. Each DPH has its own CSV.
+ 0EH         ALV        Addr of scratchpad area used for disk storage
+                        allocation information. Each DPH has its own ALV.
+
+If the system has n disk drives, the n DPH's are arranged one after
+another, from drive 0 to drive n-1, starting at DPBASE:
+
+DPBASE:
+    +--------+------+------+------+--------+--------+--------+--------+
+ 00 | XLT 00 | 0000 | 0000 | 0000 | DIRBUF | DPB 00 | CSV 00 | ALV 00 |
+    +--------+------+------+------+--------+--------+--------+--------+
+ 01 | XLT 01 | 0000 | 0000 | 0000 | DIRBUF | DPB 01 | CSV 01 | ALV 01 |
+    +--------+------+------+------+--------+--------+--------+--------+
+ ......................................................................
+    +--------+------+------+------+--------+--------+--------+--------+
+n-1 | XLTn-1 | 0000 | 0000 | 0000 | DIRBUF | DPBn-1 | CSVn-1 | ALVn-1 |
+    +--------+------+------+------+--------+--------+--------+--------+
+
+
+The SELDSK subroutine is responsible for returning the base address
+of the DPH for the selected drive, or 0000H if there is no such drive:
+
+NDISKS      EQU     4           ; Number of disk drives
+.........
+SELDSK:     ; Select disk given by BC
+            LXI     H,0000H     ; Error return
+            MOV     A,C         ; Drive OK?
+            CPI     NDISK       ; Carry if so
+            RNC                 ; Return if error
+            ; No error, continue
+            MOV     L,C         ; Low (disk)
+            MOV     H,B         ; Hi (disk)
+            DAD     H           ; *2
+            DAD     H           ; *4
+            DAD     H           ; *8
+            DAD     H           ; *16
+            LXI     D,DPBASE    ; First DPH
+            DAD     D           ; DPH(disk)
+            RET
+
+The translation vectors (XLT 00 thru XLTn-1) are located elswehere in
+the BIOS and simply correspond one-for-one with the logical sector number
+zero through the sector count.
+
+The Disk Parameter Block (DPB) for each drive type contains:
+
+Offset      Contents
+------      --------
+  00H         SPT 16b       Total number of sectors per track
+  02H         BSH  8b       Data allocation block shift factor, determined
+                            by the data block allocation size
+  03H         BLM  8b       Data allocation block mask (2[BSH-1])
+  04H         EXM  8b       Extent mask, determined by data block allocation
+                            size and number of disk blocks
+  05H         DSM 16b       Total storage capacity of disk drive
+  07H         DRM 16b       Total number of directory entries minus one
+  09H         AL0  8b       Determines reserved directory blocks
+  0AH         AL1  8b       Determines reserved directory blocks
+  0BH         CKS 16b       Size of directory check vector
+  0DH         OFF 16b       No of reserved tracks at beginning of logical disk
+  0FH       (end of table)
+
+BSH and BLM are determined by BLS, the block size or data allocation size
+
+    BLS       BSH     BLM           EXM
+   -----      ---     ---     DSM<256   DSM>=256
+    1024       3       7         0        n/a
+    2048       4      15         1         0
+    4096       5      31         3         1
+    8192       6      63         7         3
+   16384       7     127        15         7
+
+i.e.  BLS = 2**n  where n = 10 to 14
+      BSH = n-7
+      BLM = 2**BSH - 1
+      EXM = 2**(BHS-2) - 1   if DSM<256
+      EXM = 2**(BHS-3) - 1   if DSM>=256
+
+DSM = maximum data block number supported by this particular drive, measured
+in BLS (BLock Size) units, or simply "number of allocation blocks on drive".
+Blocks are counted from 0 to DSM, and thus BLS*(DSM+1) = the number of bytes
+on the drive (excluding the system tracks).  If DSM<256, the disk map in
+the directory entry of the file will be 1 byte/block.  If DSM>=256 it will
+be 2 bytes/block.
+
+DRM = total number of directory entries minus one.
+
+AL0/AL1 = the directory allocation vector.  Consider it a bit map of
+bits 16 bits, bit 0-15, where 0=hi bit of AL0, 7=lo bit of AL0, 8=hi
+bit of AL1, 15=lo bit of AL1.  Bits are assigned starting at bit 0 up
+until bit 15.  Suppose nbits is the number of bits seet to 1:
+
+    BLS     Directory entries
+    ---     -----------------
+    1024       32  * nbits
+    2048       64  * nbits
+    4096      128  * nbits
+    8192      256  * nbits
+   16384      512  * nbits
+
+Example: if DRM=127 (128 directory entries) and BLS=1024 bytes, there
+are 32 directory entries per block, requiring 4 reserved blocks.  Thus
+the 4 hi bits if AL0 are set, and AL0=0FH, AL1=00H
+
+CKS = size of directory check vector
+If drive media is removable, then CKS = (DRM+1)/4
+If drive media is fixed, then CKS=0 (no dir records checked)
+
+OFF = number of reserved tracks.  This value is automatically added
+whenever SETTRK is called.  It can be used to skip reserved system
+tracks, or for partitioning a large disk into smaller segmented
+sections.
+
+Several DPH's can address the same DPB if the drive characteristics
+are identical.  The DPB can be dynamically changed when a new drive
+is addressed by simply changing the pointer in the DPH since the BDOS
+copies the DPB values to a local area whenever the SELDKS function
+is invoked.
+
+The size of the CSV (scratchpad area to check changed disks) is CKS
+bytes.  If CKS=(DRM+1)/4, this area must be reserved. If CKS=0, no
+storage is reserved.
+
+The size of the ALV (scratchpad area for disk storage allocation info)
+is (DSM/8)+1 bytes where DSM is the disk size in allocation blocks.
+
+
+DISK PARAMETER TABLES FOR SPECIFIC DISKS
+========================================
+
+Standard CP/M 8" SSSD disk
+--------------------------
+
+    128 bytes/sector
+    26 sectors/track
+    77 tracks - 2 system tracks
+    75 used tracks ==> 243.75 user KBytes/disk
+    1024 bytes/block ==> 243 blocks/disk ==> DSM=242
+    Directory in 2 first blocks ==> 64 directory entries ==> 241.75 KBytes data
+
+Sector skew table (1 byte/sector):
+    1, 7, 13, 19, 25, 5, 11, 17, 23, 3, 9, 15, 21,
+    2, 8, 14, 20, 26, 6, 12, 18, 24, 4, 10, 16, 22
+
+DPB
+
+SPT 16b     26    Sectors per track
+BSH  8b      3    Block shift factor
+BLM  8b      7    Block shift mask
+EXM  8b      0    Extent mask - null
+DSM 16b    242    Disk size - 1 (in blocks)
+DRM 16b     63    directory mask = dir entries - 1
+AL0  8b   0C0H    Dir Alloc 0
+AL1  8b      0    Dir Alloc 1
+CKS 16b     16    Directory check vector size
+OFF 16b      2    Track offset: 2 system tracks
+
+Dirbuf 128 bytes
+ALV     31 bytes
+CSV     16 bytes
+
+Block size 1024 bytes ==> BSH=3, BLM=7
+
+DSM = 242 blocks
+
+Disk size:  243.75 KBytes excluding system tracks
+            250.25 KBytes including system tracks
+
+
+
+Apple CP/M 5.25" disks
+----------------------
+
+Physical format:      A            B                C
+
+                    ---- Standard -----     ----- Special ------
+                    13-sect     16-sect     80-trk/16-sec/2-side
+
+Bytes/sector          256         256               256
+Sectors/track          13          16                16
+Tracks                 35          35                80
+Heads                   1           1                 2
+
+Sector skew table (1 byte/sector):  no sector skew in CP/M BIOS
+13-sector disks: hard sector skew
+16-sector disks: soft sector skew in 6502 code (CP/M RWTS)
+
+DPB              A       B       C
+
+SPT 16b         26      32      32      Sectors per track
+BSH  8b          3       3       4      Block shift factor
+BLM  8b          7       7      15      Block shift mask
+EXM  8b          0       0       0      Extent mask
+DSM 16b        103     127     313      Disk size - 1 (in blocks)
+DRM 16b         47      63     255      Directory mask = dir entries - 1
+AL0  8b       0C0H    0C0H    0F0H      Dir Alloc 0
+AL1  8b          0       0       0      Dir Alloc 1
+CKS 16b         12      16      64      Directory check vector size
+OFF 16b          3       3       3      Track offset: 3 system tracks
+
+Block size    1024    1024    2048
+Dir entries     48      64     256
+Dir blocks       2       2       4
+DSM+1          104     128     314 blocks
+Disk size      104     128     628 KBytes (excluding system tracks)
+               113.75  140     640 KBytes (including system tracks)
+
+Dirbuf         128     128     128 bytes
+ALV             14      17      40 bytes
+CSV             12      16      64 bytes
+
+===========================================================================
+
+
+Apple CP/M Reference
+====================
+
+Microsoft SoftCard
+==================
+
+Apple peripheral cards: What goes where
+
+Card type   Card name
+
+    1       Apple Disk II controller
+
+   *2       Apple Communications Card
+            CCS 7710A Serial Interface
+
+    3       Apple Super Serial Card
+            Apple Silentype Printer
+            Videx Videoterm 24x80 Video Terminal Card
+            M&R Enterprises Sup-R-Term 24x80 Video Terminal Card
+
+    4       Apple Parallell Printer Card
+
+*The CCS 7710A card is the preferred card of type 2 as it supports
+hardware handshaking and variable baud rates from 110 to 19200 baud.
+The Apple Communications Card requires hardware modification for use
+with baud rates other than 110 or 300 baud.
+
+As a general rule, any card directly compatible with Apple Pascal
+without requiring software modifications will probably be directly
+compatible with Apple CP/M as well.  Other peripheral cards may be
+used if software supplied by the card manufacturer is bound to your
+Apple CP/M system using the CONFIGIO utility program.
+
+Slot    Valid card          Purpose
+        types
+
+ 0      Not used for I/O    Applesoft or Integer Basic ROM card
+                            Language card (used by Apple CP/M)
+
+ 1        2,3,4             Line printer interface (CP/M LST: device)
+
+ 2        2,3,4             General purpose I/O (CP/M PUN: and RDR: revices)
+
+ 3        2,3,4             Console output device (CP/M CRT: or TTY: device)
+                            The normal Apple 24x40 screen used if no card here
+
+ 4          1               Disk controller for drives E: and F:
+                            Z80 Softcard may be installed here if no disk
+                            controller here.
+
+ 5          1               Disk controller dir drives C: and D:
+
+ 6          1               Disk controller dir drives A: and B:
+                            Must be present.
+
+ 7       any type           No assigned purpose. The Z-80 SoftCard may be
+                            installed here  (note about european Apple II's
+                            in PAL mode: only a PAL color card may be inserted
+                            here!)
+
+If you do have an external terminal interface with a terminal interface card
+in slot 3, it is recommended to remove it and to use the normal Apple screen
+and keyboard until you have configured Apple CP/M for use with your terminal
+with the CONFIGIO utility.
+
+
+Apple Disk Drives
+=================
+
+            CP/M name    Slot #   Drive #
+
+1st drive:      A:          6       1
+2nd drive:      B:          6       2
+3rd drive:      C:          5       1
+4th drive:      D:          5       2
+5th drive:      E:          4       1
+6th drive:      F:          4       2
+
+Note: SoftCard CP/M up to 2.20B allows up to 6 drives, while versions
+2.23, 2.25 and 2.26 allows only up to 4 drives.  Generic CP/M allows
+up to 16 drives.
+
+
+Installing the Softcard
+=======================
+
+Make sure the four small DIP switches all are swithed to the OFF position.
+This is the standard operating position for Apple CP/M.
+
+Turn off your Apple II, insert the SoftCard into any unused slot except slot 0.
+The standard slot for the SoftCard is slot 4.  If slot 4 is occupied by a
+disk controller card, choose some other slot.
+
+Insert the other peripheral cards according to the list above which you
+want to use.
+
+Turn on your Apple II.
+
+
+Apple CP/M specific programs
+============================
+
+FORMAT  <drive>     
+    e.g.  FORMAT A:    Format disk in drive A:
+    The Apple CP/M disk formatter
+    (Apple CP/M ver 2.23 and later has no FORMAT program, instead
+     disk formatting is integrated into the COPY program)
+
+COPY  <dest drive>=<source drive>[/S]
+    e.g.  COPY B:=A:    Copy disk in A: to disk in B:
+          COPY A:=A:    Single-drive copy
+          COPY A:=A:/S  Copy only the CP/M system tracks
+          COPY          Prompts user for source and dest. drives
+    The Apple CP/M disk copy program.  Copies the entire disk, overwriting
+    the whole destination disk.  Can copy on a single drive too (PIP
+    requires two drives to copy from one disk to another)
+
+CPM56 <drive>
+    e.g.  CPM56 A:
+    Updates the CP/M system from 44K CP/M to 56K CP/M.  56K CP/M requires
+    a Language Card to work.  CPM56 is preset only on the 16-sector Apple
+    CP/M disk.
+
+CONFIGIO
+    An MBASIC program used to:
+    1. Redefine keyboard characters
+    2. Load User I/O Software
+    3. Configure Apple CP/M for use with an External Terminal
+
+APDOS
+    Transfers data (files) from your Apple DOS disks to CP/M disks.
+    May be used to transfer text and binary files only.  Does not
+    transfer files from CP/M disks to Apple DOS disks -- use the
+    Apple DOS utility CPMXFER for that.
+
+DOWNLOAD
+    DOWNLOAD and UPLOAD enable the user to transfer CP/M files from
+    another CP/M machine to the Apple by means of an RS-232 serial
+    data link.  UPLOAD is not included on either of the Apple CP/M
+    disks but should be typed in and assembled on the other CP/M
+    machine.  Using these programs requires a working knowledge of
+    8080 assembly language programming.
+
+RW13
+    Allows 16-sector APple CP/M to access files on a 13-sector Apple
+    CP/M disk.  Requires at least two Disk II drives to work.
+    RW13 is preset only on the 16-sector Apple CP/M disk.
+
+MBASIC/GBASIC  [/filename] [/F:<no_files>] [/M:<max_mem>] [/S:<max_recsize>]
+    /filename  Loads and executes a basic prgoram files (.BAS default ext)
+    /F:<no_files>    Max number of concurrently open files (default=3)
+                     Each file requires 166+128 bytes extra
+    /M:<max_mem>     Highest mem location used by MBASIC (default all TPA)
+    /S:<max_recsize> Max record size allowed by random files (default 128)
+    The <no_files> and <max_mem> may be given as <decimal>, &O<octal>
+    or &H<hexadecimal>
+    These are Microsofts MBASIC interpreter, adapted for Apple CP/M.
+    It comes in two flavows: GBASIC supports Apple hires graphics while
+    MBASIC does not.  Both basic's support Apple's lo-res graphics plus
+    a few other Apple specific things.  GBASIC is preset only on the
+    16-sector Apple CP/M disk.
+
+
+Typing at the Apple CP/M Keyboard
+=================================
+
+<--     Backspaces one character, deleting the char under the cursor
+Ctrl-H
+
+Ctrl-X  Backsapces to the beginning of the line, deleting the line
+
+Ctrl-R  Retypes the current line
+
+Ctrl-J  Terminates input - same as RETURN key
+
+Ctrl-E  Physical end-of-line. Cursor moved to the beginning of next
+        line, but line is not terminated until RETURN is typed.
+
+RUBOUT  Deletes and "echoes" (reprints) the last character typed.
+        Also referred to as DEL or DELETE (ASCII 7Fh).  Type Ctrl-@
+        to get RUBOUT on the Apple keyboard
+
+A few characters normally unavailable on the Apple's keyboard have been
+assigned to certain control characters, making them available:
+
+    Type:       To get:
+
+    Ctrl-K      [
+    Ctrl-@      RUBOUT
+    Ctrl-B      \
+    Ctrl-U      TAB     (Ctrl-I)
+
+These control characters can be redefined with the CONFIGIO program
+
+Output Control
+==============
+
+Ctrl-S  Temporarily stops character output to TTY:  Output is resumed
+        when any character is typed
+
+Cltr-P  Sends all character output to LPT: as well as to TTY:
+        This "printer echo" mode remains in effect until another Ctrl-P
+        is typed.
+
+CP/M Warm Boot: Ctrl-C
+======================
+
+When Ctrl-C is typed as the first character on a line, CP/M performs a
+"warm boot", causing CP/M to be reloaded from disk to insure that it is
+in working order.  You should ALWAYS type Ctrl-C whenever you change
+disks.
+
+Hitting the RESET Key
+=====================
+
+On a system having the Autostart ROM hitting the RESET key while in
+CP/M will cause CP/M to warm boot, returning to CP/M.  Hitting the
+RESET key while in MBASIC/GBASIC will result in a "Reset error",
+which can be trapped using "ON ERROR GOTO".
+
+On a system having the older Monitor ROM, hitting the REST key will
+land you in the Apple Monitor.  You can recover by typing Ctrl-Y RETURN,
+after which the behaviour will be the same as for the Autostart ROM.
+
+Changing CP/M Disks
+===================
+
+Unlike Apple DOS you cannot indiscriminately change disks in drives
+with CP/M.  When you change disks, you must let CP/M know that you
+have done so, because certain disk directory information is stored in
+memory at all times and used to allocate space on the disk.  When you
+cahnge disks, this information must be replaced by the corresponding
+information for the new disk.
+
+To let CP/M know you have changed disks, type Ctrl-C to execute a CP/M
+"warm boot".  Do so AFTER you have changed the disks.  You should get
+used to typing Ctrl-C often.
+
+If you don't type Ctrl-C after having changed disks, and a WRITE is
+attempted to the changed disk, CP/M will display:
+
+    BDOS ERR ON x:Disk R/O      (where x: is a disk drive A:-F:)
+
+(R/O means Read Only).  When you receive this message, hit RETURN.
+This will perform a CP/M warm boot and return you to CP/M, terminating
+any application you may have been running.
+
+The above error will apply only to changed disks which are to be WRITTEN.
+No error will result if you attempt to READ from the changed disk without
+having typed Ctrl-C first.
+
+
+
+6502/Z-80 Address Translation
+=============================
+
+The SoftCard performs address translation from the Z-80 to the Apple II
+address bus.  Below Z-80 addresses are written with a trailing 'H' while
+6502 addresses are written with a leading '$':
+
+ Z-80 addr       6502 addr
+
+ 000H-00FFH     $1000-$1FFF     Z-80 address zero
+ 100H-10FFH     $2000-$2FFF
+ 200H-20FFH     $3000-$3FFF
+ 300H-30FFH     $4000-$4FFF
+ 400H-40FFH     $5000-$5FFF
+ 500H-50FFH     $6000-$6FFF
+ 600H-60FFH     $7000-$7FFF
+ 700H-70FFH     $8000-$8FFF
+ 800H-80FFH     $9000-$9FFF
+ 900H-90FFH     $A000-$AFFF
+0A00H-0A0FFH    $B000-$BFFF
+0B00H-0B0FFH    $D000-$DFFF
+0C00H-0C0FFH    $E000-$EFFF
+0D00H-0D0FFH    $F000-$FFFF     6502 RESET, NMI, BREAK vectors
+0E00H-0E0FFH    $C000-$CFFF     6502 memory mapped I/O
+0F00H-0F0FFH    $0000-$0FFF     6502 zero page, stack, Apple screen, CP/M RWTS
+
+Apple II CP/M Memory Usage
+==========================
+
+6502 address    Z-80 address
+
+ $800-$FFF      0F800H-0FFFFH   Apple CP/M disk drivers and buffers ("RWTS")
+ $400-$7FFF     0F400H-0F7FFH   Apple screen memory
+ $200-$3FF      0F200H-0F3FFH   I/O config block, device drivers
+ $000-$1FF      0F000H-0F1FFH   Reserved area:6502  page zero and 6502 stack
+
+$C000-$CFFF     0E000H-0EFFFH   Apple memory mapped I/O
+$FFFA-$FFFF     0DFFAH-0DFFFH   6502 RESET, NMI and BREAK vectors
+
+$D400-$FFF9     0C400H-0DFF9H   56K Langauge Card CP/M (if Lang. Card installed)
+$D000-$D3FF     0C000H-0C3FFH   Top 1K of free RAM with 56K CP/M
+
+$A400-$BFFF      9400H-0AFFFH   44K CP/M (free memory with 56K CP/M
+$1100-$A3FF      0100H-93FFH    Free RAM
+$1000-$10FF      0000H-00FFH    CP/M page zero
+
+
+Interrupt handling
+==================
+
+Because of the way the 6502 is "put to sleep" by the Z-80 SoftCard using the
+DMA line on the Apple bus, ALL interrupt processing must be handled by the
+6502.  AN interrupt can occur at two times: while in Z-80 mode and while in
+6502 mode:
+
+Handling the interrupt in 6502 mode: handle the interrupt in the usual way:
+simply end the interrupt processing routine with an RTI instruction.
+
+Handling the interrupt in Z-80 mode: both processors are interrupted
+when an interrupt occurs in Z_80 mode. Here is a step-by-step process
+for hadling an interrupt while in Z-80 mode:
+
+1. Save any registers that are destroyed on the stack
+
+2. Save the contents of the 6502 subroutine call address (see Calling
+of 6502 subroutines below) in case an interrupt has occurred during a
+6502 subroutine call.
+
+3. Set up the 6502 subroutine call address to FF58, which is the address
+of a 6502 RTS instruction in the Apple Monitor ROM.
+
+4. Return control to the 6502 by performing a write to the address of
+the Z-80 card (again see Calling of 6502 Subroutines).
+
+5. When contorl is returned to the Z-80, restore the previous 6502
+subroutine call address.
+
+6. Restore all used Z_80 registers from the stack.
+
+7. Enable interrupts with an EI instruction.
+
+8. Return with a RET instruction.
+
+
+
+Console Cursor Addressing and Screen Control
+============================================
+
+There are nine screen functions supported by Apple CP/M
+
+1. Clear Screen
+2. Clear to End of Page
+3. Clear to End of Line
+4. Set Normal (lolite) Text Mode
+5. Set Inverse (hilite) Text Mode
+6. Home Cursor
+7. Address Cursor
+8. Move Cursor Up
+9. Non-destructively Move Cursor Forward
+
+The Backspace character (Ctrl-H, ASCII 8) is assumed to move the cursor
+backwards, and the Line Feed character (Ctrl-J, ASCII 10) is assumed to
+move the cursor down one line.
+
+Screen function character sequences supported by Apple CP/M mey be of
+two forms:
+
+1. A single control character, or
+2. Any ACII characters preceded by a single character lead-in
+
+Screen function sequences longer than two characters are not supported
+
+The internal format of each of the two 11-byte tables are identical. Below
+are listed the function number, the hexadecimal address and a description
+of each table entry.
+
+Funct #     Software    Hardware        Description
+
+            0F396H      0F3A1H          Cursor addr coordinate offset.
+                                        Range 0-127. If hi bit is 0, the
+                                        X/Y coordinates are expected to be
+                                        transmitted Y first, X last.  If hi
+                                        bit is 1, X first Y last is expected
+
+            0F397H      0F3A2H          Lead-in character, zero if no lead-in
+
+            Note: the following rules apply to the screen function table
+            entries below: if the table entry is zero, the function is not
+            implemented. If the entry has the high bit order set, the function
+            requires a lead-in. An entry with the high order bit clear means
+            the function does not require a lead-in.
+
+   1        0F398H      0F3A3H          Clear Screen
+
+   2        0F399H      0F3A4H          Clear to End of Page
+
+   3        0F39AH      0F3A5H          Clear to End of Line
+
+   4        0F39BH      0F3A6H          Set Normal (lo-line) Text Mode
+
+   5        0F39CH      0F3A7H          Set Inverse (hi-lite) Text Mode
+
+   6        0F39DH      0F3A8H          Home Cursor
+
+   7        0F39EH      0F3A9H          Address Cursor (see above)
+
+   8        0F39FH      0F3AAH          Move Cursor Up One Line
+
+   9        0F3A0H      0F3ABH          Non-destructively Move Cursor Forward
+
+The standard 24x40 Apple screen supports all nine function independent
+of the Hardware Screen Function Table.  However if a Software Screen
+Function Table entry is zero, that function will be disabled.
+
+The Hardware and SOftware Screen Fucntion Tables can be examined and
+modified with the CONFIGIO program.
+
+It is possible to write programs that use the information contained in
+these tables to perform screen functions. These programs would then
+work with ANY terminal, as long as the Hardware Screen Function Table
+was set up correctly - however such a prgoram would work only on
+Apple SoftCard CP/M and not on any other CP/M system.
+
+
+Keyboard redefinition
+=====================
+
+Keyboard redefinition take place only during input from the TTY: and
+CRT: devices.  The Keyboard Character Redefinition Table will support
+up to six character redefinitions. The table is located at 0F3ACH
+from the Z-80.  Entries in the table are two bytes: the first is the
+ASCII value of the character to be redefined, and the second is the
+redefined ASCII character.  Both bytes must have their high bits cleared.
+
+If there are less than six entries in this table, end end of the table
+is denoted by a byte with the high order bit set.
+
+Modifications of the Keyboard Character Redefinition Table may be made
+using the CONFIGIO program.
+
+
+Support of Non-Standard Peripherals and I/O Software
+====================================================
+
+The I/O Info Block also provides for support of non-standard Apple
+peripherals and I/O software.  All the primitive character I/O
+functions are vectored through the I/O Vector Table within the
+I/O Config Block.  These vectors normally point to the standard I/O
+routine located in the CP/M BIOS, but they can be altered by the user
+to point to his own drivers.  Three blocks of 128 bytes each are
+provided within the I/O COnfig block for user I/O driver software:
+
+Address         Assigned Slot   Assigned Logical Device
+
+0F200H-0F27FH       1           LST: - line pritner device
+0F280H-0FF7FH       2           PUN: and RDR: - general purpose I/O
+0F300H-0F37FH       3           TTY: - the console device
+
+Most APple I/O interface cards have 6502 ROM drivers on the card.
+The easiest way to interface these types of cards to Apple CP/M is to
+write Z-80 code to call the 6502 subroutine on the ROM.
+
+If no card is installed in a particular slot, its allocated 128-byte
+space can be used for other purposes relating to its assigned logical
+device.  Thes einclude lower-case input drivers for Apple keyboard,
+cassette tape interface, etc.
+
+I/O driver subroutinesa re patched to APple CP/M by patching the
+appropriate I/O vector to point to the subroutine.  A table of vector
+locations and their porposes is shown below:
+
+Vec #   Addr    Vector Name         Description
+
+  1   0F380H    Console Status      Return 0FFH in A if char ready, 00H if not
+
+  2   0F382H    Console Input #1    Return char from console into A with
+  3   0F384H    Console Input #2    hi bit clear
+
+  4   0F386H    Console Output #1   Send ASCII char in C to
+  5   0F388H    Console Output #2   console device
+
+  6   0F38AH    Reader Input #1     Read char from "Paper Tape Reader"
+  7   0F38CH    Reader Input #2     device into A
+
+  8   0F38EH    Punch Output #1     Send char in C to "Paper Tape Punch"
+  9   0F390H    Punch Output #2     device
+
+ 10   0F392H    List Output #1      Send char in C to
+ 11   0F394H    List Output #2      "Line Printer" device
+
+Vec #   Addr        Addr        Device
+       SS BIOS   PS IIe BIOS
+
+  1     0F380H      0F3C0H      Console status (no CP/M device)
+  2     0F382H      0F3C2H      Input  TTY: = CRT:
+  3     0F384H      0F3C4H      Input  UC1:
+  4     0F386H      0F3C6H      Output TTY: = CRT:
+  5     0F388H      0F3C8H      Output UC1:
+  6     0F38AH      0F3CAH      Input  PTR:
+  7     0F38CH      0F3CCH      Input  UR1: = UR2:
+  8     0F38EH      0F3CEH      Output PTP:
+  9     0F390H      0F3D0H      Output UP1: = UP2:
+ 10     0F392H      0F3D2H      Output LPT:
+ 11     0F394H      0F3D4H      Output UL1:
+
+Note: during console output, the B register contains a number corresponding
+to one of the nine supported screen functions during output of a screen
+function.  B contains zero during normal character output.  B is also
+non-zero during the output of the Cursor Address X/Y coords after
+executing screen function #7.
+
+Assigning logical to physical I/O devices: the IOBYTE
+
+IOBYTE at 0003H:      LIST   PUNCH  READER   CONSOLE
+           bits:     7   6   5   4   3   2   1   0
+
+The value of each field can be in the range 0-3:
+
+CONSOLE field (bits 0,1):
+  0 - TTY: device
+  1 - CRT: device
+  2 - BAT: - batch mode, uses RDR: for input and LST: for output
+  3 - UC1: - User defined CONSOLE device
+
+READER field (bits 2,3):
+  0 - TTY: device
+  1 - PTR: device ("paper tape reader")
+  2 - UR1: - User defined READER device #1
+  3 - UR2: - User defined READER device #2
+
+PUNCH field (bits 4,5):
+  0 - TTY: device
+  1 - PTP: device ("paper tape punch")
+  2 - UP1: - User defined PUNCH #1
+  3 - UP2: - User defined PUNCH #2
+
+LIST field (bits 6,7):
+  0 - TTY: device
+  1 - CRT: device
+  2 - LPT: device ("line printer")
+  3 - UL1: - User defined LIST device
+
+Default device assignments are:
+
+CON: = CRT:
+RDR: = PTR:
+PUN: = PTP:
+LST: = LPT:
+
+
+TTY: Either the standard Apple screen/keyboard or an external
+terminal installed in slot 3.  This routine vectors through Console
+Input #1 and Console Output #1. The Console status is always vectored
+through the Console Status vector.
+
+CRT: Same as TTY:
+
+UC1: User defined console device. Vectored through Console Input #2 and
+Console Output #2.
+
+PTR: A standard Apple interface capable of doing INPUT installed into
+slot 2. If no card is plugged into slot 2, the PTR: device always returns
+a 1Ah end-of-file character. Input from the PTR: device is vectored
+through Reader Input vector #1. Characters are returned in the A register.
+
+UR1: User defined reader #1. A character read from this device is returned
+in the A register.
+
+UR2: User defined reader #2. This device is physically the same as UR1:.
+
+PTP: Any standard Apple interface capable of doing OUTPUT installed into
+slot 2. If no card is plugged into slot 2, the PTP: device does nothing.
+Output to the PTP: device is vectored through Punch Output vector #1.
+
+UP1: User defined punch #1.  The character in register C is output
+through Punch Output vector #2.
+
+IP2: User defined ounch #2. This device is physically the same as UP1:.
+
+LPT: The LPT. device is any standard Apple interface card installed into
+slot 1 capable of doing output. The character in register C is output
+thoguh the List Output vector #1.
+
+UL1: User defined list device. the character in register C is output via
+List Output vector #2.
+
+The IOBYTE can be changed with the STAT program, or it may be modified
+from an assembly langauge program using the CP/M Get IOBYTE
+and Set IOBYTE (#7 & #8) functions.
+
+
+Patching User Software Via the I/O Vector Table
+===============================================
+
+User subroutines can be aptched into the I/O Configuration Block with
+the CONFIGIO program.  Any patches made can also be permanently saved
+onto a CP/M system disk as well with CONFIGIO.
+
+To creade a code tile, use ASM to write the driver software,
+and then use LOAD to create a COM file.
+
+The code file loaded by CONFGIO must be of certain internal format.
+Only one code segment may be patched into the I/O Configuration Block
+per code file.  However, as many vectors in the I/O Vector Table may be
+patched as desred.
+
+Below is outlined  the format of a disk code file to be loaded with
+CONFIGIO and patched to the I/O Configuration Block:
+
+First byte:         No of patches to I/O Vector Table to be made
+Next 2 bytes:       Destinationa ddress of program code
+Next 2 bytes:       Length of program code
+
+    Repeat for each I/O vector patch to be made:
+
+Next byte:          Vector Patch type - either 1 or 2
+
+If Vector Patch type = 1:
+Next byte:          Vector number to be patched, 1-11
+Next 2 bytes:       Address to be patched into the vector
+
+If Vector Patch type = 2:
+Next byte:          Vector number to be patched, 1-11
+Next 2 bytes:       Address in which to place the current contents of the vector
+                    (may be the address field of a JMP, etc)
+Next 2 bytes:       New address to be placed in the specified vector
+Next:               The actual program code is located after the patch
+                    information above. Convention restricts the size of the
+                    program code to 128 bytes per slot-dependent block.  Use
+                    the block approproate for your application and slot use.
+
+
+
+
+Calling of 6502 Subroutine
+==========================
+
+The 6502 is enabled from the Z-80 by a WRITE to the slot-dependent
+location 0EN00H, where N is the slot location of the Z-80 card.  Z-80
+mode is selected from 6502 mode with a WRITE to the same slot
+dependent location, which is addressed as $CN00 in 6502 mode.  The
+location of the SoftCard will vary from system to system.
+
+When the system is booted, the location of the SoftCard is determined
+by Apple CP/M and its address is stored in the I/O Configuration Block.
+This address is thus available to CP/M software for calling 6502
+subroutines.
+
+Calling the 6502 subroutine is a simple matter.  Set up the address
+of the subroutine to be called, and then write to the address of the
+Z-80 SoftCard.  One can also pass parameters to and from 6502
+subroutines through the 6502 A, X, Y, P (Status) registers.  The 6502
+stack pointer is also available after a 6502 subroutine call.
+
+Z-80 addr   6502 addr       Purpose
+
+ 0F045H        $45          6502 A register pass area
+ 0F046H        $46          6502 X register pass area
+ 0F047H        $47          6502 Y register pass area
+ 0F048H        $48          6502 P register pass area
+ 0F049H        $49          Contains 6502 stack pointer on exit
+
+ 0F3DEH                     Address of Z-80 Softcard here as 0EN00H
+
+ 0F3D0H                     Address of 6502 subroutine to be called stored here
+
+              $3C0          Start address of 6502-to-Z80 mode switching routine.
+                            6502 RESET, NMI and BREAK vectors point here.  A
+                            JMP to this address puts the 6502 on "hold" and
+                            returns to Z-80 mode.
+
+03C0:   LDA $C083       ;Put Apple Language Card into read/write mode
+        LDA $C083
+        STA SOFTCARD    ;Enable SoftCard, disable 6502
+START:  LDA $C081       ;Enable Apple Monitor ROM
+        JSR SET6502     ;Load the 6502 registers from $45 to $48
+        JSR ROUTINE     ;Run the 6502 subroutine
+        STA $C081       ;Make sure ROM is enabled
+        SEI             ;Disble 6502 interrupts
+        JSR SAVE        ;Store 6502 registers into $45 to $49
+        JMP $3C0        ;Loop back to beginning
+
+Note: Locations $800-$FFF are used by the Apple CP/M disk drivers and
+buffers ("RWTS") and are NOT available for use by a 6502 subroutine.
+
+Language Card Users: When in Z-80 mode, the Language Card RAM is both
+read- and write-enabled.  When a 6502 subroutine is called, the APple
+on-board ROM is automatically enabled, making the Apple Monitor
+available to the 6502 subroutine. However the Langauge Card RAM is
+write-enabled during a 6502 call, i.e. a write to any location above
+$D000 will write in the Languae Card RAM.
+
+A side effect of read-enabling the on-board Apple ROM's is that the
+Z80 memory from 0C000H to 0EFFFH ($D000-$FFFF on 6502) cannot be
+READ by te 6502, unless the appropriate LAnguage Card addresses can be
+accessed.
+
+The first of the two available 4K banks in the Language Card is not used
+by 56K Apple CP/M.
+
+
+Presence and Location of Perhpheral Cards
+=========================================
+
+The Card Type Table is located at 0F3B9H, and the entry for a given slot
+is located at 0F3B8H + S where S is an integer from 1 to 7.  The contents
+are:
+
+  0     No peripheral card ROM detected (usually there's no card here)
+
+  1     A peripheral card ROm of unknown type was detected
+
+  2     Apple Disk II Controller card
+
+  3     Apple Communications Card or CCS 7710A Serial Interface
+
+  4     Super Serial Card, or Videx Videoterm, or M&R SUp-R-Term or
+        Apple Silentype interface card
+
+  5     Apple Parallell Printer Card
+
+  6     Firmware Card (SoftCard CP/M ver 2.23 and higher)
+
+
+The Disk Count Byte, located at 0F3B8H, is a single byte equal to the
+number of disk controller cards in the system times two.  This value does
+not reflect an odd number of disk drives.
+
+
+Each peripheral card has signature bytes at:
+
+$Cn05  $Cn07  $Cn0B  $Cn0C
+
+where n is the slot number.  Apple CP/M looks at $Cn05 and $Cn07
+only.  Versions 2.23 and later also inspects $Cn0B.
+
+    Card type           Signature Bytes
+                        $Cn05   $Cn07   $Cn0B
+
+Parallell Card           $48     $48
+Communications Card      $18     $38
+Super Serial Card        $38     $18
+Disk Controller Card     $03     $3C
+Firmware Card                            $01
+
+
+
+
+Microsoft SoftCard Version 2.20B BIOS
+=====================================
+
+The BIOS for the Microsoft Softcard 56K CP/M version 2.20B extends
+intp the Apple Language Card area but uses only bank 2 of the Language
+Card.  The Language Card bank 1 is left unused.
+
+All the logical device routines use the IOCB.  The IOBYTE is used to
+determine which physical device is to be used.  The address for that
+device is taken from the IOCB and a jump is made to that address.
+
+DA00H - DA32H  BIOS vector jump tables
+DA33H - DA92H  Disk Parameter Headers for six drives
+DA93H - DAA1H  Disk Parameter Block
+DAA2H - DAC4H  Slot init routine, initializes communications and
+               serial cards from slot 7 to slot 7.  The ACIA
+               is set to 7 data bits, even parity, 2 stop bits,
+               xmit interrupts enabled
+DAC5H - DACBH  Routine to place En00H in HL where n = slot # passed in E
+DACCH - DB07H  WBOOT routine: 
+                   Init SP
+                   Call warm loader at $E00
+                   Init slots
+                   Init CP/M BDOS zero page
+                   Patch CCP for 2-column or 4-column DIR
+                     DAFDH = 1 for 2 cols, 3 for 4 cols
+                   Jmp to CCP at accress C400H
+DB08H - DB0BH  CONST - Console Status from IOCB at F380H
+DB0CH - DB11H  CONST routine for Apple keyboard
+DB12H - DB28H  CONIN - Console Input routine
+                    Call input char routine at DB50H
+                    Check against redefinition table at F3ACH
+                    Return with translated char in A
+DB29H - DB3AH  Default address in IOCB for console input
+                    Set DE to 3 for slot 3
+                    If 80-col card in slot 3, patch next jump to
+                       appropriate routine
+                    If no 80-col card, go to Apple kdb input at DB2FH
+DB3BH - DB41H  Routine to set up and make call to the 6502.  On entry
+                 HL contains 6502 program address
+DB42H          Routine to place A into C and fall into CONOUT
+DB43H - DB4FH  CONOUT  Checks the IOBYTE for the output device then jumps
+               to the selected routine.
+DB50H - DB61H  Character input routine, checks IOBYTE then goes to the
+               selected routine
+DB62H - DB65H  A jump to the physical PTR: device. May be used by the
+               console input or logical RDR: device
+DB66H - DB74H  LIST  The logical LST: device routine, checks IOBYTE then
+               goes to the selected routine
+DB75H - DB86H  PUNCH  The logical PUN: device, checks IOBYTE then goes to
+               the selected routine
+DB87H - DB95H  READER  The logical RDR: device, checks IOBYTE then goes to
+               the selected routine
+DB96H - DBB7H  A routine for 80-column cards.  Conditions the memory
+               locations and looks to see if an escape sequence is coming.
+               Control is passed to routines to perform specific functions
+               depending on how the output is to be performed.
+DBB8H - DBDFH  Routine to position the cursor in the GOTOXY sequence
+DBE0H - DBF4H  Routine that checks to see if there was a terminal lead-in
+               character sent and calls routines as requires
+DBF5H - DC3DH  Routine that considers all the possible combinations and
+               finally prints the character to the console via physical
+               devices TTY: or UC1: as required
+DC3EH - DC43H  Physical TTY: device. This is the general console output
+               routine. THe jump address to the specific output routine
+               is patched during the cold boot. Since the output routines
+               are slot-dependent, the slot number of the console is supplied
+               in location DC3FH. The slot number here is 3.
+DC44H - DCDEH  Screen output routine for the standard 40-column Apple screen.
+               This is the routine patched into the former routine if no
+               serial or 80-column card is found in slot 3.
+DCDFH - DCE9H  The comm card output routine. A status loop runs, and when
+               ACIA is ready, character in C register is transmitted.
+DCEEH - DD03H  Preparatory routine for setting up a serial card for either
+               input or output.
+DD04H - DD11H  The serial card output routine, performed by calling the 6502
+DD12H - DD1BH  The comm card input routine. Resembles the output routine in
+               structure.
+DD1CH - DD2AH  Serial card input routine.
+DD2BH - DD30H  Physical LPT: device output function. Jump is made to card
+               driver routine. Jump address is loaded during cold boot and
+               depends on card type in slot 1. Since the card routines are
+               slot dependent, this routine supplies the slot number in
+               location DD2CH
+DD31H - DD3EH  Parallell card output routine
+DD3FH - DD44H  Physical PTP: device output function. Jump is made to card
+               driver routine. Jump address is loaded during cold boot and
+               depends on card type found in slot 2.
+DD45H - DD4CH  Physical PTR: device output function. Jump to card drive
+               routine. Jump address is loaded during cold boot and
+               depends on card type found in slot 2.
+DD4BH - DD55H  HOME  A disk routine to select track 0
+DD56H - DD5AH  SETTRK  A disk routine to select the track in register C
+DD5BH - DD6CH  A computational routine used by the peripheral card drivers
+               and disk I/O routines to get needed slot and memory addresses
+               and the numbers passed to them from the physical device routines
+DD6DH - DD88H  SELDSK  Select the disk drive and set flags to notify the disk
+               I/O routines if the drive has been changed or a nonexistent
+               drive was called
+DD89H - DD8DH  SETSEC  Select the 128-byte CP/M sector
+DD8EH - DD92H  SETDMA  Select the disk I/O buffer accress
+DD93H - DDA2H  READ  Set up the disk read operation according to all the
+               CP/M protocols
+DDA3H - DDF1H  WRITE  Perform the disk write operation using CP/M protocols
+DDF2H - DE72H  Used by both READ and WRITE to make sure the CP/M protocols
+               are met. A sector skew is done with the CP/M sector skew
+               table. The data is moved to or from the CP/M RWTS buffer
+               at $800. The read or write operation is then called.
+DE73H - DE91H  Do the actual read or write by calling the 6502 CP/M RWTS
+DE92H - DEA1H  The CP/M logical sector skew table, which relates the 256-byte
+               sector number to the logical 128-byte sector number used by
+               CP/M.
+F200H - F37FH  The I/O Patch area: space for user provided routines required
+               for special I/O situations. The IOCB must be patched to vector
+               the device I/O to the routines in this area.
+F380H - F395H  IOCB containing the vectors to the CP/M physical devices
+F396H - F3AAH  Table used by the console routines to perform console functions.
+               Can be adapted to a variety of terminals.
+F3C0H - F3FFH  Space used by the Apple Monitor ROM to vector the interrupts
+               and resets. The vectors under CP/M all points to $3C0, so
+               the Z-80 never loses control of the Apple.
+F800H - F900H  The data buffer used by the CP/M RWTS
+FA00H - FFFCH  The CP/M RWTS routines, written in 6502 assembly
+
+
+The CPM56.COM map
+=================
+
+On Apple II SoftCard CP/M systems, the Standard CP/M utilities MOVCPM
+and SYSGEN are missing.  Instead we have CPM56.COM on 56K CP/M
+systems.  Patches are most easily stored on the system tracks by
+patching a copy of CPM56.COM and then running it to store the patched
+system on the system tracks.
+
+The program CPM56.COM contains the entire 56K CP/M system image. It's
+easiest to modify the BIOS by making modifications to CPM56.COM and
+then running it to put the image on the system tracks of a disk.
+Below is a mapping of the CPM56.COM program when loaded in memory by
+DDT
+
+100H - 2FFH    The command portion of CPM56.COM
+300H - 3FFH    The boot 1 portion: loads from track 0 sector 0 and is
+               responsible for loading the CP/M RWTS sectors into the
+               memory range $A000-$FFF and the boot 2 portion into the
+               range $1000-$13FF.
+400H - 9FFH    The CP/M RWTS
+A00H - BFFH    The boot 2
+C00H - D7FH    The I/O Patch area, which gets moved by boot 2 to F200H-F37FH
+D80H           The IOCB console status vector
+D82H           The IOCB console input vector 1, or the TTY: device
+D84H           The IOCB console input vector 2, or the UC1: device
+D86H           The IOCB console output vector 1, or the TTY: device
+D88H           The IOCB console output vector 1, or the UC1: device
+D8AH           The IOCB reader vector 1, or the PTR: device
+D8CH           The IOCB reader vector 2, or the UR1: device
+D8EH           The IOCB punch vector 1, or the PTP: device
+D90H           The IOCB punch vector 2, or the UP1: device
+D92H           The IOCB list vector 1, or the LST: device
+D94H           The IOCB list vector 2, or the UL1: device
+D96H - DFFH    The console hardware and software definition tables and the
+               remainder of page 3 routines and vectors. The data in the
+               range D80H-DFFH gets moved by boot 2 to F380H-F3FFH
+ E00H-15FFH    The CCP
+1600H-23FFH    The BDOS
+2400H-29A7H    The BIOS
+29A8H-29E7H    The cold boot routine
+29E8H-29FFH    Patches required for 2.20B to run a turnkey and correct
+               a disk read/rwite problem
+
+
+The CPM56 Diskette Map
+======================
+
+The Apple CP/M diskette system tracks are mapped as follows:
+
+Trk 00H Sec 00H                     Boot 1 sector
+Trk 00H Sec 01H - Trk 00H Sec 06H   CP/M RWTS
+Trk 00H Sec 07H - Trk 00H Sec 08H   Boot 2 routine
+Trk 00H Sec 09H - Trk 00H Sec 0AH   I/O Patch Area, page F300H routines+tables
+Trk 00H Sec 0BH - Trk 01H Sec 02H   CCP
+Trk 01H Sec 03H - Trk 02H Sec 00H   BDOS
+Trk 02H Sec 01H - Trk 02H Sec 06H   BIOS
+
+CP/M RWTS sectors are used in this table
+
+
+CPM56 Card Driver Entry Points
+==============================
+
+A list of entry points to the peripheral card drivers is useful for
+BIOS patching:
+
+DCDFH  Entry to the Communications Card output routine
+DD04H  Entry to the Serial Card output routine
+DD12H  Entry to the Communications Card input routine
+DD1CH  Entry to the Serial Card input routine
+DD31H  Entry to the Parallell Card output routine
+
+ALl these enty points require that DE contains the card slot
+number upon entry.  The A and C registers are used as required by
+the CP/M protocols.
+
+
+
+Microsoft SoftCard Version 2.23 BIOS
+====================================
+
+THe Microsoft 2.20B BIOS uses some ingainly fixes to correct a few
+problems, but still a few problems remain in the area of hardware
+interfacing.  Most of these problems are corrected in the SoftCard
+2.23 BIOS.
+
+The hardware interfacing is greatly improved because version 2.23
+uses Apple Computer's protocols for operating what Apple calls
+Formware Cards.  Most of the cards that can operate a host of
+peripheral devices and have them do all sorts of neat tricks are
+Firmware Cards.  Version 2.20B could not identify Firmware Cards and
+would often use the wrong I/O drives.  This caused a grinding of
+teeth by those unfortunates who invested in expensive equipment and
+could not get it to operate under CP/M.  Version 2.23 will operate
+the Firmware Cards, if the card manufacturer followed the Apple
+protocols.
+
+Another improvement in 2.23 is that the BIOS Comm Card driver uses
+the 6502 instead of the Z-80 to access the ACIA.  The Z-80 has a
+memory refresh provision, which causes the address to be accessed
+to be preread before the actual reading or writing occurs.  Reading
+the data port on an ACAI clears the ACAI status flags, which means
+the data can disappear before a second read is made.  You can lose
+data when the ACIA is read by the Z-80; using the 6502 instead
+eliminates this problem.
+
+The 60K 2.23 BIOS has a bigger TPA than the 56K 2.20B verison because
+both 4K banked memories in the Language Card are used.  Version 2.23
+uses bank 1 to store the BIOS disk-handling routines, which include
+the 6502 CP/M RWTS, the Z-80 BIOS routines, and two-thirds of the BDOS,
+which leaves bank 2 available for program memory.
+
+F200H - F37FH  The I/O Patch area: space for user provided routines required
+               for special I/O situations. The IOCB must be patched to vector
+               the device I/O to the routines in this area.
+F380H - F395H  IOCB containing the vectors to the CP/M physical devices
+F396H - F3AAH  Table used by the console routines to perform console functions.
+               Can be adapted to a variety of terminals.
+
+ $3C0 - $3DA   Routine which calls the 6502 microprocessor
+ $3F0 - $3FF   Space used by the Apple Monitor ROM to vector the interrupts
+               and resets. The vectors under CP/M all points to $3C0, so
+               the Z-80 never loses control of the Apple.
+
+ $800 - $900   Default I/O bbuffer area used by the CP/M RWTS
+ $900 - $9FF   A nibble buffer used by the CP/M RWTS
+
+FA00H - FA32H  BIOS vector jump tables
+FA33H - FA92H  Disk Parameter Headers for six drives
+FA93H - FAA1H  Disk Parameter Block
+FA82H - FAB0H  Slot init routine, initializes communications and
+               serial cards from slot 7 to slot 7.  The ACIA
+               is set to 7 data bits, even parity, 2 stop bits,
+               xmit interrupts enabled
+FAB1H - FAB7H  Routine to place En00H in HL where n = slot # passed in E
+FAB8H - FB0FH  WBOOT routine: 
+                   Init SP
+                   Call warm loader at $E00
+                   Init slots
+                   Init CP/M BDOS zero page
+                   Patch CCP for 2-column or 4-column DIR
+                     FB05H = 1 for 2 cols, 3 for 4 cols
+                   Jmp to CCP at accress E400H
+FB10H - FB13H  CONST - Console Status from IOCB at F380H
+FB14H - FB19H  CONST routine for Apple keyboard
+FB1AH - FB32H  CONIN - Console Input routine
+                    Call input char routine at FB5AH
+                    Check against redefinition table at F3ACH
+                    Return with translated char in A
+FB33H - FB38H  Default address in IOCB for console input
+                    Set DE to 3 for slot 3
+                    If 80-col card in slot 3, patch next jump to
+                       appropriate routine
+                    If no 80-col card, go to Apple kdb input at FB39H
+FB45H - FB4BH  Routine to set up and make call to the 6502.  On entry
+                 HL contains 6502 program address
+FB4CH          Routine to place A into C and fall into CONOUT
+FB4DH - FB59H  CONOUT  Checks the IOBYTE for the output device then jumps
+               to the selected routine.
+FB5AH - FB6BH  Character input routine, checks IOBYTE then goes to the
+               selected routine
+FB6CH - FB6FH  A jump to the physical PTR: device. May be used by the
+               console input or logical RDR: device
+FB70H - FB7EH  LIST  The logical LST: device routine, checks IOBYTE then
+               goes to the selected routine
+FB7FH - FB90H  PUNCH  The logical PUN: device, checks IOBYTE then goes to
+               the selected routine
+FB91H - FB9FH  READER  The logical RDR: device, checks IOBYTE then goes to
+               the selected routine
+FBA0H - FBCAH  A routine for 80-column cards.  Conditions the memory
+               locations and looks to see if an escape sequence is coming.
+               Control is passed to routines to perform specific functions
+               depending on how the output is to be performed.
+FBCBH - FBF1H  Routine to position the cursor in the GOTOXY sequence
+               The routine jumps to FCA4H.  ROutines required for the
+               functioning of the routine at FBA0H are also placed out
+               of sequence compared to ver 2.20B and start at address
+               FC56H. This displacement is required so that room for a
+               nibble buffer used by the RWTS can be located at $C00
+FBF4H - FBF8H  SETSEC  Select the 128-byte CP/M sector
+FBF9H - FBFDH  SETDMA  Select the disk I/O buffer accress
+ $C00 - $C55   One of the CP/M RWTS nibble buffers
+FC56H - FC6AH  Routine that checks to see if there was a terminal lead-in
+               character sent and calls routines as requires
+FC6BH - FCB4H  Routine that considers all the possible combinations and
+               finally prints the character to the console via physical
+               devices TTY: or UC1: as required
+FC5BH - FCBAH  Physical TTY: device. This is the general console output
+               routine. THe jump address to the specific output routine
+               is patched during the cold boot. Since the output routines
+               are slot-dependent, the slot number of the console is supplied
+               in location DC3FH. The slot number here is 3.
+FCBBH - FD0DH  Screen output routine for the standard 40-column Apple screen.
+               This is the routine patched into the former routine if no
+               serial or 80-column card is found in slot 3.
+FD0EH - FD27H  The comm card output routine, using 6502 code. A status loop
+               runs; when ACIA is ready, character in C register is transmitted.
+FD28H - FD70H  Screen function routines, located in the BIOS out of sequence
+               compared to version 2.20B
+FD71H - FD82H  The serial card output routine, performs the output by calling
+               the 6502
+FD83H - FD98H  Preparatory routine for setting up a serial card for either
+               input or output.
+FD99H - FDA8H  Contole status routine for a Firmware Card, which calls a 6502
+               routine for operation
+FDA9H - FDB6H  Firmware Card output routine, calls a 6502 routine for operation
+FDB7H - FDC0H  Firmware Card input routine, calls 6502 code at $E0F
+FDC1H - FDCFH  Serial card input routine.
+ $DD0 - $DE0   Firmware Card initialization routine, followed by a routine
+               that uses the Apple protocol for firmware I/O
+ $DE1 - $DEE   Firmware Card output routine
+ $DEF - $DFA   Formware Card routine which waits for card to accept I/O
+ $E00 - $E02   CP/M entry to the warm loader routine
+ $E03 - $E08   Entry to CP/M RWTS routine on Language Card bank 1
+ $E09 - $E0E   Second entry to warm loader routine on bank 1 of Lang Card
+ $E0F - $E1C   Firmware Card input routine
+ $E1D - $E25   Firmware Card routine to obtain the card's I/O status
+ $E26 - $E3E   Sets up all parameters used by the Firmware Card protocol
+               and set up the coresident ROM area at $C800 to be ready for
+               the Firmware Card's requirements
+ $E3F - $E4A   Called by the routine at $3C0 to set all the 6502 registers
+               and flags from their respective memory areas.  The 6502
+               interrupt is also enabled
+FE48H - FE54H  The comm card input routine. Resembles the output routine in
+               structure.
+FE55H - FE5AH  Physical LPT: device output function. Jump is made to card
+               driver routine. Jump address is loaded during cold boot and
+               depends on card type in slot 1. Since the card routines are
+               slot dependent, this routine supplies the slot number in
+               location DD2CH
+FE5BH - FE68H  Parallell card output routine
+FE69H - FE6EH  Physical PTP: device output function. Jump is made to card
+               driver routine. Jump address is loaded during cold boot and
+               depends on card type found in slot 2.
+FE6FH - FE74H  Physical PTR: device output function. Jump to card drive
+               routine. Jump address is loaded during cold boot and
+               depends on card type found in slot 2.
+FE75H - FE7FH  HOME  A disk routine to select track 0
+FE80H - FE84H  SETTRK  A disk routine to select the track in register C
+FE85H - FE96H  A computational routine used by the peripheral card drivers
+               and disk I/O routines to get needed slot and memory addresses
+               and the numbers passed to them from the physical device routines
+FE97H - FEC5H  SELDSK  Select the disk drive and set flags to notify the disk
+               I/O routines if the drive has been changed or a nonexistent
+               drive was called
+FEC6H - FECBH  READ  Entry point to the disk read routine found on bank 1
+               of the Language Card
+FECCH - FED1H  WRITE  Entry point to the disk write routine found on bank 1
+               of the Language Card
+FED2H - FED8H  Called when the 6502 must be called by code on bank 1
+FED9H - FEDFH  Called when a disk I/O error is encountered by disk-handling
+               code on bank 1.  Bank 2 is sswitched back on, and the BDOS
+               error routine is called
+FEE0H - FEE3H  Bank 1 routines returns here -- bank 2 is turned back on
+$FFAC - $FFE8  CP/M RWTS prenibblizing routines, located above BDOS in memory
+               and doesn't neatly fit into this memory map.  Microsoft had
+               to put it here to fit the second segment of BDOS on bank 1
+               of the Language Card.  Version 2.23 gets choppy from here on.
+
+The following are located on bank 1 of the Langauge Card
+
+$D000 - $D246  The first segment of the CP/M RWTS.  The RWTS is split into
+               two segments for reasons known only to Microsoft.
+
+B247H - B256H  The disk read operation, set up according to the CP/M protocols
+B257H - B270H  The disk write operation, performed according to CP/M protocols
+B271H - B333H  Used by both READ and WRITE to make sure the CP/M protocols
+               are met. A sector skew is done with the CP/M sector skew
+               table. The data is moved to or from the CP/M RWTS buffer
+               at $800. The read or write operation is then called.
+B334H - B358H  Do the actual read or write by calling the 6502 CP/M RWTS
+B359H - B368H  The CP/M logical sector skew table, which relates the 256-byte
+               sector number to the logical 128-byte sector number used by
+               CP/M.
+$D369 - $D5BC  The second segment of the CP/M RWTS
+B5C0H - BFFFH  The second BDOS segment. This is not hte BIOS, but is included
+               for completeness.
+
+
+The CPM60.COM map
+=================
+
+On Apple II SoftCard CP/M systems, the Standard CP/M utilities MOVCPM
+and SYSGEN are missing.  Instead we have CPM60.COM on 60K CP/M
+systems.  Patches are most easily stored on the system tracks by
+patching a copy of CPM60.COM and then running it to store the patched
+system on the system tracks.
+
+The program CPM60.COM contains the entire 60K CP/M system image. It's
+easiest to modify the BIOS by making modifications to CPM60.COM and
+then running it to put the image on the system tracks of a disk.
+Below is a mapping of the CPM60.COM program when loaded in memory by
+DDT
+
+100H - 3FFH    The command portion of CPM60.COM
+400H - 4FFH    The boot 1 portion: loads from track 0 sector 0 and is
+               responsible for loading the CP/M RWTS sectors into the
+               memory range $A000-$FFF, loading boot 2 into $1000-$12FF,
+               and loading the $300-page area into $1300-$13FF
+500H - 746H    The first segment of the CP/M RWTS
+747H - 858H    The BIOS read/write portions of the disk handling routines
+859H - AFFH    The second segment of the CP/M RWTS
+B00H - CFFH    The boot 2
+D00H - E7FH    The I/O Patch area, which gets moved by boot 2 to F200H-F37FH
+E80H           The IOCB console status vector
+E82H           The IOCB console input vector 1, or the TTY: device
+E84H           The IOCB console input vector 2, or the UC1: device
+E86H           The IOCB console output vector 1, or the TTY: device
+E88H           The IOCB console output vector 1, or the UC1: device
+E8AH           The IOCB reader vector 1, or the PTR: device
+E8CH           The IOCB reader vector 2, or the UR1: device
+E8EH           The IOCB punch vector 1, or the PTP: device
+E90H           The IOCB punch vector 2, or the UP1: device
+E92H           The IOCB list vector 1, or the LST: device
+E94H           The IOCB list vector 2, or the UL1: device
+E96H - EFFH    The console hardware and software definition tables and the
+               remainder of page 3 routines and vectors. The data in the
+               range D80H-DFFH gets moved by boot 2 to F380H-F3FFH
+ F00H-17FFH    The CCP
+1800H-1BFFH    The non-Language Card BDOS segment plus the prenibblizing CP/M
+               RWTS routines
+1C00H-26FFH    The Language Card segment of BDOS
+2700H-2BE9H    The BIOS
+2BEAH-2BFFH    The cold boot routine
+
+
+The CPM60 Diskette Map
+======================
+
+The Apple CP/M diskette system tracks are mapped as follows:
+
+Trk 00H Sec 00H                     Boot 1 sector
+Trk 00H Sec 01H - Trk 00H Sec 06H   CP/M RWTS and Z-80 BIOS disk routines
+Trk 00H Sec 07H - Trk 00H Sec 08H   Boot 2 routine
+Trk 00H Sec 09H - Trk 00H Sec 0AH   I/O Patch Area, page F300H routines+tables
+Trk 00H Sec 0BH - Trk 01H Sec 03H   CCP
+Trk 01H Sec 04H - Trk 01H Sec 07H   First segment of BDOS
+Trk 01H Sec 08H - Trk 02H Sec 02H   Second segment of BDOS
+Trk 02H Sec 03H - Trk 02H Sec 03H   BIOS
+
+CP/M RWTS sectors are used in this table
+
+
+CPM60 Card Driver Entry Points
+==============================
+
+A list of entry points to the peripheral card drivers is useful for
+BIOS patching:
+
+FD0EH  Entry to the Communications Card output routine
+FD71H  Entry to the Serial Card output routine
+FDA9H  Entry to the Firmware Card output routine
+FDB7H  Entry to the Firmware Card input routine
+FDC1H  Entry to the Serial Card input routine
+FE4BH  Entry to the Communications Card input routine
+FE5BH  Entry to the Parallell Card output routine
+
+All these enty points require that DE contains the card slot
+number upon entry.  The A and C registers are used as required by
+the CP/M protocols.
+
+
+
+CP/M Microsoft BIOS Patches
+===========================
+
+Squashing ver 2.20B bugs
+========================
+
+Correct bug which exchanges the PTP: and UP1: devices (usually unnoticed
+because they by default point to the same device):
+Modify  2581 from 20 to 28
+
+DDT CPM56.COM
+#S2581
+2581 20   (type 28)
+.
+#<Ctrl-C>
+SAVE 42 CPM56.COM
+CPM56 A:
+
+Correct bug with Apple IIe 80-column card: ever warm boot the screen is
+cleared, since the BIOS initializes all peripheral cards on each warm
+boot: remove call to initialization routine in warm boot routine.
+
+Addr   Old   New
+24D8    CD    00
+24D9    A2    00
+24DA    DA    00
+
+
+Squashing ver 2.23 bugs
+=======================
+
+An error in RDR: vectoring was introduced, and the Apple IIe warm boot
+problem is present as well.  Change the following locations in CPM60.COM
+
+Addr   Old   New
+
+0EF4    A6    00    (corrects the IIe warmboot problem)
+27C4    CD    00
+27C5    82    00
+27C6    DA    00
+
+2897    08    04    (corrects the RDR: vector problem)
+
+SAVE 44 CPM60.COM
+CPM60 A:
+
+
+
+The CP/M RWTS
+=============
+
+Written in 6502 code, resides at $800 - $FFF including buffers.
+Entry point at $E03 (for BIOS ver 2.20B and 2.23) -- before entry
+thes addresses below must be filled with appropriate data.  The CP/M
+RWTS use a 256-byte data buffer at $800 by default.
+
+To call the CP/M RWTS from your own code, init the following memory
+areas before calling $E03:
+
+$3E0    Place track to be accessed here
+
+$3E1    Place CP/M physical sector to be accessed here. The Apple sector
+numbers range from $0 to $F. The sector skew for CP/M physical sectors is used
+
+$3E1 and $3E3   Holdovers from the DOS 3.3 RWTS and were used for volume
+numbers.  CP/M RWTS doesn't use volume numbers, so put $00 here
+
+$3E4    Put the drive here.  DOS 3.3 numbers are used, so put 1 or 2 here
+
+$3E5    Another holdover from DOS 3.3 - put last drive used here
+
+$3E6    Put the slot number times 16 here.  Slot 6 ==> put $60 here
+
+$3E7    Last slot (times 16) accessed.  Slot 6 ==> $60
+
+$3E8 and $3E9   I/O buffer address (256 bytes).  If buffer is at $800,
+then $3E8 contains $00 and $3E9 contains $08
+
+$3EA    Error code: $00 no error, $10 write protected, $40 drive error
+        (the CP/M RWTS stores the error code here)
+
+$3EB    Command code:  $01 read sector, $02 write sector
+
+$800-$900   Default I/O bbuffer area used by the CP/M RWTS
+$900-$9FF   A nibble buffer used by the CP/M RWTS
+
+
+CP/M version 2.23 always reinitializes the I/O buffer address to $800
+before using the CP/M RWTS.  CP/M version 2.20B doesn't reinitialize
+the I/O buffer address, so the programmer must restore it to $800
+if needed after having called the CP/M RWTS.
+
+The CP/M warm loader is located at $E00 for ver 2.20B and 2.23.
+CP/M 2.23 60K reads track $0 sector $B to track $2 sector $8 to
+memory starting at D300H.
+CP/M 2.20B 56K reads track $0 sector $B to track $2 sector $0 to
+memory starting at C400H.
+
+
+The first 3 tracks, tracks $00 to $02, are reserved for the boot
+routine, the CCP, BDOS and BIOS.  Track $03 contian the CP/M
+directory, where only 6 physical sectors contains the directory (CP/M
+logical sectors 00H through 0BH).
+
+SoftCard CP/M ver 2.23 and higher uses a trick to allow the system
+tracks for data storage: a file called cp/m.sys is created in user
+area 31 as a dummy file allocated to the system tracks.  It is
+inaccessible from the CCP and unseen by the user.  The BIOS is
+written to recognize the system tracks as accessible data areas.
+COPY.COM has an option to create a "data diskette" where cp/m.sys is
+absent, which creates 3 more tracks for data storage.  Such a
+diskette cannot be warm booted, bit it is safe to use it in any other
+drive than A:
+
+
+CP/M Logical    CP/M Physical    DOS 3.3       Apple Physical
+Sectors         Sectors          Sectors       Sectors
+
+00,01               0               0               0
+02,03               9               6               3
+04,05               3               C               6
+06,07               C               3               9
+08,09               6               9               C
+0A,0B               F               F               F
+0C,0D               1               E               2
+0E,0F               A               5               5
+10,11               4               B               8
+12,13               D               2               B
+14,15               7               8               E
+16,17               8               7               1
+18,19               2               D               4
+1A,1B               B               4               7
+1C,1D               5               A               A
+1E,1F               E               1               D
+
+Apple CP/M has double sector skewing: the system tracks use CP/M
+physical sector skew while the data tracks uses the logical sector
+skew.  The CP/M physiscal sector skew is fastest for reading sectors,
+while the logical sector skew is a compromise for getting the
+fastest sector read skew in conjunction with the fastest sector write
+skew.
+
+
+The Apple CP/M Disk Parameter Tables
+====================================
+
+The CP/M BIOS contains several Disk Parameter Tables:
+
+DPH - Disk Parameter Header: a pointer to the DPH for a specific disk
+is obtained by loading C with the disk drive (0=A:, 1=B:, etc) and
+then call the BIOS function SELDSK (entry point at xx1BH, where xx00H
+is your BIOS base where xx is found at address 0002H of your CP/M
+system).  The disk drive need not have any disk inserted, since the
+BIOS SELDSK function only locates the tables but does not attempt to
+access the disk.  When SELDSK returns, HL points to the DPH, which
+contains:
+
+Offset      Contents
+------      --------
+ 00H         XLT        Addr of logical-to-physical sector translation vector.
+                        On Apple CP/M, XLT is 0000H, which means that the
+                        CP/M BIOS does no such translation - instead sector
+                        skewing is implemented in the CP/M RWTS, which is
+                        written in 6502 code.
+ 02H         0000H      \
+ 04H         0000H      |  Scratchpad values for use within BDOS
+ 06H         0000H      /   (initial value unimportant)
+ 08H         DIRBUF     Addr of scratchpad 128-byte directory buffer.
+ 0AH         DPB        Addr of Disk Parameter Block for this drive, see below.
+ 0CH         CSV        Addr of scratchpad area to check for changed disks
+ 0EH         ALV        Addr of scratchpad area for disk allocation info
+
+
+DPB - Disk Parameter Block.  The address of the DPB can be found in
+either the DPH (see above), or by calling BDOS function 31 (=1FH)
+"Get addr disk params", which will return the address of the DPB for
+the current drive in HL.  If you want the DPB for a specific drive,
+first call BDOS function 14 (=0EH) "Select disk", with the drive to
+select in E on entry (0=A:, 1=B:, etc) - note that the drive must
+have a valid CP/M disk inserted for this to work.
+
+The Disk Parameter Block (DPB) for each drive type contains:
+
+Offset      Contents
+------      --------
+  00H         SPT 16b       Total number of sectors per track
+  02H         BSH  8b       Data allocation block shift factor, determined
+                            by the data block allocation size
+  03H         BLM  8b       Data allocation block mask (2[BSH-1])
+  04H         EXM  8b       Extent mask, determined by data block allocation
+                            size and number of disk blocks
+  05H         DSM 16b       Total storage capacity of disk drive
+  07H         DRM 16b       Total number of directory entries minus one
+  09H         AL0  8b       Determines reserved directory blocks
+  0AH         AL1  8b       Determines reserved directory blocks
+  0BH         CKS 16b       Size of directory check vector
+  0DH         OFF 16b       No of reserved tracks at beginning of logical disk
+
+BSH and BLM are determined by BLS, the block size or data allocation size
+
+    BLS       BSH     BLM           EXM
+   -----      ---     ---     DSM<256   DSM>=256
+    1024       3       7         0        n/a
+    2048       4      15         1         0
+    4096       5      31         3         1
+    8192       6      63         7         3
+   16384       7     127        15         7
+
+i.e.  BLS = 2**n  where n = 10 to 14
+      BSH = n-7
+      BLM = 2**BSH - 1
+      EXM = 2**(BHS-2) - 1   if DSM<256
+      EXM = 2**(BHS-3) - 1   if DSM>=256
+
+DSM = maximum data block number supported by this particular drive, measured
+in BLS (BLock Size) units, or simply "number of allocation blocks on drive".
+Blocks are counted from 0 to DSM, and thus BLS*(DSM+1) = the number of bytes
+on the drive (excluding the system tracks).  If DSM<256, the disk map in
+the directory entry of the file will be 1 byte/block.  If DSM>=256 it will
+be 2 bytes/block.
+
+DRM = total number of directory entries minus one.
+
+AL0/AL1 = the directory allocation vector.  Consider it a bit map of
+bits 16 bits, bit 0-15, where 0=hi bit of AL0, 7=lo bit of AL0, 8=hi
+bit of AL1, 15=lo bit of AL1.  Bits are assigned starting at bit 0 up
+until bit 15.  Suppose nbits is the number of bits seet to 1:
+
+    BLS     Directory entries
+    ---     -----------------
+    1024       32  * nbits
+    2048       64  * nbits
+    4096      128  * nbits
+    8192      256  * nbits
+   16384      512  * nbits
+
+Example: if DRM=127 (128 directory entries) and BLS=1024 bytes, there
+are 32 directory entries per block, requiring 4 reserved blocks.  Thus
+the 4 hi bits if AL0 are set, and AL0=0FH, AL1=00H
+
+CKS = size of directory check vector
+If drive media is removable, then CKS = (DRM+1)/4
+If drive media is fixed, then CKS=0 (no dir records checked)
+
+OFF = number of reserved tracks.  This value is automatically added
+whenever SETTRK is called.  It can be used to skip reserved system
+tracks, or for partitioning a large disk into smaller segmented
+sections.
+
+Several DPH's can address the same DPB if the drive characteristics
+are identical.  The DPB can be dynamically changed when a new drive
+is addressed by simply changing the pointer in the DPH since the BDOS
+copies the DPB values to a local area whenever the SELDKS function
+is invoked.
+
+The size of the CSV (scratchpad area to check changed disks) is CKS
+bytes.  If CKS=(DRM+1)/4, this area must be reserved. If CKS=0, no
+storage is reserved.
+
+The size of the ALV (scratchpad area for disk storage allocation info)
+is (DSM/8)+1 bytes where DSM is the disk size in allocation blocks.
+
+
+Below DPB parameters are given for three different kinds of Apple CP/M
+formats, plus the Standard CP/M 8" SSSD disk format as a comparison:
+
+A:  The SoftCard 13-sector Apple CP/M format, used only briefly on
+    early SoftCard CP/M systems.  No other Apple CP/M card ever used
+    the 13-sector format.  This format yielded 104K of data per
+    diskette, excluding the system tracks.
+
+B:  The 16-sector Apple CP/M format.  This was THE Apple CP/M disk
+    format, introduced by the SoftCard and subsequently used by all
+    other Apple CP/M systems (Appli-Card, CP/M Card, Premium SoftCard).
+    This format yields 128K of data per diskette, excluding the system
+    tracks.
+
+The Apple CP/M disk formats were really too small, since the Standard
+CP/M 8" SSSD disk format yielded 243K of data per diskette, and many
+CP/M programs assumed a disk at least this big.  One enhancement was
+to use 40 tracks instead of 35 tracks on the diskette, which would
+yield 148K of data per diskette, excluding the system tracks.  Later,
+when 80-track double-sided disk drives became available, CP/M could
+fairly easily be modified to accept these drives.  The hardest parts
+were to hook up the hardware, and modify the CP/M RWTS program to
+access all 80 tracks on both sides, and the formatter program to
+format 80 tracks on both sides.  But once this was accomplished, it
+was fairly straight-forward to modify the BIOS DPH so that CP/M could
+access the entire 80-track double-sided disk as one disk, yielding
+628K of data per diskette, making virtually any CP/M program
+comfortably fitting on one diskette.
+
+C:  This disk format is 16 sectors/track, 80 tracks double sided, where
+    the tracks and sides are mapped within the modified CP/M RWTS so they
+    appear as 160 tracks to the CP/M Z-80 BIOS (which knew nothing about
+    double-sided disks).  This format yields 628K of data per diskette,
+    excluding the system tracks.
+
+D:  As a comparison, the DPB parameters for the Standard CP/M 8" SSSD
+    format is given.  This disk format had 128 bytes/sector on the disk.
+
+
+Physical format:      A            B                C                 D
+ 
+                    ---- Apple CP/M ---     ----- Enhanced -----    Standard
+                    13-sect     16-sect     80-trk/16-sec/2-side    8" SSSD
+
+Bytes/sector          256         256               256               128
+Sectors/track          13          16                16                26
+Tracks                 35          35                80                77
+Heads                   1           1                 2                 1
+
+
+Sector skew table:  
+  No sector skew in Apple CP/M Z-80 BIOS (XLT in DPH = 0000H)
+  13-sector disks: hard sector skew
+  16-sector disks: soft sector skew in 6502 code (CP/M RWTS)
+  (Standard CP/M: disk skew in BIOS - every 6'th sector: 1,7,13,...)
+
+
+Apple CP/M DPB - Disk Parameter Block
+
+                 A       B       C       D
+
+SPT 16b         26      32      32      26     128-byte Logical Sectors/Track
+BSH  8b          3       3       4       3     Block shift factor
+BLM  8b          7       7      15       7     Block shift mask
+EXM  8b          0       0       0       0     Extent mask
+DSM 16b        103     127     313     242     Disk size - 1 (in blocks)
+DRM 16b         47      63     255      63     Directory mask = dir entries - 1
+AL0  8b       0C0H    0C0H    0F0H    0C0H     Dir Alloc 0
+AL1  8b          0       0       0       0     Dir Alloc 1
+CKS 16b         12      16      64      16     Directory check vector size
+OFF 16b          3       3       3       2     Track offset: # system tracks
+
+Block size    1024    1024    2048    1024     # bytes per allocation block
+Dir entries     48      64     256      64     Max # directory extent entries
+Dir blocks       2       2       4       2     # blocks allocated to directory
+DSM+1          104     128     314     243     blocks
+Disk size      104     128     628     243     KBytes (excluding system tracks)
+               113.75  140     640     250     KBytes (including system tracks)
+
+Dirbuf         128     128     128     128     bytes
+ALV             14      17      40      31     bytes
+CSV             12      16      64      16     bytes
+
+===========================================================================
+
