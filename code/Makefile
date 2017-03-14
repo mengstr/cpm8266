@@ -2,7 +2,18 @@ SHELL		=  /bin/bash
 
 ESPPORT		?= /dev/ttyUSB0
 ESP8266SDK	?= /Volumes/case-sensitive/esp-open-sdk/
-MAIN_MHZ	=  320 #Pick from *52, *80, 104 or *115, 160, *173, *189#, 231, 346, 378#  * = peripheral clock at processor clock. # = Mine won't boot + on ESP8285, Clock Lower and unreliable.  Warning. Peripheral clocks of >115 will NOT boot without a full power-down and up. (Don't know why)
+
+#  Pick from *52 *80 104 *115 160 *173 *189 231 320 346 378
+#  * = peripheral clock at processor clock. 
+
+MAIN_MHZ	=  160
+
+#  80MHz = 65 seconds
+# 160MHz = 32 seconds
+# 231MHz = 45 seconds
+# 320MHz = 32 seconds
+# 346MHz = 29 seconds
+# 378MHz = 28 seconds
 
 FLASHPARAM 	=  --flash_freq 80m --flash_mode dout
 FLASHBAUD	=  921600
@@ -147,6 +158,9 @@ systemdiskA : CPM22/BOOT.bin CPM22/BIOS.bin CPM22/BDOS.bin CPM22/CCP.bin
 	@$(DD) of=disks/DISK_A.DSK if=CPM22/CCP.bin  seek=128  count=2048 $(DDFLAGS)
 	@$(DD) of=disks/DISK_A.DSK if=CPM22/BDOS.bin seek=2176 count=3584 $(DDFLAGS)
 	@$(DD) of=disks/DISK_A.DSK if=CPM22/BIOS.bin seek=5760 count=896  $(DDFLAGS)
+
+undiskA :
+	@$(MAKE) --no-print-directory -C disks undiskA
 
 serialp :
 	putty -load cpm8266 -sercfg $(EMULATIONBAUD)

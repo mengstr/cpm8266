@@ -9,6 +9,17 @@ DISKTARGETS=$(foreach DSK,$(DISKS), DISK_$(DSK).DSK )
 
 all : $(DISKTARGETS)
 
+define HANDLEUNDISK =
+undisk$(1):
+	@echo "[UNDISK] $(1)"
+	@mkdir -p tmp
+	@rm -f tmp/*.*
+	@$(CPMCP) DISK_$(1).DSK 0:*.* tmp/
+endef
+
+$(foreach DSK,$(DISKS),$(eval $(call HANDLEUNDISK,$(DSK))))
+
+
 define HANDLEDISK =
 DISK_$(1).DSK: $(wildcard $(1)/*.*)
 	@echo "[MAKEDISK] DISK_$(1).DSK"
@@ -26,3 +37,4 @@ $(foreach DSK,$(DISKS),$(eval $(call HANDLEDISK,$(DSK))))
 clean:
 	@rm -rf *~
 	@rm -rf $(DISKTARGETS)
+	@rm -rf tmp
