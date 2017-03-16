@@ -35,7 +35,7 @@ static volatile uint16_t rxW = 0;
 // Sender at 1200                 80 80 00
 // Sender at 300                  00 00 00
 //
-uint32_t AutoBaud(void) {
+uint32_t ICACHE_FLASH_ATTR AutoBaud(void) {
   uint8_t v;
   for (;;) {
     uart_div_modify(UART0, (PERIPH_FREQ * 1000000) / 115200);
@@ -63,7 +63,7 @@ uint32_t AutoBaud(void) {
 //
 //
 //
-uint16_t GetRxCnt(void) {
+uint16_t ICACHE_FLASH_ATTR GetRxCnt(void) {
   if (rxW == rxR) return 0;
   if (rxW > rxR) return rxW - rxR;
   return (sizeof(rxBuf) - rxR) + rxW;
@@ -73,7 +73,7 @@ uint16_t GetRxCnt(void) {
 //
 //
 //
-uint8_t GetRxChar(void) {
+uint8_t ICACHE_FLASH_ATTR GetRxChar(void) {
   int i;
   while (!GetRxCnt()) continue;  // Wait for character to become available
   rxR = (rxR + 1) & (sizeof(rxBuf) - 1);
@@ -84,7 +84,7 @@ uint8_t GetRxChar(void) {
 //
 //
 //
-void FlushUart(void) {
+void ICACHE_FLASH_ATTR FlushUart(void) {
     while (GetRxCnt()) GetRxChar();
 
 }
@@ -140,7 +140,7 @@ LOCAL void uart0_rx_intr_handler(void *para) {
 //
 //
 //
-void InitUart(void) {
+void ICACHE_FLASH_ATTR InitUart(void) {
   ETS_UART_INTR_ATTACH(uart0_rx_intr_handler, &(UartDev.rcv_buff));
   PIN_PULLUP_DIS(PERIPHS_IO_MUX_U0TXD_U);
   PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0TXD_U, FUNC_U0TXD);

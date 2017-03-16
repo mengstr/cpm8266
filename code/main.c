@@ -3,7 +3,9 @@
 #include "espincludes.h"
 #include "ets_sys.h"
 #include "gpio.h"
-#include "nosdk8266.h"
+#ifdef NOSDK
+ #include "nosdk8266.h"
+#endif
 #include "uart.h"
 #include "uart_dev.h"
 #include "uart_register.h"
@@ -23,10 +25,11 @@ static const char z80code[] RODATA_ATTR = {
 
 #include "z80/z80emu.h"
 #include "z80/z80user.h"
-
-#include "disasm/disasm.h"
 #include "monitor.h"
 #include "utils.h"
+#ifdef NOSDK
+# include "disasm/disasm.h"
+#endif
 
 // 01=    02=r/w    04=bios/bdos  08=
 const uint8_t DBG = 0x00;
@@ -60,11 +63,10 @@ uint8_t biostrace = 0;
 
 #define BREAKKEY '`'
 
-
 //
 //
 //
-void DebugBiosBdos() {
+void ICACHE_FLASH_ATTR DebugBiosBdos() {
   switch (machine.state.pc) {
     case 0xF100: printf("(BIOS BOOT)"); break;
     case 0xF103: printf("(BIOS WBOOT)"); break;
@@ -159,10 +161,12 @@ void Execute(bool canbreak) {
 //
 //
 //
-int main() {
+void ICACHE_FLASH_ATTR cpm_main() {
   char *line;
 
+#ifdef NOSDK
   nosdk8266_init();
+#endif
 
   //  PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U,FUNC_GPIO0);
   //  PIN_DIR_OUTPUT=_BV(0);
@@ -170,14 +174,19 @@ int main() {
   gpio16_output_set(1);	// PIN_OUT_SET=_BV(0);
 
   ets_delay_us(250000);
-  InitUart();
 
+#ifdef NOSDK
+  InitUart();
   uint32_t baud=AutoBaud();
   uart_div_modify(UART0, (PERIPH_FREQ * 1000000) / baud);
+#endif 
 
   printf("\n\ncpm8266 - Z80 Emulator and CP/M 2.2 system version %d.%d\n\n",VERSION/10,VERSION%10);
   ets_delay_us(250000);
+
+#ifdef NOSDK
   FlushUart();
+#endif
 
   Z80Reset(&machine.state);
   machine.is_done = 0;
@@ -521,3 +530,17 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
   }
   if (DBG & 8) printf("\n");
 }
+
+
+#ifdef NOSDK
+void ICACHE_FLASH_ATTR main(void) {
+  cpm_main();
+}
+#endif
+
+
+#ifdef WIFI
+void ICACHE_FLASH_ATTR user_init() {
+  cpm_main();
+}
+#endif

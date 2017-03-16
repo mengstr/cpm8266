@@ -84,12 +84,12 @@ static const int OVERFLOW_TABLE[4] = {
 
 };
 
-static int	emulate (Z80_STATE * state, 
+static int ICACHE_FLASH_ATTR	emulate (Z80_STATE * state, 
 			int opcode,
 			int elapsed_cycles, int number_cycles,
 			void *context);
 
-void Z80Reset (Z80_STATE *state)
+void ICACHE_FLASH_ATTR Z80Reset (Z80_STATE *state)
 {
         int     i;
         
@@ -158,7 +158,7 @@ void Z80Reset (Z80_STATE *state)
         state->fd_register_table[14] = &state->registers.word[Z80_IY];        
 }
 
-int Z80Interrupt (Z80_STATE *state, int data_on_bus, void *context)
+int ICACHE_FLASH_ATTR Z80Interrupt (Z80_STATE *state, int data_on_bus, void *context)
 {
         state->status = 0;
         if (state->iff1) {
@@ -215,7 +215,7 @@ int Z80Interrupt (Z80_STATE *state, int data_on_bus, void *context)
                 return 0;
 }
 
-int Z80NonMaskableInterrupt (Z80_STATE *state, void *context)
+int ICACHE_FLASH_ATTR Z80NonMaskableInterrupt (Z80_STATE *state, void *context)
 {
 	int	elapsed_cycles;
 
@@ -233,7 +233,7 @@ int Z80NonMaskableInterrupt (Z80_STATE *state, void *context)
         return elapsed_cycles + 11;
 }
 
-int Z80Emulate (Z80_STATE *state, int number_cycles, void *context)
+int ICACHE_FLASH_ATTR Z80Emulate (Z80_STATE *state, int number_cycles, void *context)
 {
         int     elapsed_cycles, pc, opcode;
 
@@ -250,7 +250,7 @@ int Z80Emulate (Z80_STATE *state, int number_cycles, void *context)
  * needed by Z80Interrupt() for interrupt mode 0.
  */
 
-static int emulate (Z80_STATE * state, 
+static int ICACHE_FLASH_ATTR emulate (Z80_STATE * state, 
 	int opcode, 
 	int elapsed_cycles, int number_cycles, 
 	void *context)

@@ -156,7 +156,7 @@ extern void     Z80Reset (Z80_STATE *state);
  * byte opcode.
  */
 
-extern int      Z80Interrupt (Z80_STATE *state, 
+extern int ICACHE_FLASH_ATTR     Z80Interrupt (Z80_STATE *state, 
 			int data_on_bus, 
 			void *context);
 

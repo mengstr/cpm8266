@@ -1,35 +1,40 @@
-SHELL		=  /bin/bash
-
 ESPPORT		?= /dev/ttyUSB0
 ESP8266SDK	?= /Volumes/case-sensitive/esp-open-sdk/
 
+# Select WIFI for small memory CP/M machine with telnet over wifi access
+# or     NOSDK for 64K CP/M with serial access
+
+BUILD		?= NOSDK
+
 #  Pick from *52 *80 104 *115 160 *173 *189 231 320 346 378
-#  * = peripheral clock at processor clock. 
-
+#  * = peripheral clock at processor clock.
 MAIN_MHZ	=  160
-
-#  80MHz = 65 seconds
-# 160MHz = 32 seconds
-# 231MHz = 45 seconds
-# 320MHz = 32 seconds
-# 346MHz = 29 seconds
-# 378MHz = 28 seconds
 
 FLASHPARAM 	=  --flash_freq 80m --flash_mode dout
 FLASHBAUD	=  921600
 
-EMULATIONBAUD	=  9600
 DISKSIZE	=  0x3E900 # 256256 bytes (IMB 8-inch 26sec, 77trk, SS)
 DISKBLOCK	=  262144  # 0x40000
 DISKS		=  A B C D E F G H I J K L M N O
 
-export CPMMEMORY =  65536
-export VERSION	 =  01
+EMULATIONBAUD	=  9600
+PORT 			= 23
+
+ifeq (NOSDK, $(BUILD))
+ export CPMMEMORY = 1024*64
+endif
+
+ifeq (WIFI, $(BUILD))
+ export CPMMEMORY =  1024*40
+endif
+
+export VERSION	 =  02
 
 TARGET	 	=  image
 FW0 		=  $(TARGET).elf-0x00000.bin
 FW1 		=  $(TARGET).elf-0x10000.bin
 
+SHELL		=  /bin/bash
 CPMCP		=  /usr/bin/cpmcp
 ZASM		=  /usr/local/bin/zasm
 XXD			=  /usr/bin/xxd
@@ -38,38 +43,60 @@ DD			=  /bin/dd
 ESPTOOL		=  $(ESP8266SDK)/esptool/esptool.py
 BINS		=  $(ESP8266SDK)/xtensa-lx106-elf/bin
 SIZE		=  $(BINS)/xtensa-lx106-elf-size
+READELF		=  $(BINS)/xtensa-lx106-elf-readelf
 OBJDUMP		=  $(BINS)/xtensa-lx106-elf-objdump
 OBJCOPY		=  $(BINS)/xtensa-lx106-elf-objcopy
 GCC			=  $(BINS)/xtensa-lx106-elf-gcc
 AS			=  $(BINS)/xtensa-lx106-elf-as
 
 DDFLAGS		= status=none bs=1 conv=notrunc
-CFLAGS		=  -std=c99 -flto -Os -g -Iinclude -nostdlib -mno-serialize-volatile -mlongcalls
-CFLAGS		:= $(CFLAGS) -DMAIN_MHZ=$(MAIN_MHZ) -DVERSION=$(VERSION) -DEMULATIONBAUD=$(EMULATIONBAUD) -DCPMMEMORY=$(CPMMEMORY)
-#CFLAGS		:= $(CFLAGS) -DDEBUG
-LDFLAGS		=  -T ld/linkerscript.ld -T ld/addresses.ld
-SRCS		=  main.c uart.c flash.c monitor.c utils.c gpio16.c disasm/disasm.c z80/z80emu.c nosdk/startup.S nosdk/nosdk8266.c
-OBJS		=  main.o uart.o flash.o monitor.o utils.o gpio16.o disasm/disasm.o z80/z80emu.o nosdk/startup.o nosdk/nosdk8266.o
+
+CFLAGS		=  -std=c11 -DMAIN_MHZ=$(MAIN_MHZ) -DVERSION=$(VERSION) -DEMULATIONBAUD=$(EMULATIONBAUD) -DCPMMEMORY=$(CPMMEMORY) -DPORT=$(PORT)
+CFLAGS 		:= $(CFLAGS) -Iinclude -I./ -Os -mlongcalls
+
+ifeq (NOSDK, $(BUILD))
+ CFLAGS		:= $(CFLAGS) -DNOSDK  -flto -g -Iinclude -nostdlib -mno-serialize-volatile
+ #CFLAGS	:= $(CFLAGS) -DDEBUG
+ LDLIBS		:=
+ LDFLAGS	=  -T ld/linkerscript.ld -T ld/addresses.ld
+endif
+
+ifeq (WIFI, $(BUILD))
+ CFLAGS 	:= $(CFLAGS) -DWIFI -DICACHE_FLASH
+ LDLIBS 	= -nostdlib -Wl,--start-group -lmain -lupgrade -lnet80211 -lwpa -llwip -lpp -lphy -Wl,--end-group -lcirom -lgcc
+ LDFLAGS 	= -Teagle.app.v6.ld
+endif
+
+SRCS		=  main.c uart.c flash.c monitor.c utils.c gpio16.c z80/z80emu.c
+OBJS		=  main.o uart.o flash.o monitor.o utils.o gpio16.o z80/z80emu.o
+
+ifeq (NOSDK, $(BUILD))
+ SRCS		:= $(SRCS) nosdk/startup.S nosdk/nosdk8266.c disasm/disasm.c
+ OBJS		:= $(OBJS) nosdk/startup.o nosdk/nosdk8266.o disasm/disasm.o
+endif
+
+ifeq (WIFI, $(BUILD))
+endif
 
 
-.PHONY: all full disks clean dist
+.PHONY: all NOSDK disks clean dist ram size
 
 all: bins flash
 
-full: clean bins flash disks systemdiskA writealldisks
+NOSDK: clean bins flash disks systemdiskA writealldisks
 
 erase:
 	@echo "[ERASING]"
 	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) erase_flash > /dev/null
 
-dist: erase full
+dist: erase NOSDK
 	@echo "[READING IMAGE]"
 	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) read_flash 0x00000 0x400000 dist/cpm8266_$(VERSION).bin > /dev/null
 	@$(ZIP) -j -9 dist/cpm8266_$(VERSION).zip dist/cpm8266_$(VERSION).bin dist/readme.txt > /dev/null
 
 bins: $(OBJS)
 	@echo [LINK]
-	@$(GCC) $(OBJS) $(CFLAGS) $(LDFLAGS) -o $(TARGET).elf
+	@$(GCC) $(OBJS) $(LDLIBS) $(CFLAGS) $(LDFLAGS) -o $(TARGET).elf
 	@$(SIZE) $(TARGET).elf
 	@nm -S -n $(TARGET).elf > $(TARGET).map
 	@$(OBJDUMP) -S $(TARGET).elf > $(TARGET).lst
@@ -99,6 +126,11 @@ gpio16.o: gpio16.c gpio16.h
 	@echo [CC] $<
 	@$(GCC) $(CFLAGS) -o $@ -c $<
 
+z80/z80emu.o: z80/z80emu.c z80/z80emu.h
+	@echo [CC] $<
+	@$(GCC) $(CFLAGS) -o $@ -c $<
+
+ifeq (NOSDK, $(BUILD))
 disasm/mnemonic_cb.data: disasm/mnemonic_cb.txt
 	@$(XXD) -i < $< > $@
 
@@ -123,10 +155,6 @@ disasm/disasm.o: disasm/disasm.c disasm/disasm.h \
 	@echo [CC] $<
 	@$(GCC) $(CFLAGS) -o $@ -c $<
 
-z80/z80emu.o: z80/z80emu.c z80/z80emu.h
-	@echo [CC] $<
-	@$(GCC) $(CFLAGS) -o $@ -c $<
-
 nosdk/nosdk8266.o: nosdk/nosdk8266.c
 	@echo [CC] $<
 	@$(GCC) $(CFLAGS) -o $@ -c $<
@@ -134,6 +162,7 @@ nosdk/nosdk8266.o: nosdk/nosdk8266.c
 nosdk/startup.o: nosdk/startup.S
 	@echo [AS] $<
 	@$(AS) -o $@ -c $<
+endif
 
 hex/boot.data: CPM22/BOOT.bin
 	@$(XXD) -i < CPM22/BOOT.bin > hex/boot.data
@@ -199,6 +228,13 @@ READDISKTARGETS=$(foreach DSK,$(DISKS), readdisk$(DSK) )
 
 writealldisks : $(WRITEDISKTARGETS)
 readalldisks  : $(READDISKTARGETS)
+
+size :
+	$(SIZE) *.o
+
+ram : image.elf
+	$(READELF) -s $(TARGET).elf | sort -k2 | grep ": 401"
+
 
 clean :
 	@rm -rf $(FW1) $(FW2)
