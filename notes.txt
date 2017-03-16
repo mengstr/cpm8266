@@ -268,4 +268,11 @@ http://wikiti.brandonw.net/index.php?title=Category:Z80_Routines
 
 http://www.z80cpu.eu/mirrors/www.autometer.de/unix4fun/z80pack/index.html
 
+
+Before write cache: 38 seconds assembly time on ESP for SED80 1de29be using "a:z80asm sed80/AF"
+With 4K write cache: 17 seconds 
+With 4K write cache: 7.5 seconds
+
+
+
                         

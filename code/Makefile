@@ -48,8 +48,8 @@ CFLAGS		=  -std=c99 -flto -Os -g -Iinclude -nostdlib -mno-serialize-volatile -ml
 CFLAGS		:= $(CFLAGS) -DMAIN_MHZ=$(MAIN_MHZ) -DVERSION=$(VERSION) -DEMULATIONBAUD=$(EMULATIONBAUD) -DCPMMEMORY=$(CPMMEMORY)
 #CFLAGS		:= $(CFLAGS) -DDEBUG
 LDFLAGS		=  -T ld/linkerscript.ld -T ld/addresses.ld
-SRCS		=  main.c uart.c monitor.c utils.c gpio16.c disasm/disasm.c z80/z80emu.c nosdk/startup.S nosdk/nosdk8266.c
-OBJS		=  main.o uart.o monitor.o utils.o gpio16.o disasm/disasm.o z80/z80emu.o nosdk/startup.o nosdk/nosdk8266.o
+SRCS		=  main.c uart.c flash.c monitor.c utils.c gpio16.c disasm/disasm.c z80/z80emu.c nosdk/startup.S nosdk/nosdk8266.c
+OBJS		=  main.o uart.o flash.o monitor.o utils.o gpio16.o disasm/disasm.o z80/z80emu.o nosdk/startup.o nosdk/nosdk8266.o
 
 
 .PHONY: all full disks clean dist
@@ -80,6 +80,10 @@ main.o: main.c z80/z80emu.h z80/z80user.h hex/boot.data
 	@$(GCC) $(CFLAGS) -o $@ -c $<
 
 uart.o: uart.c uart.h
+	@echo [CC] $<
+	@$(GCC) $(CFLAGS) -o $@ -c $<
+
+flash.o: flash.c flash.h
 	@echo [CC] $<
 	@$(GCC) $(CFLAGS) -o $@ -c $<
 

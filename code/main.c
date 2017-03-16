@@ -8,6 +8,7 @@
 #include "uart_dev.h"
 #include "uart_register.h"
 #include "gpio16.h"
+#include "flash.h"
 
 #define RODATA_ATTR __attribute__((section(".irom.text"))) __attribute__((aligned(4)))
 #define ROMSTR_ATTR __attribute__((section(".irom.text.romstr"))) __attribute__((aligned(4)))
@@ -31,6 +32,7 @@ static const char z80code[] RODATA_ATTR = {
 const uint8_t DBG = 0x00;
 
 MACHINE machine;
+uint32_t cycles=0;
 
 uint16_t z80_dma = 0x80;
 uint16_t z80_trk = 0x00;
@@ -53,90 +55,10 @@ uint8_t biostrace = 0;
 #define WRITE 0x0C
 #define READER 0x0D
 #define LISTST 0x0E
+#define CYCLES 0xFE
+#define HALT 0xFF
 
 #define BREAKKEY '`'
-
-#define SECTORSIZE 128
-#define SECTORSPERTRACK 26
-#define TRACKSPERDISK 77
-#define DISKFLASHOFFSET 0x40000  // Location in flash for first disk
-#define DISKFLASHSIZE 0x40000    // Number of bytes in flash for each disk
-#define DISKCOUNT 15             // We have 15 disks A..O
-#define FLASHBLOCKSIZE 4096
-
-static uint16_t flashSectorNo = 0xFFFF;
-static uint8_t flashBuf[FLASHBLOCKSIZE];
-
-//
-//
-//
-void ICACHE_FLASH_ATTR ReadDiskBlock(uint16_t mdest, uint8_t sectorNo,
-                                     uint8_t trackNo, uint8_t diskNo) {
-  if (diskNo > (DISKCOUNT - 1)) diskNo = DISKCOUNT - 1;
-  if (trackNo > (TRACKSPERDISK - 1)) trackNo = TRACKSPERDISK - 1;
-  if (sectorNo > (SECTORSPERTRACK - 1)) sectorNo = SECTORSPERTRACK - 1;
-
-  uint32_t lba = SECTORSPERTRACK * trackNo + sectorNo;
-  uint32_t flashloc = DISKFLASHOFFSET + DISKFLASHSIZE * diskNo + SECTORSIZE * lba;
-  uint16_t myFlashSectorNo = flashloc / FLASHBLOCKSIZE;
-  uint16_t fl = flashloc % FLASHBLOCKSIZE;
-  if (DBG & 1) printf("(fl=0x%04X\n", fl);
- 
-  if (DBG & 1) printf("(read Sec=%d, Trk=%d Dsk=%d) LBA=%d myFlashSectorNo=%04X flashSectorNo=%04X  \n", sectorNo, trackNo, diskNo, lba, myFlashSectorNo, flashSectorNo);
- 
-  if (myFlashSectorNo != flashSectorNo) {
-    Cache_Read_Disable();
-    SPIUnlock();
-    flashSectorNo = myFlashSectorNo;
-    if (DBG & 1) printf("(FLASH READ sector %04X %08X\n", flashSectorNo, flashSectorNo * FLASHBLOCKSIZE);
-    SPIRead(flashSectorNo * FLASHBLOCKSIZE, (uint32_t *)flashBuf, FLASHBLOCKSIZE);
-    if (DBG & 2) printf("R");
-    Cache_Read_Enable(0, 0, 1);
-  } else {
-    if (DBG & 2) printf("r");
-  }
-
-  for (uint8_t i = 0; i < SECTORSIZE; i++) {
-    machine.memory[mdest + i] = flashBuf[fl + i];
-  }
-}
-
-//
-//
-//
-void ICACHE_FLASH_ATTR WriteDiskBlock(uint16_t msrc, uint8_t sectorNo,
-                                      uint8_t trackNo, uint8_t diskNo) {
-
-  if (diskNo > (DISKCOUNT - 1)) diskNo = DISKCOUNT - 1;
-  if (trackNo > (TRACKSPERDISK - 1)) trackNo = TRACKSPERDISK - 1;
-  if (sectorNo > (SECTORSPERTRACK - 1)) sectorNo = SECTORSPERTRACK - 1;
-
-  uint32_t lba = SECTORSPERTRACK * trackNo + sectorNo;
-  uint32_t flashloc = DISKFLASHOFFSET + DISKFLASHSIZE * diskNo + SECTORSIZE * lba;
-  uint16_t myFlashSectorNo = flashloc / FLASHBLOCKSIZE;
-
-  if (DBG & 1) printf("(read Sec=%d, Trk=%d Dsk=%d) LBA=%d myFlashSectorNo=%04X flashSectorNo=%04X\n", sectorNo, trackNo, diskNo, lba, myFlashSectorNo, flashSectorNo);
-
-  Cache_Read_Disable();
-  SPIUnlock();
-  if (myFlashSectorNo != flashSectorNo) {
-    flashSectorNo = myFlashSectorNo;
-    if (DBG & 1) printf("(FLASH READ(for erase/write) sector %04X %08X\n", flashSectorNo, flashSectorNo * FLASHBLOCKSIZE);
-    SPIRead(flashSectorNo * FLASHBLOCKSIZE, (uint32_t *)flashBuf, FLASHBLOCKSIZE);
-  }
-  if (DBG & 1) printf("(FLASH ERASE/WRITE sector %04X %08X\n", flashSectorNo, flashSectorNo * FLASHBLOCKSIZE);
-  uint16_t fl = flashloc % FLASHBLOCKSIZE;
-  if (DBG & 1) printf("(fl=0x%04X\n", fl);
-  for (uint8_t i = 0; i < SECTORSIZE; i++) {
-    flashBuf[fl + i] = machine.memory[msrc + i];
-  }
-  if (DBG & 2) printf("w");
-  gpio16_output_set(0);	
-  SPIEraseSector(flashSectorNo);
-  SPIWrite(flashSectorNo * FLASHBLOCKSIZE, (uint32_t *)flashBuf, FLASHBLOCKSIZE);
-  gpio16_output_set(1);	
-  Cache_Read_Enable(0, 0, 1);
-}
 
 
 //
@@ -214,12 +136,18 @@ void DebugBiosBdos() {
 //
 //
 void Execute(bool canbreak) {
+  uint32_t flushCnt=0;
   machine.is_done = 0;
   printf("Starting excution at 0x%04X\n", machine.state.pc);
+  cycles=0;
   do {
-    Z80Emulate(&machine.state, 1, &machine);
+    cycles+=Z80Emulate(&machine.state, 2, &machine);
     if (DBG & 4) DebugBiosBdos();
 //    if (canbreak && (GetKey(false) == BREAKKEY)) break;
+    if ((flushCnt++>2000000)) {
+      FlushDisk(true);  // Flush Disk in standalone mode
+      flushCnt=0;
+    }
   } while (!machine.is_done);
   printf("\n");
 }
@@ -335,7 +263,7 @@ int main() {
         //   i = Z80_Dasm(buffer, dest, 0);
         //   printf("%s  - %d bytes\n", dest, i);
         // }
-        Z80Emulate(&machine.state, 1, &machine);
+        cycles+=Z80Emulate(&machine.state, 1, &machine);
         if (cmd == 'S') ShowAllRegisters();
 //        if (GetKey(false) == BREAKKEY) break;
       }
@@ -576,6 +504,15 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
       if (DBG & 8) printf("{WR}");
       WriteDiskBlock(z80_dma, z80_sec, z80_trk, z80_dsk);
       m->state.registers.byte[Z80_A] = 0x00;
+      break;
+
+    case CYCLES:
+      printf("{CYCLES:%u}",cycles);
+      break;
+
+    case HALT:
+      printf("\n{Exiting}\n");
+      machine.is_done = 1;
       break;
 
     default:

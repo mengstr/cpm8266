@@ -2,7 +2,9 @@ E5		= "\345"
 
 CPMCP	=	/usr/bin/cpmcp
 CPMRM	=	/usr/bin/cpmrm
+CPFLAGS =	
 NEWDISK	=	printf '%*s' 256256 | tr ' ' $(E5) >
+DESKEW	=	./deskew.sh
 DISKS	=	A B C D E F G H I J K L M N O
 
 DISKTARGETS=$(foreach DSK,$(DISKS), DISK_$(DSK).DSK )
@@ -14,11 +16,10 @@ undisk$(1):
 	@echo "[UNDISK] $(1)"
 	@mkdir -p tmp
 	@rm -f tmp/*.*
-	@$(CPMCP) DISK_$(1).DSK 0:*.* tmp/
+	@$(CPMCP) $(CPFLAGS) DISK_$(1).DSK 0:*.* tmp/
 endef
 
 $(foreach DSK,$(DISKS),$(eval $(call HANDLEUNDISK,$(DSK))))
-
 
 define HANDLEDISK =
 DISK_$(1).DSK: $(wildcard $(1)/*.*)
@@ -26,10 +27,11 @@ DISK_$(1).DSK: $(wildcard $(1)/*.*)
 	@$(NEWDISK) DISK_$(1).DSK
 	@touch -t 197001010000 DISK_$(1).DSK
 	@touch $(1)/DUMMY.FIL
-	@$(CPMCP) DISK_$(1).DSK $(1)/*.* 0:
+	@$(CPMCP) $(CPFLAGS) DISK_$(1).DSK $(1)/*.* 0:
 	@touch DISK_$(1).DSK
 	@rm $(1)/DUMMY.FIL
-	@$(CPMRM) DISK_$(1).DSK 0:DUMMY.FIL
+	@$(CPMRM) $(CPFLAGS) DISK_$(1).DSK 0:DUMMY.FIL
+	@$(DESKEW) DISK_$(1).DSK
 endef
 
 $(foreach DSK,$(DISKS),$(eval $(call HANDLEDISK,$(DSK))))
