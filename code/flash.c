@@ -13,10 +13,10 @@
 #define SECTORSPERTRACK 26
 #define TRACKSPERDISK   77
 
-#define DISKFLASHOFFSET 0x40000 // Location in flash for first disk
-#define DISKFLASHSIZE   0x40000 // Number of bytes in flash for each disk
-#define DISKCOUNT       15      // We have 15 disks A..O
-#define FLASHBLOCKSIZE  4096    // Nr of bytes for erase/write to flash
+#define DISKFLASHOFFSET 0x3c0000 // Location in flash for first disk going backwards
+#define DISKFLASHSIZE   0x40000  // Number of bytes in flash for each disk
+#define DISKCOUNT       15       // We have 15 disks A..O
+#define FLASHBLOCKSIZE  4096     // Nr of bytes for erase/write to flash
 
 extern MACHINE machine;
 
@@ -29,12 +29,18 @@ static bool dirty=false;
 //
 void ICACHE_FLASH_ATTR ReadDiskBlock(uint16_t mdest, uint8_t sectorNo,
                                      uint8_t trackNo, uint8_t diskNo) {
+#ifdef NOSDK
   if (diskNo > (DISKCOUNT - 1)) diskNo = DISKCOUNT - 1;
+#endif
+#ifdef WIFI
+  // Map disk N and O onto the same disk since we have less free flash
+  if (diskNo > (DISKCOUNT - 2)) diskNo = DISKCOUNT - 2;
+#endif
   if (trackNo > (TRACKSPERDISK - 1)) trackNo = TRACKSPERDISK - 1;
   if (sectorNo > (SECTORSPERTRACK - 1)) sectorNo = SECTORSPERTRACK - 1;
 
   uint32_t lba = SECTORSPERTRACK * trackNo + sectorNo;
-  uint32_t flashloc = DISKFLASHOFFSET + DISKFLASHSIZE * diskNo + SECTORSIZE * lba;
+  uint32_t flashloc = (DISKFLASHOFFSET - DISKFLASHSIZE * diskNo) + SECTORSIZE * lba;
   uint16_t myFlashSectorNo = flashloc / FLASHBLOCKSIZE;
   uint16_t fl = flashloc % FLASHBLOCKSIZE;
  
@@ -60,13 +66,18 @@ void ICACHE_FLASH_ATTR ReadDiskBlock(uint16_t mdest, uint8_t sectorNo,
 //
 void ICACHE_FLASH_ATTR WriteDiskBlock(uint16_t msrc, uint8_t sectorNo,
                                       uint8_t trackNo, uint8_t diskNo) {
-
+#ifdef nosdk
   if (diskNo > (DISKCOUNT - 1)) diskNo = DISKCOUNT - 1;
+#endif
+#ifdef WIFI
+  // Map disk N and O onto the same disk since we have less free flash
+  if (diskNo > (DISKCOUNT - 2)) diskNo = DISKCOUNT - 2;
+#endif
   if (trackNo > (TRACKSPERDISK - 1)) trackNo = TRACKSPERDISK - 1;
   if (sectorNo > (SECTORSPERTRACK - 1)) sectorNo = SECTORSPERTRACK - 1;
 
   uint32_t lba = SECTORSPERTRACK * trackNo + sectorNo;
-  uint32_t flashloc = DISKFLASHOFFSET + DISKFLASHSIZE * diskNo + SECTORSIZE * lba;
+  uint32_t flashloc = (DISKFLASHOFFSET - DISKFLASHSIZE * diskNo) + SECTORSIZE * lba;
   uint16_t myFlashSectorNo = flashloc / FLASHBLOCKSIZE;
   uint16_t fl = flashloc % FLASHBLOCKSIZE;
 

@@ -1,11 +1,31 @@
-#include "c_types.h"
-#include "eagle_soc.h"
-#include "espincludes.h"
-#include "ets_sys.h"
-#include "gpio.h"
+ #include "c_types.h"
+ #include "os_type.h"
 #ifdef NOSDK
+ #define os_printf printf
+ #include "eagle_soc.h"
+ #include "ets_sys.h"
+ #include "gpio.h"
+ #include "espincludes.h"
  #include "nosdk8266.h"
 #endif
+#ifdef WIFI
+int os_printf(const char *format, ...)  __attribute__ ((format (printf, 1, 2)));
+int os_snprintf(char *str, size_t size, const char *format, ...) __attribute__ ((format (printf, 3, 4)));
+int os_printf_plus(const char *format, ...)  __attribute__ ((format (printf, 1, 2)));
+void ets_timer_arm_new(volatile os_timer_t *a, int b, int c, int isMstimer);
+void ets_timer_disarm(volatile os_timer_t *a);
+void ets_timer_setfn(volatile os_timer_t *t, ETSTimerFunc *fn, void *parg);
+void ets_isr_attach(int intr, void *handler, void *arg);
+void ets_isr_mask(unsigned intr);
+void ets_isr_unmask(unsigned intr);
+void ets_delay_us(int ms);
+ #include "ets_sys.h"
+ #include "osapi.h"
+ #include "gpio.h"
+ #include "user_interface.h"
+ #include "user_config.h"
+#endif
+
 #include "uart.h"
 #include "uart_dev.h"
 #include "uart_register.h"
@@ -68,67 +88,67 @@ uint8_t biostrace = 0;
 //
 void ICACHE_FLASH_ATTR DebugBiosBdos() {
   switch (machine.state.pc) {
-    case 0xF100: printf("(BIOS BOOT)"); break;
-    case 0xF103: printf("(BIOS WBOOT)"); break;
-    case 0xF106: printf("(BIOS CONST)"); break;
-    case 0xF109: printf("(BIOS CONIN)"); break;
-    case 0xF10C: printf("(BIOS CONOUT)"); break;
-    case 0xF10F: printf("(BIOS LIST)"); break;
-    case 0xF112: printf("(BIOS PUNCH)"); break;
-    case 0xF115: printf("(BIOS READER)"); break;
-    case 0xF118: printf("(BIOS HOME)"); break;
-    case 0xF11B: printf("(BIOS SELDSK)"); break;
-    case 0xF11E: printf("(BIOS SETTRK)"); break;
-    case 0xF121: printf("(BIOS SETSEC)"); break;
-    case 0xF124: printf("(BIOS SETDMA)"); break;
-    case 0xF127: printf("(BIOS READ)"); break;
-    case 0xF12A: printf("(BIOS WRITE)"); break;
-    case 0xF12D: printf("(BIOS LISTST)"); break;
-    case 0xF130: printf("(BIOS SECTRN)"); break;
+    case 0xF100: os_printf("(BIOS BOOT)"); break;
+    case 0xF103: os_printf("(BIOS WBOOT)"); break;
+    case 0xF106: os_printf("(BIOS CONST)"); break;
+    case 0xF109: os_printf("(BIOS CONIN)"); break;
+    case 0xF10C: os_printf("(BIOS CONOUT)"); break;
+    case 0xF10F: os_printf("(BIOS LIST)"); break;
+    case 0xF112: os_printf("(BIOS PUNCH)"); break;
+    case 0xF115: os_printf("(BIOS READER)"); break;
+    case 0xF118: os_printf("(BIOS HOME)"); break;
+    case 0xF11B: os_printf("(BIOS SELDSK)"); break;
+    case 0xF11E: os_printf("(BIOS SETTRK)"); break;
+    case 0xF121: os_printf("(BIOS SETSEC)"); break;
+    case 0xF124: os_printf("(BIOS SETDMA)"); break;
+    case 0xF127: os_printf("(BIOS READ)"); break;
+    case 0xF12A: os_printf("(BIOS WRITE)"); break;
+    case 0xF12D: os_printf("(BIOS LISTST)"); break;
+    case 0xF130: os_printf("(BIOS SECTRN)"); break;
     case 0xE311:  // BDOS ENTRY POINTS
       switch (machine.state.registers.byte[Z80_C]) {
-        case 0: printf("(BDOS WBOOT)"); break;
-        case 1: printf("(BDOS GETCON)"); break;
-        case 2: printf("(BDOS OUTCON)"); break;
-        case 3: printf("(BDOS GETRDR)"); break;
-        case 4: printf("(BDOS PUNCH)"); break;
-        case 5: printf("(BDOS LIST)"); break;
-        case 6: printf("(BDOS DIRCIO %02x)", machine.state.registers.byte[Z80_E]); break;
-        case 7: printf("(BDOS GETIOB)"); break;
-        case 8: printf("(BDOS SETIOB)"); break;
-        case 9: printf("(BDOS PRTSTR)"); break;
-        case 10: printf("(BDOS RDBUFF)"); break;
-        case 11: printf("(BDOS GETCSTS)"); break;
-        case 12: printf("(BDOS GETVER)"); break;
-        case 13: printf("(BDOS RSTDSK)"); break;
-        case 14: printf("(BDOS SETDSK)"); break;
-        case 15: printf("(BDOS OPENFIL)"); break;
-        case 16: printf("(BDOS CLOSEFIL)"); break;
-        case 17: printf("(BDOS GETFST)"); break;
-        case 18: printf("(BDOS GETNXT)"); break;
-        case 19: printf("(BDOS DELFILE)"); break;
-        case 20: printf("(BDOS READSEQ)"); break;
-        case 21: printf("(BDOS WRTSEQ)"); break;
-        case 22: printf("(BDOS FCREATE)"); break;
-        case 23: printf("(BDOS RENFILE)"); break;
-        case 24: printf("(BDOS GETLOG)"); break;
-        case 25: printf("(BDOS GETCRNT)"); break;
-        case 26: printf("(BDOS PUTDMA)"); break;
-        case 27: printf("(BDOS GETALOC)"); break;
-        case 28: printf("(BDOS WRTPRTD)"); break;
-        case 29: printf("(BDOS GETROV)"); break;
-        case 30: printf("(BDOS SETATTR)"); break;
-        case 31: printf("(BDOS GETPARM)"); break;
-        case 32: printf("(BDOS GETUSER)"); break;
-        case 33: printf("(BDOS RDRANDOM)"); break;
-        case 34: printf("(BDOS WTRANDOM)"); break;
-        case 35: printf("(BDOS FILESIZE)"); break;
-        case 36: printf("(BDOS SETRAN)"); break;
-        case 37: printf("(BDOS LOGOFF)"); break;
-        case 38: printf("(BDOS RTN)"); break;
-        case 39: printf("(BDOS RTN)"); break;
-        case 40: printf("(BDOS WTSPECL)"); break;
-        default: printf("(BDOS C=%d)", machine.state.registers.byte[Z80_C]); break;
+        case 0: os_printf("(BDOS WBOOT)"); break;
+        case 1: os_printf("(BDOS GETCON)"); break;
+        case 2: os_printf("(BDOS OUTCON)"); break;
+        case 3: os_printf("(BDOS GETRDR)"); break;
+        case 4: os_printf("(BDOS PUNCH)"); break;
+        case 5: os_printf("(BDOS LIST)"); break;
+        case 6: os_printf("(BDOS DIRCIO %02x)", machine.state.registers.byte[Z80_E]); break;
+        case 7: os_printf("(BDOS GETIOB)"); break;
+        case 8: os_printf("(BDOS SETIOB)"); break;
+        case 9: os_printf("(BDOS PRTSTR)"); break;
+        case 10: os_printf("(BDOS RDBUFF)"); break;
+        case 11: os_printf("(BDOS GETCSTS)"); break;
+        case 12: os_printf("(BDOS GETVER)"); break;
+        case 13: os_printf("(BDOS RSTDSK)"); break;
+        case 14: os_printf("(BDOS SETDSK)"); break;
+        case 15: os_printf("(BDOS OPENFIL)"); break;
+        case 16: os_printf("(BDOS CLOSEFIL)"); break;
+        case 17: os_printf("(BDOS GETFST)"); break;
+        case 18: os_printf("(BDOS GETNXT)"); break;
+        case 19: os_printf("(BDOS DELFILE)"); break;
+        case 20: os_printf("(BDOS READSEQ)"); break;
+        case 21: os_printf("(BDOS WRTSEQ)"); break;
+        case 22: os_printf("(BDOS FCREATE)"); break;
+        case 23: os_printf("(BDOS RENFILE)"); break;
+        case 24: os_printf("(BDOS GETLOG)"); break;
+        case 25: os_printf("(BDOS GETCRNT)"); break;
+        case 26: os_printf("(BDOS PUTDMA)"); break;
+        case 27: os_printf("(BDOS GETALOC)"); break;
+        case 28: os_printf("(BDOS WRTPRTD)"); break;
+        case 29: os_printf("(BDOS GETROV)"); break;
+        case 30: os_printf("(BDOS SETATTR)"); break;
+        case 31: os_printf("(BDOS GETPARM)"); break;
+        case 32: os_printf("(BDOS GETUSER)"); break;
+        case 33: os_printf("(BDOS RDRANDOM)"); break;
+        case 34: os_printf("(BDOS WTRANDOM)"); break;
+        case 35: os_printf("(BDOS FILESIZE)"); break;
+        case 36: os_printf("(BDOS SETRAN)"); break;
+        case 37: os_printf("(BDOS LOGOFF)"); break;
+        case 38: os_printf("(BDOS RTN)"); break;
+        case 39: os_printf("(BDOS RTN)"); break;
+        case 40: os_printf("(BDOS WTSPECL)"); break;
+        default: os_printf("(BDOS C=%d)", machine.state.registers.byte[Z80_C]); break;
       }
   }
 }
@@ -140,7 +160,7 @@ void ICACHE_FLASH_ATTR DebugBiosBdos() {
 void Execute(bool canbreak) {
   uint32_t flushCnt=0;
   machine.is_done = 0;
-  printf("Starting excution at 0x%04X\n", machine.state.pc);
+  os_printf("Starting excution at 0x%04X\n", machine.state.pc);
   cycles=0;
   do {
     cycles+=Z80Emulate(&machine.state, 2, &machine);
@@ -151,7 +171,7 @@ void Execute(bool canbreak) {
       flushCnt=0;
     }
   } while (!machine.is_done);
-  printf("\n");
+  os_printf("\n");
 }
 
 
@@ -163,38 +183,18 @@ void Execute(bool canbreak) {
 //
 void ICACHE_FLASH_ATTR cpm_main() {
   char *line;
-
-#ifdef NOSDK
-  nosdk8266_init();
-#endif
-
   //  PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U,FUNC_GPIO0);
   //  PIN_DIR_OUTPUT=_BV(0);
   gpio16_output_conf();
   gpio16_output_set(1);	// PIN_OUT_SET=_BV(0);
 
-  ets_delay_us(250000);
-
-#ifdef NOSDK
-  InitUart();
-  uint32_t baud=AutoBaud();
-  uart_div_modify(UART0, (PERIPH_FREQ * 1000000) / baud);
-#endif 
-
-  printf("\n\ncpm8266 - Z80 Emulator and CP/M 2.2 system version %d.%d\n\n",VERSION/10,VERSION%10);
-  ets_delay_us(250000);
-
-#ifdef NOSDK
-  FlushUart();
-#endif
-
   Z80Reset(&machine.state);
   machine.is_done = 0;
 
   while (1) {
-    printf("EMON:");
+    os_printf("EMON:");
     line = GetLine();
-    printf("\n");
+    os_printf("\n");
     char cmd = line[0];
     line++;  // Skip to next char
 
@@ -202,17 +202,17 @@ void ICACHE_FLASH_ATTR cpm_main() {
     // Show help text
     //
     if (cmd == '?') {
-      printf("EMON v0.2\n");
-      printf("\td ADR [LEN] - Hexdump LEN bytes of memory starting at ADR\n");
-      printf("\tD ADR [LEN] - Intel hexdump LEN bytes of memory starting at ADR\n");
-      printf("\tL [OFFSET]  - Load an Intel hexdump into memory with OFFSET\n");
-      printf("\tm ADR       - Modify memory contents starting at ADR\n");
-      printf("\tr [REG VAL] - Display all registers, or set REG to VAL\n");
-      printf("\tg [ADR]     - Start execution at PC or [ADR], can break with `\n");
-      printf("\tG [ADR]     - Start execution at PC or [ADR]\n");
-      printf("\ts [NUM]     - Single step 1 or [NUM] instructions, print once\n");
-      printf("\tS [NUM]     - Single step 1 or [NUM] instructions, print every step\n");
-      printf("\tB           - Load D0/T0/S0 to 0x0000 and execute\n");
+      os_printf("EMON v0.2\n");
+      os_printf("\td ADR [LEN] - Hexdump LEN bytes of memory starting at ADR\n");
+      os_printf("\tD ADR [LEN] - Intel hexdump LEN bytes of memory starting at ADR\n");
+      os_printf("\tL [OFFSET]  - Load an Intel hexdump into memory with OFFSET\n");
+      os_printf("\tm ADR       - Modify memory contents starting at ADR\n");
+      os_printf("\tr [REG VAL] - Display all registers, or set REG to VAL\n");
+      os_printf("\tg [ADR]     - Start execution at PC or [ADR], can break with `\n");
+      os_printf("\tG [ADR]     - Start execution at PC or [ADR]\n");
+      os_printf("\ts [NUM]     - Single step 1 or [NUM] instructions, print once\n");
+      os_printf("\tS [NUM]     - Single step 1 or [NUM] instructions, print every step\n");
+      os_printf("\tB           - Load D0/T0/S0 to 0x0000 and execute\n");
       continue;
     }
 
@@ -267,10 +267,10 @@ void ICACHE_FLASH_ATTR cpm_main() {
         //   char dest[32];
         //   ets_memcpy(buffer, &machine.memory[machine.state.pc], 16);
         //   for (i = 0; i < 16; ++i)
-        //     printf("%02X ", buffer[i]);
-        //   printf("\n");
+        //     os_printf("%02X ", buffer[i]);
+        //   os_printf("\n");
         //   i = Z80_Dasm(buffer, dest, 0);
-        //   printf("%s  - %d bytes\n", dest, i);
+        //   os_printf("%s  - %d bytes\n", dest, i);
         // }
         cycles+=Z80Emulate(&machine.state, 1, &machine);
         if (cmd == 'S') ShowAllRegisters();
@@ -333,23 +333,23 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
 
   switch (arg) {
     case EXIT:
-      if (DBG & 8) printf("{EX}");
+      if (DBG & 8) os_printf("{EX}");
       machine.is_done = 1;
       break;
 
     case CONOUT:
-      if (DBG & 8) printf("{CO}");
-      printf("%c", C);
+      if (DBG & 8) os_printf("{CO}");
+      os_printf("%c", C);
       break;
 
     case LIST:
-      if (DBG & 8) printf("{LO}");
-      printf("%c", C);
+      if (DBG & 8) os_printf("{LO}");
+      os_printf("%c", C);
       break;
 
     case PUNCH:
-      if (DBG & 8) printf("{PO}");
-      printf("%c", C);
+      if (DBG & 8) os_printf("{PO}");
+      os_printf("%c", C);
       break;
 
     // CONIN	The next console character is read into register A, and the
@@ -357,7 +357,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		character is ready, wait until a character is typed before
     //		returning.
     case CONIN:
-      if (DBG & 8) printf("{CI}");
+      if (DBG & 8) os_printf("{CI}");
       m->state.registers.byte[Z80_A] = GetKey(true);
       break;
 
@@ -366,7 +366,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		character is ready to read and 00H in register A if no
     //		console characters are ready.
     case CONST:
-      if (DBG & 8) printf("{CS}");
+      if (DBG & 8) os_printf("{CS}");
       if (GetRxCnt() == 0) {
         m->state.registers.byte[Z80_A] = 0x00;
       } else {
@@ -382,7 +382,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     // value should be returned if LIST status is not implemented
     //
     case LISTST:
-      if (DBG & 8) printf("{LS}");
+      if (DBG & 8) os_printf("{LS}");
       m->state.registers.byte[Z80_A] = 0x00;
       break;
 
@@ -393,7 +393,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     // ASCII CTRL-Z(1AH).
     //
     case READER:
-      if (DBG & 8) printf("{RI}");
+      if (DBG & 8) os_printf("{RI}");
       m->state.registers.byte[Z80_A] = 0x1A;
       break;
 
@@ -410,7 +410,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		at the selected DMA address for the memory buffer during
     //		the subsequent read or write operations.
     case SETDMA:
-      if (DBG & 8) printf("{SD}");
+      if (DBG & 8) os_printf("{SD}");
       z80_dma = BC;
       break;
 
@@ -424,7 +424,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		standard floppy disk drives and 0- 65535 for nonstandard
     //		disk subsystems.
     case SETTRK:
-      if (DBG & 8) printf("{ST}");
+      if (DBG & 8) os_printf("{ST}");
       z80_trk = BC & 0xFF;
       break;
 
@@ -435,7 +435,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		information to the controller at this point or delay sector
     //		selection until a read or write operation occurs.
     case SETSEC:
-      if (DBG & 8) printf("{SS}");
+      if (DBG & 8) os_printf("{SS}");
       z80_sec = BC - 1;
       break;
 
@@ -446,7 +446,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		controller does not support this feature, the HOME call is
     //		translated into a call to SETTRK with a parameter of 0.
     case HOME:
-      if (DBG & 8) printf("{HO}");
+      if (DBG & 8) os_printf("{HO}");
       z80_trk = 0;
       break;
 
@@ -474,7 +474,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		if this is the first occurrence of the drive select since
     //		the last cold or warm start
     case SELDSK:
-      if (DBG & 8) printf("{SD}");
+      if (DBG & 8) os_printf("{SD}");
       z80_dsk = C & 0x0F;
       break;
 
@@ -497,7 +497,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		SECTOR. The operator then has the option of pressing a
     //		carriage return to ignore the error, or CTRL-C to abort.
     case READ:
-      if (DBG & 8) printf("{RD}");
+      if (DBG & 8) os_printf("{RD}");
       ReadDiskBlock(z80_dma, z80_sec, z80_trk, z80_dsk);
       m->state.registers.byte[Z80_A] = 0x00;
 
@@ -510,37 +510,139 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		codes given in the READ command are returned in register A,
     //		with error recovery attempts as described above.
     case WRITE:
-      if (DBG & 8) printf("{WR}");
+      if (DBG & 8) os_printf("{WR}");
       WriteDiskBlock(z80_dma, z80_sec, z80_trk, z80_dsk);
       m->state.registers.byte[Z80_A] = 0x00;
       break;
 
     case CYCLES:
-      printf("{CYCLES:%u}",cycles);
+      os_printf("{CYCLES:%u}",cycles);
       break;
 
     case HALT:
-      printf("\n{Exiting}\n");
+      os_printf("\n{Exiting}\n");
       machine.is_done = 1;
       break;
 
     default:
-      printf("\nINVALID argument to IN/OUT, ARG=0x%02x PC=%04x\n", arg, m->state.pc);
+      os_printf("\nINVALID argument to IN/OUT, ARG=0x%02x PC=%04x\n", arg, m->state.pc);
       machine.is_done = 1;
   }
-  if (DBG & 8) printf("\n");
+  if (DBG & 8) os_printf("\n");
 }
 
 
 #ifdef NOSDK
 void ICACHE_FLASH_ATTR main(void) {
+  uint32_t baud;
+
+  nosdk8266_init();
+  InitUart();
+  baud=AutoBaud();
+  uart_div_modify(UART0, (PERIPH_FREQ * 1000000) / baud);
+
+  os_printf("\n\ncpm8266 - Z80 Emulator and CP/M 2.2 system version %d.%d\n\n",VERSION/10,VERSION%10);
+  ets_delay_us(250000);
+  FlushUart();
+
   cpm_main();
 }
 #endif
 
 
+
+#ifdef WIFI
+#define user_procTaskPrio        0
+#define user_procTaskQueueLen    1
+os_event_t    user_procTaskQueue[user_procTaskQueueLen];
+static void user_procTask(os_event_t *events);
+
+static volatile os_timer_t some_timer;
+
+bool connected;
+bool connecting;
+bool dhcpc_started;
+struct station_config wifi_conf;
+
+void some_timerfunc(void *arg) {
+  int wifi_status;
+
+  if ((!connected) && (!connecting)){
+//   char ssid[32] = "01111523287";
+//   char password[64] = "jamsheed12" ;
+//   char ssid[32] = "mats";
+//   char password[64] = "6503181114" ;
+    strcpy((char *)wifi_conf.ssid, "01111523287");
+    strcpy((char *)wifi_conf.password, "jamsheed12");
+    wifi_conf.bssid_set = FALSE;
+    ETS_UART_INTR_DISABLE();
+    wifi_station_set_config_current(&wifi_conf);
+    ETS_UART_INTR_ENABLE();
+    connected = wifi_station_connect();
+  }
+
+  if (connecting) {
+    wifi_status = wifi_station_get_connect_status();
+    switch (wifi_status) {
+      case STATION_GOT_IP:
+        connecting = FALSE;
+        connected = TRUE;
+        break;
+
+      case STATION_IDLE:
+      case STATION_CONNECTING:
+        // Still going
+        break;
+
+      case STATION_WRONG_PASSWORD:
+      case STATION_NO_AP_FOUND:
+      case STATION_CONNECT_FAIL:
+      default:
+        connecting = FALSE;
+        connected = FALSE;
+        wifi_station_disconnect();
+        break;
+    }
+  }
+
+  if (connected && !dhcpc_started) {
+    dhcpc_started = wifi_station_dhcpc_start();
+  }
+}
+
+//Do nothing function
+static void ICACHE_FLASH_ATTR user_procTask(os_event_t *events) {
+  os_delay_us(10);
+}
+
+
+
+
+#endif
+
+
 #ifdef WIFI
 void ICACHE_FLASH_ATTR user_init() {
+  wifi_set_opmode_current(STATION_MODE);
+  connected = FALSE;
+  connecting = FALSE;
+  dhcpc_started = FALSE;
+
+  //Disarm timer
+  os_timer_disarm(&some_timer);
+
+  //Setup timer
+  os_timer_setfn(&some_timer, (os_timer_func_t *)some_timerfunc, NULL);
+
+  //Arm the timer
+  //&some_timer is the pointer
+  //1000 is the fire time in ms
+  //0 for once and 1 for repeating
+  os_timer_arm(&some_timer, 1000, 1);
+
+  //Start os task
+  system_os_task(user_procTask, user_procTaskPrio,user_procTaskQueue, user_procTaskQueueLen);
+
   cpm_main();
 }
 #endif

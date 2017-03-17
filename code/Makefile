@@ -4,27 +4,29 @@ ESP8266SDK	?= /Volumes/case-sensitive/esp-open-sdk/
 # Select WIFI for small memory CP/M machine with telnet over wifi access
 # or     NOSDK for 64K CP/M with serial access
 
-BUILD		?= NOSDK
+BUILD		?= WIFI
+#BUILD		?= NOSDK
 
 #  Pick from *52 *80 104 *115 160 *173 *189 231 320 346 378
 #  * = peripheral clock at processor clock.
 MAIN_MHZ	=  160
 
-FLASHPARAM 	=  --flash_freq 80m --flash_mode dout
-FLASHBAUD	=  921600
-
-DISKSIZE	=  0x3E900 # 256256 bytes (IMB 8-inch 26sec, 77trk, SS)
-DISKBLOCK	=  262144  # 0x40000
-DISKS		=  A B C D E F G H I J K L M N O
-
+FLASHPARAM 		=  --flash_freq 80m --flash_mode dout
+FLASHBAUD		=  921600
 EMULATIONBAUD	=  9600
-PORT 			= 23
+PORT 			=  23
+
+DISKSIZE	=  0x3E900  # 256256 bytes (IMB 8-inch 26sec, 77trk, SS)
+DISKBLOCK	=  262144   # 0x40000 
+DISKADDR	=  3932160  # 0x3c0000	
 
 ifeq (NOSDK, $(BUILD))
+ DISKS		=  A B C D E F G H I J K L M N O
  export CPMMEMORY = 1024*64
 endif
 
 ifeq (WIFI, $(BUILD))
+ DISKS		=  A B C D E F G H I J K L M N
  export CPMMEMORY =  1024*40
 endif
 
@@ -55,9 +57,8 @@ CFLAGS		=  -std=c11 -DMAIN_MHZ=$(MAIN_MHZ) -DVERSION=$(VERSION) -DEMULATIONBAUD=
 CFLAGS 		:= $(CFLAGS) -Iinclude -I./ -Os -mlongcalls
 
 ifeq (NOSDK, $(BUILD))
- CFLAGS		:= $(CFLAGS) -DNOSDK  -flto -g -Iinclude -nostdlib -mno-serialize-volatile
- #CFLAGS	:= $(CFLAGS) -DDEBUG
- LDLIBS		:=
+ CFLAGS		:= $(CFLAGS) -DNOSDK  -flto -mno-serialize-volatile
+ LDLIBS 	= -nostdlib 
  LDFLAGS	=  -T ld/linkerscript.ld -T ld/addresses.ld
 endif
 
@@ -79,17 +80,17 @@ ifeq (WIFI, $(BUILD))
 endif
 
 
-.PHONY: all NOSDK disks clean dist ram size
+.PHONY: all full disks clean dist ram size
 
 all: bins flash
 
-NOSDK: clean bins flash disks systemdiskA writealldisks
+full: clean bins flash disks systemdiskA writealldisks
 
 erase:
 	@echo "[ERASING]"
 	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) erase_flash > /dev/null
 
-dist: erase NOSDK
+dist: erase full
 	@echo "[READING IMAGE]"
 	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) read_flash 0x00000 0x400000 dist/cpm8266_$(VERSION).bin > /dev/null
 	@$(ZIP) -j -9 dist/cpm8266_$(VERSION).zip dist/cpm8266_$(VERSION).bin dist/readme.txt > /dev/null
@@ -206,21 +207,21 @@ serials :
 
 define WRITEDISK =
 writedisk$(1) :
-	@$(eval address := $(shell n=$$(printf "%d\n" \'$(1)); printf "0x%06x" $$(( ($$n-64)*$(2) )); ) )
+	@$(eval address := $(shell n=$$(printf "%d\n" \'$(1)); printf "0x%06x" $$(( $(4)-(($$n-65)*$(2)) )); ) )
 	@echo "[UPLOAD]" disks/DISK_$(1).DSK to $(address)
 	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash $(address) disks/DISK_$(1).DSK > /dev/null
 endef
 
 define READDISK =
 readdisk$(1) :
-	@$(eval address := $(shell n=$$(printf "%d\n" \'$(1)); printf "0x%06x" $$(( ($$n-64)*$(2) )); ) )
+	@$(eval address := $(shell n=$$(printf "%d\n" \'$(1)); printf "0x%06x" $$(( $(4)-(($$n-65)*$(2)) )); ) )
 	@echo "[DOWNLOAD]" disks/DISK_$(1).DSK from $(address)
 	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) read_flash $(address) $(3) disks/DISK_$(1).DSK > /dev/null
 endef
 
 $(foreach DSK,$(DISKS), \
-	$(eval $(call WRITEDISK,$(DSK), $(DISKBLOCK), $(DISKSIZE))); \
-	$(eval $(call  READDISK,$(DSK), $(DISKBLOCK), $(DISKSIZE))); \
+	$(eval $(call WRITEDISK,$(DSK), $(DISKBLOCK), $(DISKSIZE), $(DISKADDR) )); \
+	$(eval $(call  READDISK,$(DSK), $(DISKBLOCK), $(DISKSIZE), $(DISKADDR) )); \
 )
 
 WRITEDISKTARGETS=$(foreach DSK,$(DISKS), writedisk$(DSK) )

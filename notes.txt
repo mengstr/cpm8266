@@ -268,11 +268,38 @@ http://wikiti.brandonw.net/index.php?title=Category:Z80_Routines
 
 http://www.z80cpu.eu/mirrors/www.autometer.de/unix4fun/z80pack/index.html
 
+------
 
 Before write cache: 38 seconds assembly time on ESP for SED80 1de29be using "a:z80asm sed80/AF"
 With 4K write cache: 17 seconds 
 With 4K write cache: 7.5 seconds
 
+-------
 
+http://bbs.espressif.com/viewtopic.php?t=1183
 
-                        
+Another useful technique can be found in the ESP8266-Arduino linker script. The excerpt below 
+comes from esp8266/Arduino on GitHub:
+
+Code: Select all
+  .irom0.text : ALIGN(4)
+  {
+    _irom0_text_start = ABSOLUTE(.);
+    *core_esp8266_*.o(.literal*, .text*)
+    *spiffs*.o(.literal*, .text*)
+    *.cpp.o(.literal*, .text*)
+    *libm.a:(.literal .text .literal.* .text.*)
+    *libsmartconfig.a:(.literal .text .literal.* .text.*)
+    *(.irom0.literal .irom.literal .irom.text.literal .irom0.text .irom.text)
+    _irom0_text_end = ABSOLUTE(.);
+    _flash_code_end = ABSOLUTE(.);
+  } >irom0_0_seg :irom0_0_phdr
+
+Note, particularly, the fourth and seventh lines. The fourth line causes all of the core 
+esp8266/Arduino code .literal and .text sections to be put in .irom0.text. This accomplishes 
+exactly the same purpose as does using objcopy to rename the sections. (The fifth line does 
+the same for SPIFFS code.) The seventh line causes all .literal and .text sections in the 
+libm.a to be put in .irom0.text. This works around a problem where using sqrt() in an application 
+would cause the cache RAM size to be exceeded.
+
+-------
