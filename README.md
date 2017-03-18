@@ -39,8 +39,7 @@ setup two environment variables:
 export ESP8266SDK=/opt/esp-open-sdk
 export ESPPORT=/dev/ttyUSB0
 ```
-Then just do a `make full` to compile and upload to the
-ESP.
+Then just do a `make full` to compile it all and upload to the ESP.
 
 ### Folder contents
 - *CPM22/* The Z80 assembly sources for CP/M 2.2
