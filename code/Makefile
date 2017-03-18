@@ -4,8 +4,8 @@ ESP8266SDK	?= /Volumes/case-sensitive/esp-open-sdk/
 # Select WIFI for small memory CP/M machine with telnet over wifi access
 # or     NOSDK for 64K CP/M with serial access
 
-#BUILD		?= WIFI
-BUILD		?= NOSDK
+BUILD		?= WIFI
+#BUILD		?= NOSDK
 
 #  Pick from *52 *80 104 *115 160 *173 *189 231 320 346 378
 #  * = peripheral clock at processor clock.
@@ -171,7 +171,7 @@ ifeq (WIFI, $(BUILD))
 	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash \
 		0x3fc000 espbin/esp_init_data_default.binary \
 		0x3fe000 espbin/blank.binary \
-		$(FLASHPARAM) #> /dev/null
+		$(FLASHPARAM) > /dev/null
 endif
 
 disks :
@@ -229,7 +229,7 @@ ram : image.elf
 
 clean :
 	@rm -rf $(FW1) $(FW2)
-	@rm -rf {.,nosdk,z80,dist}/*.{data,s,o,i,elf,res,map,bin,lst,out,bak,zip}
+	@rm -rf {.,nosdk,z80,dist}/*.{data,s,o,i,elf,res,map,bin,lst,out,bak,zip,cap,log}
 	@rm -rf {..,.,nosdk,z80,dist}/*~
 	@$(MAKE) --no-print-directory -C CPM22 clean
 	@$(MAKE) --no-print-directory -C disks clean
