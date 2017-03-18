@@ -643,6 +643,6 @@ void ICACHE_FLASH_ATTR user_init() {
   //Start os task
   system_os_task(user_procTask, user_procTaskPrio,user_procTaskQueue, user_procTaskQueueLen);
 
-  cpm_main();
+//  cpm_main();
 }
 #endif

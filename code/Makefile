@@ -17,16 +17,17 @@ EMULATIONBAUD	=  9600
 PORT 			=  23
 
 DISKSIZE	=  0x3E900  # 256256 bytes (IMB 8-inch 26sec, 77trk, SS)
-DISKBLOCK	=  262144   # 0x40000 
-DISKADDR	=  3932160  # 0x3c0000	
+DISKBLOCK	=  262144   # 0x40000
 
 ifeq (NOSDK, $(BUILD))
  DISKS		=  A B C D E F G H I J K L M N O
+ DISKADDR	=  3932160  # 0x3c0000
  export CPMMEMORY = 1024*64
 endif
 
 ifeq (WIFI, $(BUILD))
  DISKS		=  A B C D E F G H I J K L M N
+ DISKADDR	=  3915776  # 0x3bc000
  export CPMMEMORY =  1024*40
 endif
 
@@ -42,7 +43,7 @@ ZASM		=  /usr/local/bin/zasm
 XXD			=  /usr/bin/xxd
 ZIP			=  /usr/bin/zip
 DD			=  /bin/dd
-ESPTOOL		=  $(ESP8266SDK)/esptool/esptool.py
+ESPTOOL		=  /opt/esptool/esptool.py
 BINS		=  $(ESP8266SDK)/xtensa-lx106-elf/bin
 SIZE		=  $(BINS)/xtensa-lx106-elf-size
 READELF		=  $(BINS)/xtensa-lx106-elf-readelf
@@ -58,7 +59,7 @@ CFLAGS 		:= $(CFLAGS) -Iinclude -I./ -Os -mlongcalls
 
 ifeq (NOSDK, $(BUILD))
  CFLAGS		:= $(CFLAGS) -DNOSDK  -flto -mno-serialize-volatile
- LDLIBS 	= -nostdlib 
+ LDLIBS 	= -nostdlib
  LDFLAGS	=  -T ld/linkerscript.ld -T ld/addresses.ld
 endif
 
@@ -80,11 +81,11 @@ ifeq (WIFI, $(BUILD))
 endif
 
 
-.PHONY: all full disks clean dist ram size
+.PHONY: all full disks clean flash flashinit dist ram size
 
 all: bins flash
 
-full: clean bins flash disks systemdiskA writealldisks
+full: clean bins flashinit flash disks systemdiskA writealldisks
 
 erase:
 	@echo "[ERASING]"
@@ -182,7 +183,21 @@ CPM22/CCP.bin :
 
 flash : $(FW0) $(FW1)
 	@echo "[UPLOAD]" $(FW0) $(FW1)
-	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash 0x00000 $(FW0) 0x10000 $(FW1) $(FLASHPARAM) > /dev/null
+	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash \
+		0x00000 $(FW0) \
+		0x10000 $(FW1) \
+		$(FLASHPARAM) > /dev/null
+
+flashinit:
+	@echo "[ERASING FLASH]"
+	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) erase_flash > /dev/null
+ifeq (WIFI, $(BUILD))
+	@echo "[INITIALIZING FLASH]"
+	@$(ESPTOOL) -p $(ESPPORT) -b $(FLASHBAUD) write_flash \
+		0x3fc000 espbin/esp_init_data_default.binary \
+		0x3fe000 espbin/blank.binary \
+		$(FLASHPARAM) #> /dev/null
+endif
 
 disks :
 	@$(MAKE) --no-print-directory -C disks clean all

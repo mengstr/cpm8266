@@ -13,7 +13,13 @@
 #define SECTORSPERTRACK 26
 #define TRACKSPERDISK   77
 
-#define DISKFLASHOFFSET 0x3c0000 // Location in flash for first disk going backwards
+#ifdef NOSDK
+ #define DISKFLASHOFFSET 0x3c0000 // Location in flash for first disk going backwards
+#endif
+#ifdef WIFI
+ #define DISKFLASHOFFSET 0x3bc000 // Location in flash for first disk going backwards
+#endif
+
 #define DISKFLASHSIZE   0x40000  // Number of bytes in flash for each disk
 #define DISKCOUNT       15       // We have 15 disks A..O
 #define FLASHBLOCKSIZE  4096     // Nr of bytes for erase/write to flash
