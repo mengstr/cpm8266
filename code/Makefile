@@ -77,6 +77,8 @@ ifeq (NOSDK, $(BUILD))
 endif
 
 ifeq (WIFI, $(BUILD))
+ SRCS		:= $(SRCS) wifi.c
+ OBJS		:= $(OBJS) wifi.o
 endif
 
 
@@ -139,6 +141,12 @@ nosdk/nosdk8266.o: nosdk/nosdk8266.c
 nosdk/startup.o: nosdk/startup.S
 	@echo [AS] $<
 	@$(AS) -o $@ -c $<
+endif
+
+ifeq (WIFI, $(BUILD))
+wifi.o: wifi.c
+	@echo [CC] $<
+	@$(GCC) $(CFLAGS) -o $@ -c $<
 endif
 
 CPM22/boot.data: CPM22/BOOT.bin

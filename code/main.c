@@ -9,21 +9,11 @@
  #include "nosdk8266.h"
 #endif
 #ifdef WIFI
-int os_printf(const char *format, ...)  __attribute__ ((format (printf, 1, 2)));
-int os_snprintf(char *str, size_t size, const char *format, ...) __attribute__ ((format (printf, 3, 4)));
-int os_printf_plus(const char *format, ...)  __attribute__ ((format (printf, 1, 2)));
-void ets_timer_arm_new(volatile os_timer_t *a, int b, int c, int isMstimer);
-void ets_timer_disarm(volatile os_timer_t *a);
-void ets_timer_setfn(volatile os_timer_t *t, ETSTimerFunc *fn, void *parg);
-void ets_isr_attach(int intr, void *handler, void *arg);
-void ets_isr_mask(unsigned intr);
-void ets_isr_unmask(unsigned intr);
-void ets_delay_us(int ms);
- #include "ets_sys.h"
- #include "osapi.h"
- #include "gpio.h"
- #include "user_interface.h"
- #include "user_config.h"
+//  int os_printf(const char *format, ...)  __attribute__ ((format (printf, 1, 2)));
+//  int os_snprintf(char *str, size_t size, const char *format, ...) __attribute__ ((format (printf, 3, 4)));
+ int os_printf_plus(const char *format, ...)  __attribute__ ((format (printf, 1, 2)));
+#include "osapi.h"
+ #include "wifi.h"
 #endif
 
 #include "uart.h"
@@ -548,136 +538,4 @@ void ICACHE_FLASH_ATTR main(void) {
 
 
 #ifdef WIFI
-#define user_procTaskPrio        0
-#define user_procTaskQueueLen    1
-os_event_t    user_procTaskQueue[user_procTaskQueueLen];
-static void user_procTask(os_event_t *events);
-
-static volatile os_timer_t some_timer;
-
-bool connected;
-bool connecting;
-bool dhcpc_started;
-struct station_config wifi_conf;
-
-void some_timerfunc(void *arg) {
-  int wifi_status;
-
-  if ((!connected) && (!connecting)){
-//   char ssid[32] = "01111523287";
-//   char password[64] = "jamsheed12" ;
-//   char ssid[32] = "mats";
-//   char password[64] = "6503181114" ;
-    strcpy((char *)wifi_conf.ssid, "01111523287");
-    strcpy((char *)wifi_conf.password, "jamsheed12");
-    wifi_conf.bssid_set = FALSE;
-    ETS_UART_INTR_DISABLE();
-    wifi_station_set_config_current(&wifi_conf);
-    ETS_UART_INTR_ENABLE();
-    connected = wifi_station_connect();
-  }
-
-  if (connecting) {
-    wifi_status = wifi_station_get_connect_status();
-    switch (wifi_status) {
-      case STATION_GOT_IP:
-        connecting = FALSE;
-        connected = TRUE;
-        break;
-
-      case STATION_IDLE:
-      case STATION_CONNECTING:
-        // Still going
-        break;
-
-      case STATION_WRONG_PASSWORD:
-      case STATION_NO_AP_FOUND:
-      case STATION_CONNECT_FAIL:
-      default:
-        connecting = FALSE;
-        connected = FALSE;
-        wifi_station_disconnect();
-        break;
-    }
-  }
-
-  if (connected && !dhcpc_started) {
-    dhcpc_started = wifi_station_dhcpc_start();
-  }
-}
-
-//Do nothing function
-static void ICACHE_FLASH_ATTR user_procTask(os_event_t *events) {
-  os_delay_us(10);
-}
-
-void ICACHE_FLASH_ATTR user_init() {
-  os_printf("NONOS SDK version:%s\n", system_get_sdk_version());
-  system_print_meminfo();
-
-  wifi_set_opmode_current(STATION_MODE);
-  connected = FALSE;
-  connecting = FALSE;
-  dhcpc_started = FALSE;
-
-  //Disarm timer
-  os_timer_disarm(&some_timer);
-
-  //Setup timer
-  os_timer_setfn(&some_timer, (os_timer_func_t *)some_timerfunc, NULL);
-
-  //Arm the timer
-  //&some_timer is the pointer
-  //1000 is the fire time in ms
-  //0 for once and 1 for repeating
-  os_timer_arm(&some_timer, 1000, 1);
-
-  //Start os task
-  system_os_task(user_procTask, user_procTaskPrio,user_procTaskQueue, user_procTaskQueueLen);
-
-//  cpm_main();
-}
-
-//
-// Required for NONOS 2.0
-//
-uint32 ICACHE_FLASH_ATTR user_rf_cal_sector_set(void) {
-    enum flash_size_map size_map = system_get_flash_size_map();
-    uint32 rf_cal_sec = 0;
-
-    switch (size_map) {
-        case FLASH_SIZE_4M_MAP_256_256:
-            rf_cal_sec = 128 - 5;
-            break;
-
-        case FLASH_SIZE_8M_MAP_512_512:
-            rf_cal_sec = 256 - 5;
-            break;
-
-        case FLASH_SIZE_16M_MAP_512_512:
-        case FLASH_SIZE_16M_MAP_1024_1024:
-            rf_cal_sec = 512 - 5;
-            break;
-
-        case FLASH_SIZE_32M_MAP_512_512:
-        case FLASH_SIZE_32M_MAP_1024_1024:
-            rf_cal_sec = 1024 - 5;
-            break;
-
-        default:
-            rf_cal_sec = 0;
-            break;
-    }
-
-    return rf_cal_sec;
-}
-
-
-//
-// Required for NONOS 2.0
-//
-void ICACHE_FLASH_ATTR user_rf_pre_init(void) {
-}
-
-
 #endif
