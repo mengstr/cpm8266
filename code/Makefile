@@ -103,7 +103,7 @@ bins: $(OBJS)
 	@$(OBJDUMP) -S $(TARGET).elf > $(TARGET).lst
 	@export PATH=$(BINS):$$PATH; $(ESPTOOL) elf2image $(TARGET).elf $(FLASHPARAM) > /dev/null
 
-main.o: main.c z80/z80emu.h z80/z80user.h hex/boot.data
+main.o: main.c z80/z80emu.h z80/z80user.h CPM22/boot.data
 	@echo [CC] $<
 	@$(GCC) $(CFLAGS) -o $@ -c $<
 
@@ -141,8 +141,8 @@ nosdk/startup.o: nosdk/startup.S
 	@$(AS) -o $@ -c $<
 endif
 
-hex/boot.data: CPM22/BOOT.bin
-	@$(XXD) -i < CPM22/BOOT.bin > hex/boot.data
+CPM22/boot.data: CPM22/BOOT.bin
+	@$(XXD) -i < CPM22/BOOT.bin > CPM22/boot.data
 
 CPM22/BOOT.bin :
 	@$(MAKE) --no-print-directory -C CPM22 BOOT.bin
@@ -229,7 +229,6 @@ ram : image.elf
 
 clean :
 	@rm -rf $(FW1) $(FW2)
-	@rm -rf hex/*.*
 	@rm -rf {.,nosdk,z80,dist}/*.{data,s,o,i,elf,res,map,bin,lst,out,bak,zip}
 	@rm -rf {..,.,nosdk,z80,dist}/*~
 	@$(MAKE) --no-print-directory -C CPM22 clean

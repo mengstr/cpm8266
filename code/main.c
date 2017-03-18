@@ -40,9 +40,8 @@ void ets_delay_us(int ms);
 volatile uint32_t KEEPMEHERE __attribute__((section(".irom.text"))) = 0xDEADBEEF;
 
 static const char z80code[] RODATA_ATTR = {
-#include "hex/boot.data"
+#include "CPM22/boot.data"
 };
-
 #include "z80/z80emu.h"
 #include "z80/z80user.h"
 #include "monitor.h"

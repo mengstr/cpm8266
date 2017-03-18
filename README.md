@@ -39,8 +39,20 @@ setup two environment variables:
 export ESP8266SDK=/opt/esp-open-sdk
 export ESPPORT=/dev/ttyUSB0
 ```
-Then just a `make clean && make && make flash` to compile and upload to the
+Then just do a `make full` to compile and upload to the
 ESP.
+
+### Folder contents
+- *CPM22/* The Z80 assembly sources for CP/M 2.2
+- *disks/* Have sub-folders with the files to be put into the simulated disks
+- *dist/* Used to hold the file when creating the zipped binary distributions
+- *espbin/* SDK bin-files from Espresif to be uploaded in high flash 
+- *include/* .h files from NoSDK
+- *ld/* Linker scripts
+- *nosdk/* Modified files from the NoSDK repo
+- *z80/* Modified files from the Z80 emulator repo 
+
+
 
 ### Acknowledgements and thanks
 I'm standing on the shoulders of a lot of really smart people here. Without

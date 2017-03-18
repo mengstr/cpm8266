@@ -63,5 +63,6 @@ CCP.hex: CCP.Z80
 clean :
 	@rm -rf *~
 	@rm -rf *.{rom,bin,hex,lst}
+	@rm -rf *.data
 
 
