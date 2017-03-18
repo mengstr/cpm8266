@@ -9,9 +9,11 @@
 #include "gpio16.h"
 #include "flash.h"
 
-#define SECTORSIZE      128
-#define SECTORSPERTRACK 26
-#define TRACKSPERDISK   77
+#define DISKCOUNT       15    // We have 15 floppy simulated drives A..O
+#define SECTORSIZE      128   // CP/M Sectors are 128 bytes each
+#define SECTORSPERTRACK 26    // A standard 8" IBM disk have 26 sectors...
+#define TRACKSPERDISK   77    // ... and 77 tracks 
+#define DISKSIZE        (SECTORSIZE*SECTORSPERTRACK*TRACKSPERDISK)
 
 #ifdef NOSDK
  #define DISKFLASHOFFSET 0x3c0000 // Location in flash for first disk going backwards
@@ -20,8 +22,6 @@
  #define DISKFLASHOFFSET 0x3bc000 // Location in flash for first disk going backwards
 #endif
 
-#define DISKFLASHSIZE   0x40000  // Number of bytes in flash for each disk
-#define DISKCOUNT       15       // We have 15 disks A..O
 #define FLASHBLOCKSIZE  4096     // Nr of bytes for erase/write to flash
 
 extern MACHINE machine;
@@ -46,7 +46,7 @@ void ICACHE_FLASH_ATTR ReadDiskBlock(uint16_t mdest, uint8_t sectorNo,
   if (sectorNo > (SECTORSPERTRACK - 1)) sectorNo = SECTORSPERTRACK - 1;
 
   uint32_t lba = SECTORSPERTRACK * trackNo + sectorNo;
-  uint32_t flashloc = (DISKFLASHOFFSET - DISKFLASHSIZE * diskNo) + SECTORSIZE * lba;
+  uint32_t flashloc = (DISKFLASHOFFSET - DISKSIZE * diskNo) + SECTORSIZE * lba;
   uint16_t myFlashSectorNo = flashloc / FLASHBLOCKSIZE;
   uint16_t fl = flashloc % FLASHBLOCKSIZE;
  
@@ -83,7 +83,7 @@ void ICACHE_FLASH_ATTR WriteDiskBlock(uint16_t msrc, uint8_t sectorNo,
   if (sectorNo > (SECTORSPERTRACK - 1)) sectorNo = SECTORSPERTRACK - 1;
 
   uint32_t lba = SECTORSPERTRACK * trackNo + sectorNo;
-  uint32_t flashloc = (DISKFLASHOFFSET - DISKFLASHSIZE * diskNo) + SECTORSIZE * lba;
+  uint32_t flashloc = (DISKFLASHOFFSET - DISKSIZE * diskNo) + SECTORSIZE * lba;
   uint16_t myFlashSectorNo = flashloc / FLASHBLOCKSIZE;
   uint16_t fl = flashloc % FLASHBLOCKSIZE;
 

@@ -4,8 +4,8 @@ ESP8266SDK	?= /Volumes/case-sensitive/esp-open-sdk/
 # Select WIFI for small memory CP/M machine with telnet over wifi access
 # or     NOSDK for 64K CP/M with serial access
 
-BUILD		?= WIFI
-#BUILD		?= NOSDK
+#BUILD		?= WIFI
+BUILD		?= NOSDK
 
 #  Pick from *52 *80 104 *115 160 *173 *189 231 320 346 378
 #  * = peripheral clock at processor clock.
@@ -17,7 +17,6 @@ EMULATIONBAUD	=  9600
 PORT 			=  23
 
 DISKSIZE	=  0x3E900  # 256256 bytes (IMB 8-inch 26sec, 77trk, SS)
-DISKBLOCK	=  262144   # 0x40000
 
 ifeq (NOSDK, $(BUILD))
  DISKS		=  A B C D E F G H I J K L M N O
@@ -235,8 +234,8 @@ readdisk$(1) :
 endef
 
 $(foreach DSK,$(DISKS), \
-	$(eval $(call WRITEDISK,$(DSK), $(DISKBLOCK), $(DISKSIZE), $(DISKADDR) )); \
-	$(eval $(call  READDISK,$(DSK), $(DISKBLOCK), $(DISKSIZE), $(DISKADDR) )); \
+	$(eval $(call WRITEDISK,$(DSK), $(DISKSIZE), $(DISKSIZE), $(DISKADDR) )); \
+	$(eval $(call  READDISK,$(DSK), $(DISKSIZE), $(DISKSIZE), $(DISKADDR) )); \
 )
 
 WRITEDISKTARGETS=$(foreach DSK,$(DISKS), writedisk$(DSK) )
