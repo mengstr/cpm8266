@@ -27,7 +27,7 @@ endif
 ifeq (WIFI, $(BUILD))
  DISKS		=  A B C D E F G H I J K L M N
  DISKADDR	=  3915776  # 0x3bc000
- export CPMMEMORY =  1024*40
+ export CPMMEMORY =  1024*38
 endif
 
 export VERSION	 =  02
@@ -234,6 +234,11 @@ size :
 ram : image.elf
 	$(READELF) -s $(TARGET).elf | sort -k2 | grep ": 401"
 
+-include Makefile.tmp
+
+Makefile.tmp: Makefile
+	@touch $@
+	@$(MAKE) -s clean
 
 clean :
 	@rm -rf $(FW1) $(FW2)
