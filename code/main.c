@@ -47,9 +47,6 @@ static const char z80code[] RODATA_ATTR = {
 #include "z80/z80user.h"
 #include "monitor.h"
 #include "utils.h"
-#ifdef NOSDK
-# include "disasm/disasm.h"
-#endif
 
 // 01=    02=r/w    04=bios/bdos  08=
 const uint8_t DBG = 0x00;
@@ -614,9 +611,6 @@ void some_timerfunc(void *arg) {
 static void ICACHE_FLASH_ATTR user_procTask(os_event_t *events) {
   os_delay_us(10);
 }
-
-
-
 
 #endif
 

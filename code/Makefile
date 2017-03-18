@@ -72,8 +72,8 @@ SRCS		=  main.c uart.c flash.c monitor.c utils.c gpio16.c z80/z80emu.c
 OBJS		=  main.o uart.o flash.o monitor.o utils.o gpio16.o z80/z80emu.o
 
 ifeq (NOSDK, $(BUILD))
- SRCS		:= $(SRCS) nosdk/startup.S nosdk/nosdk8266.c disasm/disasm.c
- OBJS		:= $(OBJS) nosdk/startup.o nosdk/nosdk8266.o disasm/disasm.o
+ SRCS		:= $(SRCS) nosdk/startup.S nosdk/nosdk8266.c
+ OBJS		:= $(OBJS) nosdk/startup.o nosdk/nosdk8266.o
 endif
 
 ifeq (WIFI, $(BUILD))
@@ -132,30 +132,6 @@ z80/z80emu.o: z80/z80emu.c z80/z80emu.h
 	@$(GCC) $(CFLAGS) -o $@ -c $<
 
 ifeq (NOSDK, $(BUILD))
-disasm/mnemonic_cb.data: disasm/mnemonic_cb.txt
-	@$(XXD) -i < $< > $@
-
-disasm/mnemonic_main.data: disasm/mnemonic_main.txt
-	@$(XXD) -i < $< > $@
-
-disasm/mnemonic_xx.data: disasm/mnemonic_xx.txt
-	@$(XXD) -i < $< > $@
-
-disasm/mnemonic_ed.data: disasm/mnemonic_ed.txt
-	@$(XXD) -i < $< > $@
-
-disasm/mnemonic_xx_cb.data: disasm/mnemonic_xx_cb.txt
-	@$(XXD) -i < $< > $@
-
-disasm/disasm.o: disasm/disasm.c disasm/disasm.h \
-		 disasm/mnemonic_xx_cb.data \
-		 disasm/mnemonic_cb.data \
-		 disasm/mnemonic_main.data \
-		 disasm/mnemonic_xx.data \
-		 disasm/mnemonic_ed.data
-	@echo [CC] $<
-	@$(GCC) $(CFLAGS) -o $@ -c $<
-
 nosdk/nosdk8266.o: nosdk/nosdk8266.c
 	@echo [CC] $<
 	@$(GCC) $(CFLAGS) -o $@ -c $<
@@ -254,7 +230,7 @@ ram : image.elf
 clean :
 	@rm -rf $(FW1) $(FW2)
 	@rm -rf hex/*.*
-	@rm -rf {.,nosdk,z80,disasm,dist}/*.{data,s,o,i,elf,res,map,bin,lst,out,bak,zip}
-	@rm -rf {..,.,nosdk,z80,disasm,dist}/*~
+	@rm -rf {.,nosdk,z80,dist}/*.{data,s,o,i,elf,res,map,bin,lst,out,bak,zip}
+	@rm -rf {..,.,nosdk,z80,dist}/*~
 	@$(MAKE) --no-print-directory -C CPM22 clean
 	@$(MAKE) --no-print-directory -C disks clean
