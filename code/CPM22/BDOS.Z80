@@ -7,26 +7,28 @@
 ;       California, 93950
 ;
 
-#include "MEMLOCS.Z80"
+		include "MEMLOCS.Z80"
+		include "VECTORS.Z80"
+
 		org START_BDOSCODE
 
 ;
 ;   Set control character equates.
 ;
-CNTRLC	EQU	3			;control-c
-CNTRLE	EQU	05H			;control-e
-BS		EQU	08H			;backspace
-TAB		EQU	09H			;tab
-LF		EQU	0AH			;line feed
-FF		EQU	0CH			;form feed
-CR		EQU	0DH			;carriage return
-CNTRLP	EQU	10H			;control-p
-CNTRLR	EQU	12H			;control-r
-CNTRLS	EQU	13H			;control-s
-CNTRLU	EQU	15H			;control-u
-CNTRLX	EQU	18H			;control-x
-CNTRLZ	EQU	1AH			;control-z (end-of-file mark)
-DEL		EQU	7FH			;rubout
+CNTRLC:		EQU	3		;control-c
+CNTRLE:		EQU	05H		;control-e
+BS:		EQU	08H		;backspace
+TAB:		EQU	09H		;tab
+LF:		EQU	0AH		;line feed
+FF:		EQU	0CH		;form feed
+CR:		EQU	0DH		;carriage return
+CNTRLP:		EQU	10H		;control-p
+CNTRLR:		EQU	12H		;control-r
+CNTRLS:		EQU	13H		;control-s
+CNTRLU:		EQU	15H		;control-u
+CNTRLX:		EQU	18H		;control-x
+CNTRLZ:		EQU	1AH		;control-z (end-of-file mark)
+DEL:		EQU	7FH		;rubout
 
 
 ;
@@ -42,9 +44,10 @@ PATTRN2:DEFB	0,22,0,0,0,0	;(* serial number bytes *).
 ; it in the MEMLOCS.Z80 include. Check that the address set for the
 ; label is correctly set and halt compile if it's wrong.
 ;
-#if $ != FBASE
-FBASE EQU BAD_ADDRESS	; Halt assembly
-#endif
+if $ != FBASE
+FBASE: EQU BAD_ADDRESS	; Halt assembly
+endif
+
 	JP	FBASE1
 
 ;
@@ -91,7 +94,7 @@ FBASE1:	EX	DE,HL		;save the (DE) parameters.
 ;
 ;   BDOS function jump table.
 ;
-NFUNCTS EQU	41		;number of functions in followin table.
+NFUNCTS: EQU	41		;number of functions in followin table.
 ;
 FUNCTNS:
 	DEFW	WBOOT	; BIOS
@@ -540,7 +543,7 @@ USRSTACK: DEFW	0		;save users stack pointer here.
 ;
 	DEFB	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 	DEFB	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-STKAREA EQU	$		;end of stack area.
+STKAREA: EQU	$		;end of stack area.
 ;
 USERNO:	DEFB	0		;current user number.
 ACTIVE:	DEFB	0		;currently active drive.

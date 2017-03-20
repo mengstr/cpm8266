@@ -6,32 +6,34 @@
 ; Copyright (c) 1980 Digital Research
 ;
 
-#include "MEMLOCS.Z80"
+		include "MEMLOCS.Z80"
+		include "VECTORS.Z80"
+
 		org 0000h
 
 ;
 ; Command codes that are sent to the emulator via a OUT (xxx),A instruction
 ; to handle the BIOS low level console & disk I/O emulation
 ;
-EMU_EXIT	equ	00h
-EMU_CONOUT	equ	01h
-EMU_LIST	equ	02h
-EMU_PUNCH	equ	03h
-EMU_CONIN	equ	04h
-EMU_CONST	equ	05h
-EMU_SETDMA	equ	06h
-EMU_SETTRK	equ	07h
-EMU_SETSEC	equ	08h
-EMU_HOME	equ	09h
-EMU_SETDSK	equ	0Ah
-EMU_READ	equ	0Bh
-EMU_WRITE	equ	0Ch
+EMU_EXIT:	equ	00h
+EMU_CONOUT:	equ	01h
+EMU_LIST:	equ	02h
+EMU_PUNCH:	equ	03h
+EMU_CONIN:	equ	04h
+EMU_CONST:	equ	05h
+EMU_SETDMA:	equ	06h
+EMU_SETTRK:	equ	07h
+EMU_SETSEC:	equ	08h
+EMU_HOME:	equ	09h
+EMU_SETDSK:	equ	0Ah
+EMU_READ:	equ	0Bh
+EMU_WRITE:	equ	0Ch
 
 	LD	BC,2			; B=TRACK 0, C=SECTOR 2
 	LD	D,51			; D=# SECTORS TO LOAD
 	LD	HL,START_CCPCODE	; HL=BASE TRANSFER ADDRESS
 
-LoadSector
+LoadSector:
 ; INSERT INLINE CODE AT THIS POINT TO READ ONE 128 BYTE SECTOR FROM THE
 ; TRACK GIVEN IN REGISTER B, SECTOR GIVEN IN REGISTER C, INTO THE ADDRESS
 ; GIVEN BY <HL> BRANCH TO LOCATION "COLD" IF A READ ERROR OCCURS
@@ -74,4 +76,6 @@ LoadSector
 
 ;	done with the load
 
-tmpbc	ds 	1			; Holding area for register BC
+tmpbc:	ds 	1			; Holding area for register BC
+
+	END

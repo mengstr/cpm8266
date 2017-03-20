@@ -6,31 +6,30 @@
 ; Copyright (c) 1980 Digital Research
 ;
 
-#include "MEMLOCS.Z80"
+	include "MEMLOCS.Z80"
 	org	START_BIOSCODE
 
-vers	equ	22				;version 2.2
-
-; buff	equ	TBUFF
-; cdisk	equ	TDRIVE
+vers:	equ	22	; version 2.2
+CR:     equ     0dh     ; Carriage Return
+LF:     equ     0ah     ; Line Feed
 
 ;
 ; Command codes that are sent to the emulator via a OUT (xxx),A instruction
 ; to handle the BIOS low level console & disk I/O emulation
 ;
-EMU_EXIT	equ	00h
-EMU_CONOUT	equ	01h
-EMU_LIST	equ	02h
-EMU_PUNCH	equ	03h
-EMU_CONIN	equ	04h
-EMU_CONST	equ	05h
-EMU_SETDMA	equ	06h
-EMU_SETTRK	equ	07h
-EMU_SETSEC	equ	08h
-EMU_HOME	equ	09h
-EMU_SETDSK	equ	0Ah
-EMU_READ	equ	0Bh
-EMU_WRITE	equ	0Ch
+EMU_EXIT:	equ	00h
+EMU_CONOUT:	equ	01h
+EMU_LIST:	equ	02h
+EMU_PUNCH:	equ	03h
+EMU_CONIN:	equ	04h
+EMU_CONST:	equ	05h
+EMU_SETDMA:	equ	06h
+EMU_SETTRK:	equ	07h
+EMU_SETSEC:	equ	08h
+EMU_HOME:	equ	09h
+EMU_SETDSK:	equ	0Ah
+EMU_READ:	equ	0Bh
+EMU_WRITE:	equ	0Ch
 
 ;
 ; perform following functions
@@ -58,23 +57,23 @@ EMU_WRITE	equ	0Ch
 ;
 
 ; Jump vectors for indiviual routines
-BOOT:	JP	boot
-WBOOT:	JP	wboot
-CONST:	JP	const
-CONIN:	JP	conin
-CONOUT:	JP	conout
-LIST:	JP	list
-PUNCH:	JP	punch
-READER:	JP	reader
-HOME:	JP	home
-SELDSK:	JP	seldsk
-SETTRK:	JP	settrk
-SETSEC:	JP	setsec
-SETDMA:	JP	setdma
-READ:	JP	read
-WRITE:	JP	write
-LISTST:	JP	listst
-SECTRN:	JP	sectran
+BOOT:	JP	boot_
+WBOOT:	JP	wboot_
+CONST:	JP	const_
+CONIN:	JP	conin_
+CONOUT:	JP	conout_
+LIST:	JP	list_
+PUNCH:	JP	punch_
+READER:	JP	reader_
+HOME:	JP	home_
+SELDSK:	JP	seldsk_
+SETTRK:	JP	settrk_
+SETSEC:	JP	setsec_
+SETDMA:	JP	setdma_
+READ:	JP	read_
+WRITE:	JP	write_
+LISTST:	JP	listst_
+SECTRN:	JP	sectran_
 
 ;
 ; XLT	Address of the logical-to-physical translation vector, if used for
@@ -100,7 +99,7 @@ SECTRN:	JP	sectran
 ; Fixed data tables for fifteen standard ibm-compatible 8" disks
 ;
 
-ndisks	equ	15	; We have 15 disks drives (A..O) in this system
+ndisks:	equ	15	; We have 15 disks drives (A..O) in this system
 
 ;		XLT   Scratch  DIRBUF DPB    CSV    ALV
 dpbase:	defw	trans, 0,0,0,  dirbf, dpblk, chkA, allA	; Disk A
@@ -174,21 +173,23 @@ dpblk:	defw	26	; SPT - sectors per track
 
 
 signon:	db	CR,LF,LF
-	db	RAMSIZEK/10+'0',RAMSIZEK%10+'0'
+	db	48+(RAMSIZEK/10)
+	db	48+(RAMSIZEK-((RAMSIZEK/10)*10))
 	db	'K CP/M v'
-	db	vers/10+'0','.',vers%10+'0'
-	db	' ['
-	db	'cpm8266 v',VERSION/10+'0','.',VERSION%10+'0',' - SmallRoomLabs'
-	db	']'
+	db	48+(vers/10), '.' 
+	db	48+(vers-((vers/10)*10))
+	db	' [cpm8266 v'
+	db	48+(VERSION/10), '.' 
+	db	48+(VERSION-((VERSION/10)*10))
+	db	' - SmallRoomLabs]'
 	db	CR,LF,0
-
-;bootmsg:db	CR,LF,'wboot',CR,LF,0
 
 ;****************************************************************************
 ; BOOT
 ; Print signon message and go to ccp
 ;****************************************************************************
-boot:	LD	SP,TBUFF	;
+boot_:	
+	LD	SP,TBUFF	;
 	LD	HL,signon	; Print cold boot message
 	CALL	prmsg
 	XOR	A		; Clear accumulator
@@ -201,7 +202,8 @@ boot:	LD	SP,TBUFF	;
 ; loader on track 0, sector 1, which will be skipped for warm read cp/m
 ; from disk assuming there is a 128 byte cold start start.
 ;****************************************************************************
-wboot:	LD	SP,TBUFF	; using dma - thus 80 thru ff available for stack
+wboot_:	
+	LD	SP,TBUFF	; using dma - thus 80 thru ff available for stack
 	LD	BC,2			; B=TRACK 0, C=SECTOR 2
 	LD	D,44			; D=# SECTORS TO LOAD
 	LD	HL,START_CCPCODE	; HL=BASE TRANSFER ADDRESS
@@ -237,7 +239,7 @@ wbdone:	;LD	HL,bootmsg		; Print warm boot message
 
 gocpm:	;(enter here from cold & warm start boots)
 	LD	BC,TBUFF		; Set default buffer address to 80h
-	CALL	setdma
+	CALL	setdma_
 
 ;	reset monitor entry points
 	LD	A,0C3h		; C3h is the Z80 instruction JP
@@ -259,21 +261,23 @@ gocpm:	;(enter here from cold & warm start boots)
 ; CONST
 ; Console status to reg-a
 ;****************************************************************************
-const:	OUT	(EMU_CONST),A
+const_:	
+	OUT	(EMU_CONST),A
 	RET
 
 ;****************************************************************************
 ; CONIN
 ; Console character input to A
 ;****************************************************************************
-conin	OUT	(EMU_CONIN),A
+conin_:	
+	OUT	(EMU_CONIN),A
 	RET
 
 ;****************************************************************************
 ; CONOUT
 ; Console device output character in A
 ;****************************************************************************
-conout:
+conout_:
 	OUT	(EMU_CONOUT),A
 	RET
 
@@ -281,28 +285,32 @@ conout:
 ; LIST
 ; List device output character in A
 ;****************************************************************************
-list:	OUT	(EMU_LIST),A
+list_:	
+	OUT	(EMU_LIST),A
 	RET
 
 ;****************************************************************************
 ; LISTST
 ; Return list status in A
 ;****************************************************************************
-listst:	XOR	A	; Always not ready
+listst_:	
+	XOR	A	; Always not ready
 	RET
 
 ;****************************************************************************
 ; PUNCH
 ; Punch device output character in A
 ;****************************************************************************
-punch:	OUT	(EMU_PUNCH),A
+punch_:	
+	OUT	(EMU_PUNCH),A
 	RET
 
 ;****************************************************************************
 ; READER
 ; Reader character input to A
 ;****************************************************************************
-reader:		; TODO
+reader_:		; TODO
+	
 	RET
 
 ;
@@ -310,14 +318,16 @@ reader:		; TODO
 ; HOME
 ; Move disk to home position
 ;****************************************************************************
-home:	OUT	(EMU_HOME),A
+home_:	
+	OUT	(EMU_HOME),A
 	RET
 
 ;****************************************************************************
 ; SELDSK
 ; Select disk given by register C
 ;****************************************************************************
-seldsk:	LD	HL,0000h	; Return 0000 if error
+seldsk_:	
+	LD	HL,0000h	; Return 0000 if error
 	LD	A,C
 	CP	ndisks		; Too large?
 	RET	NC		; Leave HL = 0000
@@ -338,7 +348,8 @@ seldsk:	LD	HL,0000h	; Return 0000 if error
 ; SETTRK
 ; Set track address given by C
 ;****************************************************************************
-settrk:	LD	HL,iot		; Update interal variabe...
+settrk_:	
+	LD	HL,iot		; Update interal variabe...
 	LD	(HL),C
 	OUT	(EMU_SETTRK),A	; ...and send to emulator
 	RET
@@ -347,7 +358,8 @@ settrk:	LD	HL,iot		; Update interal variabe...
 ; SETSEC
 ; Set sector number given by C
 ;****************************************************************************
-setsec:	LD	HL,ios		; Ppdate interal variabe...
+setsec_:
+	LD	HL,ios		; Ppdate interal variabe...
 	LD	(HL),C
 	OUT	(EMU_SETSEC),A	; ...and send to emulator
 	RET
@@ -356,7 +368,8 @@ setsec:	LD	HL,ios		; Ppdate interal variabe...
 ; SECTRAN
 ; Translate sector BC using table at DE
 ;****************************************************************************
-sectran:LD	A,D		; Do we have a translation table?
+sectran_:
+	LD	A,D		; Do we have a translation table?
 	OR	E
 	JP	NZ,SECT1	; Yes, translate
 	LD	L,C		; No, return untranslated
@@ -375,7 +388,8 @@ SECT1:	EX	DE,HL		; HL=.trans
 ; SETDMA
 ; set dma address given by regs b,c
 ;****************************************************************************
-setdma:	LD	L,C
+setdma_:
+	LD	L,C
 	LD	H,B
 	LD	(iod),HL
 	OUT	(EMU_SETDMA),A
@@ -385,13 +399,15 @@ setdma:	LD	L,C
 ; READ
 ; read next disk record (disk/trk/sec/dma set)
 ;****************************************************************************
-read:	OUT	(EMU_READ),A
+read_:
+	OUT	(EMU_READ),A
 	RET			; May have error set in A
 
 ;****************************************************************************
 ; WRITE
 ;****************************************************************************
-write:	OUT	(EMU_WRITE),A
+write_:
+	OUT	(EMU_WRITE),A
 	RET			; May have error set
 
 
@@ -403,7 +419,7 @@ prmsg:	LD	A,(HL)
 	RET	Z		; If zero return to caller
 	PUSH	HL		; else print the character
 	LD	C,A
-	CALL	conout
+	CALL	conout_
 	POP	HL
 	INC	HL
 	JP	prmsg
@@ -413,41 +429,41 @@ prmsg:	LD	A,(HL)
 ;
 	org START_BIOSDATA
 
-iot	ds	1	;track number (was db offset)
-ios	ds	1	;sector number (was db 1)
-iod	ds	2	;io address (was dw buff)
+iot:	ds	1	;track number (was db offset)
+ios:	ds	1	;sector number (was db 1)
+iod:	ds	2	;io address (was dw buff)
 
-dirbf	ds	128	;DIRECTORY ACCESS BUFFER
+dirbf:	ds	128	;DIRECTORY ACCESS BUFFER
 
-chkA	ds	16	; A Drive
-allA	ds	31
-chkB	ds	16	; B Drive
-allB	ds	31
-chkC	ds	16	; C Drive
-allC	ds	31
-chkD	ds	16	; D Drive
-allD	ds	31
-chkE	ds	16	; E Drive
-allE	ds	31
-chkF	ds	16	; F Drive
-allF	ds	31
-chkG	ds	16	; G Drive
-allG	ds	31
-chkH	ds	16	; H Drive
-allH	ds	31
-chkI	ds	16	; I Drive
-allI	ds	31
-chkJ	ds	16	; J Drive
-allJ	ds	31
-chkK	ds	16	; K Drive
-allK	ds	31
-chkL	ds	16	; L Drive
-allL	ds	31
-chkM	ds	16	; M Drive
-allM	ds	31
-chkN	ds	16	; N Drive
-allN	ds	31
-chkO	ds	16	; O Drive
-allO	ds	31
+chkA:	ds	16	; A Drive
+allA:	ds	31
+chkB:	ds	16	; B Drive
+allB:	ds	31
+chkC:	ds	16	; C Drive
+allC:	ds	31
+chkD:	ds	16	; D Drive
+allD:	ds	31
+chkE:	ds	16	; E Drive
+allE:	ds	31
+chkF:	ds	16	; F Drive
+allF:	ds	31
+chkG:	ds	16	; G Drive
+allG:	ds	31
+chkH:	ds	16	; H Drive
+allH:	ds	31
+chkI:	ds	16	; I Drive
+allI:	ds	31
+chkJ:	ds	16	; J Drive
+allJ:	ds	31
+chkK:	ds	16	; K Drive
+allK:	ds	31
+chkL:	ds	16	; L Drive
+allL:	ds	31
+chkM:	ds	16	; M Drive
+allM:	ds	31
+chkN:	ds	16	; N Drive
+allN:	ds	31
+chkO:	ds	16	; O Drive
+allO:	ds	31
 
-
+	END	
