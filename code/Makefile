@@ -4,8 +4,8 @@ ESP8266SDK	?= /Volumes/case-sensitive/esp-open-sdk/
 # Select WIFI for small memory CP/M machine with telnet over wifi access
 # or     NOSDK for 64K CP/M with serial access
 
-BUILD		?= WIFI
-#BUILD		?= NOSDK
+#BUILD		?= WIFI
+BUILD		?= NOSDK
 
 #  Pick from *52 *80 104 *115 160 *173 *189 231 320 346 378
 #  * = peripheral clock at processor clock.
@@ -139,7 +139,7 @@ nosdk/nosdk8266.o: nosdk/nosdk8266.c
 
 nosdk/startup.o: nosdk/startup.S
 	@echo [AS] $<
-	@$(AS) -o $@ -c $<
+	@$(AS) -o $@ $<
 endif
 
 ifeq (WIFI, $(BUILD))
