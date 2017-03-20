@@ -11,10 +11,10 @@ BUILD		?= WIFI
 #  * = peripheral clock at processor clock.
 MAIN_MHZ	=  160
 
-FLASHPARAM 		=  --flash_freq 80m --flash_mode dout
-FLASHBAUD		=  921600
+FLASHPARAM 	=  --flash_freq 80m --flash_mode dout
+FLASHBAUD	=  921600
 EMULATIONBAUD	=  9600
-PORT 			=  23
+PORT 		=  23
 
 DISKSIZE	=  0x3E900  # 256256 bytes (IMB 8-inch 26sec, 77trk, SS)
 
@@ -38,18 +38,17 @@ FW1 		=  $(TARGET).elf-0x10000.bin
 
 SHELL		=  /bin/bash
 CPMCP		=  /usr/bin/cpmcp
-ZASM		=  /usr/local/bin/zasm
-XXD			=  /usr/bin/xxd
-ZIP			=  /usr/bin/zip
-DD			=  /bin/dd
-ESPTOOL		=  /opt/esptool/esptool.py
+XXD		=  /usr/bin/xxd
+ZIP		=  /usr/bin/zip
+DD		=  /bin/dd
+ESPTOOL		?= /opt/esptool/esptool.py
 BINS		=  $(ESP8266SDK)/xtensa-lx106-elf/bin
 SIZE		=  $(BINS)/xtensa-lx106-elf-size
 READELF		=  $(BINS)/xtensa-lx106-elf-readelf
 OBJDUMP		=  $(BINS)/xtensa-lx106-elf-objdump
 OBJCOPY		=  $(BINS)/xtensa-lx106-elf-objcopy
-GCC			=  $(BINS)/xtensa-lx106-elf-gcc
-AS			=  $(BINS)/xtensa-lx106-elf-as
+GCC		=  $(BINS)/xtensa-lx106-elf-gcc
+AS		=  $(BINS)/xtensa-lx106-elf-as
 
 DDFLAGS		= status=none bs=1 conv=notrunc
 
