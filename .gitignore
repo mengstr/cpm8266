@@ -20,3 +20,8 @@
 private/
 tmp/
 sed80/
+
+# Created by the Makefile
+Makefile.tmp
+SETTINGS.Z80
+boot.data
