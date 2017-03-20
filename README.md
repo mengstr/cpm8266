@@ -1,47 +1,98 @@
 # cpm8266
 
-## CP/M 2.2 for Z80 emulator running on ESP8266
-
-## _Please note that this is still early work-in-progress_
+## Z80-CP/M 2.2 emulator running on ESP8266
 
 ### What
 
 This is my attempt to run CP/M 2.2 for Z80 softwares on an ESP8266.
-The CP/M machine have 64K RAM, 8 Floppy drives @ 250KB each and a serial
-port running initally at 19200 baud as a comsole device.
+The CP/M machine have 64K RAM, 15 floppy drives @ 250KB each and an
+autobauding serial port as a console device.
 
-The ESP8266 only have 96KB of Data RAM and even when runnig the "NO
-OS-firmware from Expressif the free HEAP, after the WIFI & TCP/IP stacks are
+Since the ESP8266 only have 96KB of Data RAM and even when runnig the "NONOS-firmware 
+from Espressif the free heap, after the WIFI & TCP/IP stacks are
 loaded, is less than 48KB which was my minimum goal for CP/M RAM.
 
-Luckily the Cnlohr NoSdk2866 project came can solve the RAM issue. Using the
-NoSdk there are more than 80KB of free HEAP which is more than enough for
+Luckily the Cnlohr NoSdk2866 project can solve the RAM issue. By using the
+NoSdk I get more than 80KB of heap which is more than enough for
 the 64KB RAM in the Emulator.  This unfortunately comes with a cost -
-namlely no WIFI.  Not a showstopper for me, but it would have been nice to
+namlely no wifi.  Not a showstopper for me, but it would have been nice to
 be able to just Telnet into the CP/M machine to connect to the emulated
-terminal. (Some day I'll run this on the ESP32 that have plenty of free RAM
-when whith the FreeRtos and WIFI running.)
+terminal. 
+
+But not all hope is lost for those who want wifi and telnet - I'm currently
+patching in an option to compile a version with about 36K RAM, wifi and one
+less floppy disk.
+
 
 ### Installing, Compiling and Running
 
 You will need ESP-Open-SDK installed. If you don't already have it you can
 get it at https://github.com/pfalcon/esp-open-sdk. Just follow the
-instructions for there and be prepared for a lengthy (but automated)
+installation instructions there and be prepared for a lengthy (but automated)
 process.
 
-Then clone the code for this project with:
-```git clone git@github.com:SmallRoomLabs/cpm8266.git```
+I've only setup this for for Debian/Ubuntu but most dists should be fairly
+similar.
 
-Unless you have the same serial port for the ESP and the same location of
-the OpenSDK installation as me you either have to change the Makefile or
-setup two environment variables:
+**Unless you already have git installed you should install it**
+
+```apt-get install git```
+
+**Then install the prerequisites for pfalcon/esp-open-sdk**
+
 ```
-export ESP8266SDK=/opt/esp-open-sdk
+apt-get install make unrar-free autoconf automake libtool gcc g++ 
+apt-get install gperf flex bison texinfo gawk ncurses-dev 
+apt-get install libexpat-dev python-dev python python-serial 
+apt-get install sed git unzip bash help2man wget bzip2 libtool-bin
+```
+
+** Install the esp-open-sdk **
+
+```
+git clone --recursive https://github.com/pfalcon/esp-open-sdk.git
+cd esp-open-sdk
+make
+export PATH=~/esp-open-sdk/xtensa-lx106-elf/bin:$PATH
+cd ..
+```
+
+** Install prerequisites for cpm8266 ***
+
+```
+apt-get install z80asm cpmtools zip
+```
+
+**Install the cpm8266 repo and config your environment**
+Instead of setting and exporting these environment variables you could change the settings in the top of the Makefile instead
+```
+git clone https://github.com/SmallRoomLabs/cpm8266.git
+cd cpm8266/code
+export ESP8266SDK=~/esp-open-sdk
+export ESPTOOL=~/esp-open-sdk/esptool/esptool.py
 export ESPPORT=/dev/ttyUSB0
 ```
-Then just do a `make full` to compile it all and upload to the ESP.
 
-### Folder contents
+**Compile the emulator and all cp/m disks and upload it to the ESP8266**
+
+```make full```
+
+**Connect to the emulator and boot into CP/M**
+Run any serial terminal emulator set to 8N1 at any standard speed between 300 and 115200 baud. To run any full screen CP/M programs you should have VT100/ANSI terminal emulation.
+
+Just to get started you can install the "screen" package and use that as a serial terminal.
+
+```apt-get install screen```
+
+And then connect with:
+
+```screen /dev/ttyUSB0 9600```
+
+Press Enter twice to autobaud to get the EMON:-prompt and then ```B <Enter>``` to Boot into CP/M.
+
+
+
+### Code folder contents:
 - *CPM22/* The Z80 assembly sources for CP/M 2.2
 - *disks/* Have sub-folders with the files to be put into the simulated disks
 - *dist/* Used to hold the file when creating the zipped binary distributions
