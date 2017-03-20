@@ -14,10 +14,10 @@ Since the ESP8266 only have 96KB of Data RAM and even when runnig the "NONOS-fir
 from Espressif the free heap, after the WIFI & TCP/IP stacks are
 loaded, is less than 48KB which was my minimum goal for CP/M RAM.
 
-Luckily the Cnlohr NoSdk2866 project can solve the RAM issue. By using the
-NoSdk I get more than 80KB of heap which is more than enough for
-the 64KB RAM in the Emulator.  This unfortunately comes with a cost -
-namlely no wifi.  Not a showstopper for me, but it would have been nice to
+Luckily the nosdk8266 project from cnlohr solves the RAM issue. By using the
+it I get more than 80KB of heap which is more than enough for
+the 64KB RAM in the Emulator. But this unfortunately comes with a cost -
+namlely no wifi.  Not really a showstopper for me, but it would have been nice to
 be able to just Telnet into the CP/M machine to connect to the emulated
 terminal. 
 
