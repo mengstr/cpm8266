@@ -47,7 +47,7 @@ apt-get install libexpat-dev python-dev python python-serial
 apt-get install sed git unzip bash help2man wget bzip2 libtool-bin
 ```
 
-** Install the esp-open-sdk **
+**Install the esp-open-sdk**
 
 ```
 git clone --recursive https://github.com/pfalcon/esp-open-sdk.git
@@ -63,7 +63,7 @@ cd ..
 apt-get install z80asm cpmtools zip
 ```
 
-**Install the cpm8266 repo and config your environment**
+**Clone the cpm8266 repo and config your environment**
 
 Instead of setting and exporting these environment variables you could change the settings in the top of the Makefile instead
 
