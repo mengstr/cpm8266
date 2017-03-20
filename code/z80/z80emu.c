@@ -6,7 +6,7 @@
  * This code is free, do whatever you want with it.
  */
 #include "c_types.h"
-#include "esp8266_auxrom.h"
+//#include "esp8266_auxrom.h"
 #include "esp8266_rom.h"
 #include "eagle_soc.h"
 #include "ets_sys.h"

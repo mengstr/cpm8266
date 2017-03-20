@@ -67,8 +67,8 @@ ifeq (WIFI, $(BUILD))
  LDFLAGS 	= -Teagle.app.v6.ld
 endif
 
-SRCS		=  main.c uart.c flash.c monitor.c utils.c gpio16.c z80/z80emu.c
-OBJS		=  main.o uart.o flash.o monitor.o utils.o gpio16.o z80/z80emu.o
+SRCS		=  main.c uart.c conio.c flash.c monitor.c utils.c gpio16.c z80/z80emu.c
+OBJS		=  main.o uart.o conio.o flash.o monitor.o utils.o gpio16.o z80/z80emu.o
 
 ifeq (NOSDK, $(BUILD))
  SRCS		:= $(SRCS) nosdk/startup.S nosdk/nosdk8266.c
@@ -109,6 +109,10 @@ main.o: main.c z80/z80emu.h z80/z80user.h CPM22/boot.data
 	@$(GCC) $(CFLAGS) -o $@ -c $<
 
 uart.o: uart.c uart.h
+	@echo [CC] $<
+	@$(GCC) $(CFLAGS) -o $@ -c $<
+
+conio.o: conio.c conio.h
 	@echo [CC] $<
 	@$(GCC) $(CFLAGS) -o $@ -c $<
 

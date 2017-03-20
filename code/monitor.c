@@ -1,11 +1,12 @@
-#include "monitor.h"
-
 #include "espincludes.h"
-#include "uart.h"
+//#include "uart.h"
+#include "conio.h"
 
 #include "utils.h"
 #include "z80/z80emu.h"
 #include "z80/z80user.h"
+
+#include "monitor.h"
 
 extern MACHINE machine;
 
@@ -38,12 +39,12 @@ char ICACHE_FLASH_ATTR *GetLine(void) {
     ch = GetKey(true);
     if (ch == 13 || ch == 10) return line;
     if ((ch == 8 || ch == 127) && ets_strlen(line) > 0) {
-      printf("\b \b");
+      ets_printf("\b \b");
       line[ets_strlen(line) - 1] = 0;
       continue;
     }
     if (ets_strlen(line) < sizeof(line) - 1) {
-      printf("%c", ch);
+      ets_printf("%c", ch);
       line[ets_strlen(line) + 1] = 0;
       line[ets_strlen(line)] = ch;
     }
@@ -117,36 +118,36 @@ void ICACHE_FLASH_ATTR HexDump(uint16_t address, uint16_t len, bool intel) {
       uint16_t l = len;
       if (l > 16) l = 16;
       len -= l;
-      printf(":%02X%04X00", l, address);
+      ets_printf(":%02X%04X00", l, address);
       uint8_t chksum = l + (address >> 8) + (address & 0xFF) + 0x00;
       for (int i = 0; i < l; i++) {
         chksum += machine.memory[address];
-        printf("%02X", machine.memory[address++]);
+        ets_printf("%02X", machine.memory[address++]);
       }
       chksum = ~chksum;
       chksum = chksum + 1;
-      printf("%02X\n", chksum);
+      ets_printf("%02X\r\n", chksum);
     }
-    printf(":00000001FF\n");  // EOF Record
+    ets_printf(":00000001FF\r\n");  // EOF Record
 
   } else {
     // Dump memory in human readable HAX + ASCII format
     a = address & 0xFFF0;
     cleartext[16] = 0;
     while (a < address + len) {
-      printf("%04X:", a);
+      ets_printf("%04X:", a);
       for (uint16_t i = 0; i < 16; i++) {
         cleartext[i] = '.';
         char mem = machine.memory[a];
         if (a >= address && a < address + len) {
-          printf(" %02X", mem);
+          ets_printf(" %02X", mem);
           if (mem >= 32 && mem < 127) cleartext[i] = mem;
         } else {
-          printf(" ..");
+          ets_printf(" ..");
         }
         a++;
       }
-      printf("  %s\n", cleartext);
+      ets_printf("  %s\r\n", cleartext);
     }
   }
 }
@@ -158,7 +159,7 @@ void ICACHE_FLASH_ATTR ModifyMemory(uint16_t address) {
   char *line;
   uint8_t v1, v2;
   for (;;) {
-    printf("%04x = %02x : ", address, machine.memory[address]);
+    ets_printf("%04x = %02x : ", address, machine.memory[address]);
     line = GetLine();
     if (*line == 0) {  // Empty line goes to next memory location
       address++;
@@ -173,9 +174,9 @@ void ICACHE_FLASH_ATTR ModifyMemory(uint16_t address) {
         break;
       }
     }
-    printf("\n");
+    ets_printf("\r\n");
   }
-  printf("\n");
+  ets_printf("\r\n");
 }
 
 //
@@ -188,9 +189,9 @@ void ICACHE_FLASH_ATTR LoadIntelHex(uint16_t offset) {
   uint16_t maxAddress = 0x0000;
 
   for (;;) {
-    printf("i ");
+    ets_printf("i ");
     line = GetLine();
-    printf("\n");
+    ets_printf("\r\n");
     char *p = line;
     // Skip leading blanks
     while ((*p) == ' ') p++;
@@ -198,7 +199,7 @@ void ICACHE_FLASH_ATTR LoadIntelHex(uint16_t offset) {
     if (!(*p)) continue;
     // Exit if bad data
     if ((*p++) != ':') {
-      printf("Missing : in '%s'\n", line);
+      ets_printf("Missing : in '%s'\r\n", line);
       break;
     }
 
@@ -209,7 +210,7 @@ void ICACHE_FLASH_ATTR LoadIntelHex(uint16_t offset) {
     uint8_t typ = hexDec2p(p);
     p += 2;
     if (typ == 0x01) {
-      printf("Loaded data between %04x and %04x\n", minAddress, maxAddress);
+      ets_printf("Loaded data between %04x and %04x\r\n", minAddress, maxAddress);
       break;
     } else if (typ == 0x00) {
       for (int i = 0; i < len; i++) {
@@ -220,7 +221,7 @@ void ICACHE_FLASH_ATTR LoadIntelHex(uint16_t offset) {
         address++;
       }
     } else {
-      //      printf("Invalid record type in '%s'\n",line);
+      //      ets_printf("Invalid record type in '%s'\r\n",line);
     }
   }
 }
@@ -243,9 +244,9 @@ void ICACHE_FLASH_ATTR ShowAllRegisters() {
   if (flags & Z80_P_FLAG) tmps[5] = 'P';
   if (flags & Z80_N_FLAG) tmps[6] = 'N';
   if (flags & Z80_C_FLAG) tmps[7] = 'C';
-  printf(
+  ets_printf(
       "A=%02X B=%02X C=%02X D=%02X E=%02X H=%02X L=%02X "
-      "IX=%04X IY=%04X SP=%04X PC=%04X %s\n",
+      "IX=%04X IY=%04X SP=%04X PC=%04X %s\r\n",
       machine.state.registers.byte[Z80_A], machine.state.registers.byte[Z80_B],
       machine.state.registers.byte[Z80_C], machine.state.registers.byte[Z80_D],
       machine.state.registers.byte[Z80_E], machine.state.registers.byte[Z80_H],
@@ -288,7 +289,7 @@ void ICACHE_FLASH_ATTR ModifyRegister(char *regname, uint16_t val) {
   }
 
   if (reg == -1) {
-    printf("Invalid register name.\n");
+    ets_printf("Invalid register name.\r\n");
     return;
   }
 

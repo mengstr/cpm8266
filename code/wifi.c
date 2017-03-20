@@ -1,19 +1,6 @@
  #include "c_types.h"
  #include "os_type.h"
 
-void ets_timer_arm_new(volatile os_timer_t *a, int b, int c, int isMstimer);
-void ets_timer_disarm(volatile os_timer_t *a);
-void ets_timer_setfn(volatile os_timer_t *t, ETSTimerFunc *fn, void *parg);
-void ets_isr_attach(int intr, void *handler, void *arg);
-void ets_isr_mask(unsigned intr);
-void ets_isr_unmask(unsigned intr);
-void ets_delay_us(int ms);
-void ets_update_cpu_frequency(int freqmhz);
-void *ets_memcpy(void *dest, const void *src, size_t n);
-void *ets_memset(void *s, int c, size_t n);
-int os_printf(const char *format, ...)  __attribute__ ((format (printf, 1, 2)));
-int os_snprintf(char *str, size_t size, const char *format, ...) __attribute__ ((format (printf, 3, 4)));
-int os_printf_plus(const char *format, ...)  __attribute__ ((format (printf, 1, 2)));
 
 #include "ets_sys.h"
 #include "osapi.h"
@@ -21,35 +8,47 @@ int os_printf_plus(const char *format, ...)  __attribute__ ((format (printf, 1, 
 #include "gpio.h"
 #include "user_interface.h"
 #include "user_config.h"
+#include "espconn.h"
 #include "gpio16.h"
+
+#include "espincludes.h"
+
+#include "conio.h"
 #include "wifi.h"
 
+void *ets_memcpy(void *dest, const void *src, size_t n);
+void ets_update_cpu_frequency(int freqmhz);
 
   // gpio16_output_set(0);	
   // os_delay_us(250000);
   // gpio16_output_set(1);	
 
-#include "espconn.h"
 
 static struct espconn server;
 static esp_tcp tcpconfig;
 
 static void ICACHE_FLASH_ATTR server_recv_cb(void *arg, char *data, unsigned short len) {
   struct espconn *conn=(struct espconn *)arg;
-  os_printf("recv_cb(len=%d)\r\n",len);
+//  ets_printf("recv_cb(len=%d)\r\n",len);
+  for (int i=0; i<len; i++) {
+    StoreInComBuf(data[i]);
+  }
 }
   
 static void ICACHE_FLASH_ATTR server_discon_cb(void *arg) {
-  os_printf("discon_cb() heap=%d\r\n",system_get_free_heap_size());
+//  ets_printf("discon_cb() heap=%d\r\n",system_get_free_heap_size());
 }
  
 static void ICACHE_FLASH_ATTR server_sent_cb(void *arg) {
-  os_printf("sent_cb()\r\n");
+//  ets_printf("sent_cb()\r\n");
 }
  
+static volatile struct espconn *con;
+
 static void ICACHE_FLASH_ATTR server_connected_cb(void *arg) {
-  os_printf("connected_cb() heap=%d\r\n",system_get_free_heap_size());
+//  ets_printf("connected_cb() heap=%d\r\n",system_get_free_heap_size());
   struct espconn *conn=arg;
+  con=conn;
 
   espconn_set_opt(conn, ESPCONN_REUSEADDR );
   espconn_set_opt(conn, ESPCONN_NODELAY);
@@ -75,6 +74,10 @@ static void ICACHE_FLASH_ATTR server_connected_cb(void *arg) {
 }
 
 
+void TcpSend(char c) {
+  espconn_send(con,&c,1);
+}
+
 
 //
 //
@@ -90,14 +93,12 @@ void ICACHE_FLASH_ATTR user_init() {
 
   gpio16_output_conf();
 
-  os_printf("NONOS SDK version:%s\n", system_get_sdk_version());
-  system_print_meminfo();
-
+  ets_install_putc1((void *)TcpSend);
 
   gpio16_output_set(1);	
   wifi_set_opmode(STATION_MODE);
-  os_memcpy(&stationConf.ssid, ssid, 32);
-  os_memcpy(&stationConf.password, password, 32);
+  ets_memcpy(&stationConf.ssid, ssid, 32);
+  ets_memcpy(&stationConf.password, password, 32);
   wifi_station_set_config(&stationConf);
   wifi_station_set_auto_connect(1);
   wifi_station_connect();

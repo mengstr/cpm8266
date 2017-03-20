@@ -1,9 +1,18 @@
 #include "c_types.h"
 #include "eagle_soc.h"
-#include "esp8266_auxrom.h"
-#include "esp8266_rom.h"
 #include "ets_sys.h"
-#include "nosdk8266.h"
+
+#ifdef NOSDK
+ #include "esp8266_auxrom.h"
+ #include "esp8266_rom.h"
+ #include "nosdk8266.h"
+#endif
+
+#ifdef WIFI
+ #include "esp8266_rom.h"
+ #include "espincludes.h"
+#endif
+
 #include "z80/z80emu.h"
 #include "z80/z80user.h"
 #include "gpio16.h"

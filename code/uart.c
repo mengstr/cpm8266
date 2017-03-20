@@ -1,23 +1,28 @@
 #include "c_types.h"
 #include "eagle_soc.h"
-#include "esp8266_auxrom.h"
-#include "esp8266_rom.h"
+
+#ifdef NOSDK
+ #include "esp8266_auxrom.h"
+ #include "esp8266_rom.h"
+ #include "nosdk8266.h"
+#endif
+
 #include "ets_sys.h"
 #include "gpio.h"
-#include "nosdk8266.h"
 #include "uart_dev.h"
 #include "uart_register.h"
 
+#include "espincludes.h"
+#include "conio.h"
 #include "uart.h"
 
 typedef void (*int_handler_t)(void *);
-void ets_isr_attach(int intr, int_handler_t handler, void *arg);
-void ets_isr_unmask(int intr);
 extern UartDevice UartDev;
 
-static volatile uint8_t rxBuf[1024];
-static volatile uint16_t rxR = 0;
-static volatile uint16_t rxW = 0;
+#ifdef WIFI
+ #define PERIPH_FREQ 160    // TODO
+#endif
+
 
 //
 // Reading a CR at 115k and 9600 baud gives the followin results
@@ -45,7 +50,7 @@ uint32_t ICACHE_FLASH_ATTR AutoBaud(void) {
     if (v==0x1C) return 38400;
     if (v==0xE0) return 19200;
     ets_delay_us(50000); // Delay to trap possible additional chars
-    FlushUart();  
+    EmptyComBuf();  
     uart_div_modify(UART0, (PERIPH_FREQ * 1000000) / 9600);
     v=GetRxChar();
     if (v==0x0D) return 9600;
@@ -54,7 +59,7 @@ uint32_t ICACHE_FLASH_ATTR AutoBaud(void) {
     if (v==0x80) return 1200;
     if (v==0x00) return 300;
     ets_delay_us(50000); // Delay to trap possible additional chars
-    FlushUart();  
+    EmptyComBuf();  
   }
   return 0;
 }
@@ -63,31 +68,15 @@ uint32_t ICACHE_FLASH_ATTR AutoBaud(void) {
 //
 //
 //
-uint16_t ICACHE_FLASH_ATTR GetRxCnt(void) {
-  if (rxW == rxR) return 0;
-  if (rxW > rxR) return rxW - rxR;
-  return (sizeof(rxBuf) - rxR) + rxW;
+void UartOutChar(char c) {
+  uint8_t fifo_cnt;
+  do {
+    fifo_cnt=((READ_PERI_REG(UART_STATUS(UART0))>>UART_TXFIFO_CNT_S)& UART_TXFIFO_CNT);
+  } while (fifo_cnt>125);
+  WRITE_PERI_REG(UART_FIFO(UART0), c);
 }
 
 
-//
-//
-//
-uint8_t ICACHE_FLASH_ATTR GetRxChar(void) {
-  int i;
-  while (!GetRxCnt()) continue;  // Wait for character to become available
-  rxR = (rxR + 1) & (sizeof(rxBuf) - 1);
-  return rxBuf[rxR];
-}
-
-
-//
-//
-//
-void ICACHE_FLASH_ATTR FlushUart(void) {
-    while (GetRxCnt()) GetRxChar();
-
-}
 
 
 //
@@ -96,44 +85,30 @@ void ICACHE_FLASH_ATTR FlushUart(void) {
 LOCAL void uart0_rx_intr_handler(void *para) {
   if (UART_FRM_ERR_INT_ST ==
       (READ_PERI_REG(UART_INT_ST(UART0)) & UART_FRM_ERR_INT_ST)) {
-    printf("FRM_ERR\r\n");
+    ets_printf("FRM_ERR\r\n");
     WRITE_PERI_REG(UART_INT_CLR(UART0), UART_FRM_ERR_INT_CLR);
   } else if (UART_RXFIFO_FULL_INT_ST ==
              (READ_PERI_REG(UART_INT_ST(UART0)) & UART_RXFIFO_FULL_INT_ST)) {
-    int cnt = 0;
-    while ((READ_PERI_REG(UART_STATUS(UART0)) >> UART_RXFIFO_CNT_S) &
-           UART_RXFIFO_CNT) {
+    while ((READ_PERI_REG(UART_STATUS(UART0)) >> UART_RXFIFO_CNT_S) & UART_RXFIFO_CNT) {
       uint8_t ch = READ_PERI_REG(UART_FIFO(UART0));
-      cnt++;
-      if (GetRxCnt() < sizeof(rxBuf) - 1) {
-        rxW = (rxW + 1) & (sizeof(rxBuf) - 1);
-        rxBuf[rxW] = ch;
-      }
+      StoreInComBuf(ch);
     }
-    //      printf("[cnt=%d rxR=%d rxW=%d]",cnt,rxR,rxW);
     WRITE_PERI_REG(UART_INT_CLR(UART0), UART_RXFIFO_FULL_INT_CLR);
   } else if (UART_RXFIFO_TOUT_INT_ST ==
              (READ_PERI_REG(UART_INT_ST(UART0)) & UART_RXFIFO_TOUT_INT_ST)) {
-    int cnt = 0;
-    while ((READ_PERI_REG(UART_STATUS(UART0)) >> UART_RXFIFO_CNT_S) &
-           UART_RXFIFO_CNT) {
+    while ((READ_PERI_REG(UART_STATUS(UART0)) >> UART_RXFIFO_CNT_S) & UART_RXFIFO_CNT) {
       uint8_t ch = READ_PERI_REG(UART_FIFO(UART0));
-      cnt++;
-      if (GetRxCnt() < sizeof(rxBuf) - 1) {
-        rxW = (rxW + 1) & (sizeof(rxBuf) - 1);
-        rxBuf[rxW] = ch;
-      }
+      StoreInComBuf(ch);
     }
-    //        printf("(cnt=%d rxR=%d rxW=%d)",cnt,rxR,rxW);
     WRITE_PERI_REG(UART_INT_CLR(UART0), UART_RXFIFO_TOUT_INT_CLR);
   } else if (UART_TXFIFO_EMPTY_INT_ST ==
              (READ_PERI_REG(UART_INT_ST(UART0)) & UART_TXFIFO_EMPTY_INT_ST)) {
-    printf("e");
+    ets_printf("e");
     WRITE_PERI_REG(UART_INT_CLR(UART0), UART_TXFIFO_EMPTY_INT_CLR);
   } else if (UART_RXFIFO_OVF_INT_ST ==
              (READ_PERI_REG(UART_INT_ST(UART0)) & UART_RXFIFO_OVF_INT_ST)) {
     WRITE_PERI_REG(UART_INT_CLR(UART0), UART_RXFIFO_OVF_INT_CLR);
-    printf("RX OVF!!\r\n");
+    ets_printf("RX OVF!!\r\n");
   }
 }
 
@@ -160,7 +135,8 @@ void ICACHE_FLASH_ATTR InitUart(void) {
           ((1 & UART_RX_TOUT_THRHD) << UART_RX_TOUT_THRHD_S) | UART_RX_TOUT_EN |
           ((0x10 & UART_TXFIFO_EMPTY_THRHD) << UART_TXFIFO_EMPTY_THRHD_S));
   WRITE_PERI_REG(UART_INT_CLR(UART0), 0xffff);
-  SET_PERI_REG_MASK(UART_INT_ENA(UART0),
-                    UART_RXFIFO_FULL_INT_ENA | UART_RXFIFO_OVF_INT_ENA);
+  SET_PERI_REG_MASK(UART_INT_ENA(UART0), UART_RXFIFO_FULL_INT_ENA | UART_RXFIFO_OVF_INT_ENA);
   ETS_UART_INTR_ENABLE();
+  ets_install_putc1((void *)UartOutChar);
 }
+

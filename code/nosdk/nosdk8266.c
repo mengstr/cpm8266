@@ -5,6 +5,7 @@
 #include <uart_dev.h>
 
 extern UartDevice UartDev;
+void uart_div_modify( int uart, int divisor );
 
 #define sys_const_crystal_26m_en 48 // soc_param0: 0: 40MHz, 1: 26MHz, 2: 24MHz
 

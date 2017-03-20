@@ -1,18 +1,14 @@
  #include "c_types.h"
  #include "os_type.h"
+ #include "espincludes.h"
 #ifdef NOSDK
- #define os_printf printf
  #include "eagle_soc.h"
  #include "ets_sys.h"
  #include "gpio.h"
- #include "espincludes.h"
  #include "nosdk8266.h"
 #endif
 #ifdef WIFI
-//  int os_printf(const char *format, ...)  __attribute__ ((format (printf, 1, 2)));
-//  int os_snprintf(char *str, size_t size, const char *format, ...) __attribute__ ((format (printf, 3, 4)));
- int os_printf_plus(const char *format, ...)  __attribute__ ((format (printf, 1, 2)));
-#include "osapi.h"
+ #include "osapi.h"
  #include "wifi.h"
 #endif
 
@@ -21,9 +17,7 @@
 #include "uart_register.h"
 #include "gpio16.h"
 #include "flash.h"
-
-#define RODATA_ATTR __attribute__((section(".irom.text"))) __attribute__((aligned(4)))
-#define ROMSTR_ATTR __attribute__((section(".irom.text.romstr"))) __attribute__((aligned(4)))
+#include "conio.h"
 
 // Make sure there always is something in the irom segment or the uploader
 // will barf
@@ -74,67 +68,67 @@ uint8_t biostrace = 0;
 //
 void ICACHE_FLASH_ATTR DebugBiosBdos() {
   switch (machine.state.pc) {
-    case 0xF100: os_printf("(BIOS BOOT)"); break;
-    case 0xF103: os_printf("(BIOS WBOOT)"); break;
-    case 0xF106: os_printf("(BIOS CONST)"); break;
-    case 0xF109: os_printf("(BIOS CONIN)"); break;
-    case 0xF10C: os_printf("(BIOS CONOUT)"); break;
-    case 0xF10F: os_printf("(BIOS LIST)"); break;
-    case 0xF112: os_printf("(BIOS PUNCH)"); break;
-    case 0xF115: os_printf("(BIOS READER)"); break;
-    case 0xF118: os_printf("(BIOS HOME)"); break;
-    case 0xF11B: os_printf("(BIOS SELDSK)"); break;
-    case 0xF11E: os_printf("(BIOS SETTRK)"); break;
-    case 0xF121: os_printf("(BIOS SETSEC)"); break;
-    case 0xF124: os_printf("(BIOS SETDMA)"); break;
-    case 0xF127: os_printf("(BIOS READ)"); break;
-    case 0xF12A: os_printf("(BIOS WRITE)"); break;
-    case 0xF12D: os_printf("(BIOS LISTST)"); break;
-    case 0xF130: os_printf("(BIOS SECTRN)"); break;
+    case 0xF100: ets_printf("(BIOS BOOT)"); break;
+    case 0xF103: ets_printf("(BIOS WBOOT)"); break;
+    case 0xF106: ets_printf("(BIOS CONST)"); break;
+    case 0xF109: ets_printf("(BIOS CONIN)"); break;
+    case 0xF10C: ets_printf("(BIOS CONOUT)"); break;
+    case 0xF10F: ets_printf("(BIOS LIST)"); break;
+    case 0xF112: ets_printf("(BIOS PUNCH)"); break;
+    case 0xF115: ets_printf("(BIOS READER)"); break;
+    case 0xF118: ets_printf("(BIOS HOME)"); break;
+    case 0xF11B: ets_printf("(BIOS SELDSK)"); break;
+    case 0xF11E: ets_printf("(BIOS SETTRK)"); break;
+    case 0xF121: ets_printf("(BIOS SETSEC)"); break;
+    case 0xF124: ets_printf("(BIOS SETDMA)"); break;
+    case 0xF127: ets_printf("(BIOS READ)"); break;
+    case 0xF12A: ets_printf("(BIOS WRITE)"); break;
+    case 0xF12D: ets_printf("(BIOS LISTST)"); break;
+    case 0xF130: ets_printf("(BIOS SECTRN)"); break;
     case 0xE311:  // BDOS ENTRY POINTS
       switch (machine.state.registers.byte[Z80_C]) {
-        case 0: os_printf("(BDOS WBOOT)"); break;
-        case 1: os_printf("(BDOS GETCON)"); break;
-        case 2: os_printf("(BDOS OUTCON)"); break;
-        case 3: os_printf("(BDOS GETRDR)"); break;
-        case 4: os_printf("(BDOS PUNCH)"); break;
-        case 5: os_printf("(BDOS LIST)"); break;
-        case 6: os_printf("(BDOS DIRCIO %02x)", machine.state.registers.byte[Z80_E]); break;
-        case 7: os_printf("(BDOS GETIOB)"); break;
-        case 8: os_printf("(BDOS SETIOB)"); break;
-        case 9: os_printf("(BDOS PRTSTR)"); break;
-        case 10: os_printf("(BDOS RDBUFF)"); break;
-        case 11: os_printf("(BDOS GETCSTS)"); break;
-        case 12: os_printf("(BDOS GETVER)"); break;
-        case 13: os_printf("(BDOS RSTDSK)"); break;
-        case 14: os_printf("(BDOS SETDSK)"); break;
-        case 15: os_printf("(BDOS OPENFIL)"); break;
-        case 16: os_printf("(BDOS CLOSEFIL)"); break;
-        case 17: os_printf("(BDOS GETFST)"); break;
-        case 18: os_printf("(BDOS GETNXT)"); break;
-        case 19: os_printf("(BDOS DELFILE)"); break;
-        case 20: os_printf("(BDOS READSEQ)"); break;
-        case 21: os_printf("(BDOS WRTSEQ)"); break;
-        case 22: os_printf("(BDOS FCREATE)"); break;
-        case 23: os_printf("(BDOS RENFILE)"); break;
-        case 24: os_printf("(BDOS GETLOG)"); break;
-        case 25: os_printf("(BDOS GETCRNT)"); break;
-        case 26: os_printf("(BDOS PUTDMA)"); break;
-        case 27: os_printf("(BDOS GETALOC)"); break;
-        case 28: os_printf("(BDOS WRTPRTD)"); break;
-        case 29: os_printf("(BDOS GETROV)"); break;
-        case 30: os_printf("(BDOS SETATTR)"); break;
-        case 31: os_printf("(BDOS GETPARM)"); break;
-        case 32: os_printf("(BDOS GETUSER)"); break;
-        case 33: os_printf("(BDOS RDRANDOM)"); break;
-        case 34: os_printf("(BDOS WTRANDOM)"); break;
-        case 35: os_printf("(BDOS FILESIZE)"); break;
-        case 36: os_printf("(BDOS SETRAN)"); break;
-        case 37: os_printf("(BDOS LOGOFF)"); break;
-        case 38: os_printf("(BDOS RTN)"); break;
-        case 39: os_printf("(BDOS RTN)"); break;
-        case 40: os_printf("(BDOS WTSPECL)"); break;
-        default: os_printf("(BDOS C=%d)", machine.state.registers.byte[Z80_C]); break;
+        case 0: ets_printf("(BDOS WBOOT)"); break;
+        case 1: ets_printf("(BDOS GETCON)"); break;
+        case 2: ets_printf("(BDOS OUTCON)"); break;
+        case 3: ets_printf("(BDOS GETRDR)"); break;
+        case 4: ets_printf("(BDOS PUNCH)"); break;
+        case 5: ets_printf("(BDOS LIST)"); break;
+        case 6: ets_printf("(BDOS DIRCIO %02x)", machine.state.registers.byte[Z80_E]); break;
+        case 7: ets_printf("(BDOS GETIOB)"); break;
+        case 8: ets_printf("(BDOS SETIOB)"); break;
+        case 9: ets_printf("(BDOS PRTSTR)"); break;
+        case 10: ets_printf("(BDOS RDBUFF)"); break;
+        case 11: ets_printf("(BDOS GETCSTS)"); break;
+        case 12: ets_printf("(BDOS GETVER)"); break;
+        case 13: ets_printf("(BDOS RSTDSK)"); break;
+        case 14: ets_printf("(BDOS SETDSK)"); break;
+        case 15: ets_printf("(BDOS OPENFIL)"); break;
+        case 16: ets_printf("(BDOS CLOSEFIL)"); break;
+        case 17: ets_printf("(BDOS GETFST)"); break;
+        case 18: ets_printf("(BDOS GETNXT)"); break;
+        case 19: ets_printf("(BDOS DELFILE)"); break;
+        case 20: ets_printf("(BDOS READSEQ)"); break;
+        case 21: ets_printf("(BDOS WRTSEQ)"); break;
+        case 22: ets_printf("(BDOS FCREATE)"); break;
+        case 23: ets_printf("(BDOS RENFILE)"); break;
+        case 24: ets_printf("(BDOS GETLOG)"); break;
+        case 25: ets_printf("(BDOS GETCRNT)"); break;
+        case 26: ets_printf("(BDOS PUTDMA)"); break;
+        case 27: ets_printf("(BDOS GETALOC)"); break;
+        case 28: ets_printf("(BDOS WRTPRTD)"); break;
+        case 29: ets_printf("(BDOS GETROV)"); break;
+        case 30: ets_printf("(BDOS SETATTR)"); break;
+        case 31: ets_printf("(BDOS GETPARM)"); break;
+        case 32: ets_printf("(BDOS GETUSER)"); break;
+        case 33: ets_printf("(BDOS RDRANDOM)"); break;
+        case 34: ets_printf("(BDOS WTRANDOM)"); break;
+        case 35: ets_printf("(BDOS FILESIZE)"); break;
+        case 36: ets_printf("(BDOS SETRAN)"); break;
+        case 37: ets_printf("(BDOS LOGOFF)"); break;
+        case 38: ets_printf("(BDOS RTN)"); break;
+        case 39: ets_printf("(BDOS RTN)"); break;
+        case 40: ets_printf("(BDOS WTSPECL)"); break;
+        default: ets_printf("(BDOS C=%d)", machine.state.registers.byte[Z80_C]); break;
       }
   }
 }
@@ -146,7 +140,7 @@ void ICACHE_FLASH_ATTR DebugBiosBdos() {
 void Execute(bool canbreak) {
   uint32_t flushCnt=0;
   machine.is_done = 0;
-  os_printf("Starting excution at 0x%04X\n", machine.state.pc);
+  ets_printf("Starting excution at 0x%04X\r\n", machine.state.pc);
   cycles=0;
   do {
     cycles+=Z80Emulate(&machine.state, 2, &machine);
@@ -157,7 +151,7 @@ void Execute(bool canbreak) {
       flushCnt=0;
     }
   } while (!machine.is_done);
-  os_printf("\n");
+  ets_printf("\n");
 }
 
 
@@ -178,9 +172,9 @@ void ICACHE_FLASH_ATTR cpm_main() {
   machine.is_done = 0;
 
   while (1) {
-    os_printf("EMON:");
+    ets_printf("EMON:");
     line = GetLine();
-    os_printf("\n");
+    ets_printf("\r\n");
     char cmd = line[0];
     line++;  // Skip to next char
 
@@ -188,17 +182,17 @@ void ICACHE_FLASH_ATTR cpm_main() {
     // Show help text
     //
     if (cmd == '?') {
-      os_printf("EMON v0.2\n");
-      os_printf("\td ADR [LEN] - Hexdump LEN bytes of memory starting at ADR\n");
-      os_printf("\tD ADR [LEN] - Intel hexdump LEN bytes of memory starting at ADR\n");
-      os_printf("\tL [OFFSET]  - Load an Intel hexdump into memory with OFFSET\n");
-      os_printf("\tm ADR       - Modify memory contents starting at ADR\n");
-      os_printf("\tr [REG VAL] - Display all registers, or set REG to VAL\n");
-      os_printf("\tg [ADR]     - Start execution at PC or [ADR], can break with `\n");
-      os_printf("\tG [ADR]     - Start execution at PC or [ADR]\n");
-      os_printf("\ts [NUM]     - Single step 1 or [NUM] instructions, print once\n");
-      os_printf("\tS [NUM]     - Single step 1 or [NUM] instructions, print every step\n");
-      os_printf("\tB           - Load D0/T0/S0 to 0x0000 and execute\n");
+      ets_printf("EMON v0.2\r\n");
+      ets_printf("\td ADR [LEN] - Hexdump LEN bytes of memory starting at ADR\r\n");
+      ets_printf("\tD ADR [LEN] - Intel hexdump LEN bytes of memory starting at ADR\r\n");
+      ets_printf("\tL [OFFSET]  - Load an Intel hexdump into memory with OFFSET\r\n");
+      ets_printf("\tm ADR       - Modify memory contents starting at ADR\r\n");
+      ets_printf("\tr [REG VAL] - Display all registers, or set REG to VAL\r\n");
+      ets_printf("\tg [ADR]     - Start execution at PC or [ADR], can break with `\r\n");
+      ets_printf("\tG [ADR]     - Start execution at PC or [ADR]\r\n");
+      ets_printf("\ts [NUM]     - Single step 1 or [NUM] instructions, print once\r\n");
+      ets_printf("\tS [NUM]     - Single step 1 or [NUM] instructions, print every step\r\n");
+      ets_printf("\tB           - Load D0/T0/S0 to 0x0000 and execute\r\n");
       continue;
     }
 
@@ -247,17 +241,6 @@ void ICACHE_FLASH_ATTR cpm_main() {
       if ((cnt & 0xFFFF) == 0)
         cnt = 1;
       for (int i = 0; i < cnt; i++) {
-        // if (cmd == 'S') {
-        //   int i;
-        //   unsigned char buffer[16];
-        //   char dest[32];
-        //   ets_memcpy(buffer, &machine.memory[machine.state.pc], 16);
-        //   for (i = 0; i < 16; ++i)
-        //     os_printf("%02X ", buffer[i]);
-        //   os_printf("\n");
-        //   i = Z80_Dasm(buffer, dest, 0);
-        //   os_printf("%s  - %d bytes\n", dest, i);
-        // }
         cycles+=Z80Emulate(&machine.state, 1, &machine);
         if (cmd == 'S') ShowAllRegisters();
 //        if (GetKey(false) == BREAKKEY) break;
@@ -319,23 +302,23 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
 
   switch (arg) {
     case EXIT:
-      if (DBG & 8) os_printf("{EX}");
+      if (DBG & 8) ets_printf("{EX}");
       machine.is_done = 1;
       break;
 
     case CONOUT:
-      if (DBG & 8) os_printf("{CO}");
-      os_printf("%c", C);
+      if (DBG & 8) ets_printf("{CO}");
+      ets_printf("%c", C);
       break;
 
     case LIST:
-      if (DBG & 8) os_printf("{LO}");
-      os_printf("%c", C);
+      if (DBG & 8) ets_printf("{LO}");
+      ets_printf("%c", C);
       break;
 
     case PUNCH:
-      if (DBG & 8) os_printf("{PO}");
-      os_printf("%c", C);
+      if (DBG & 8) ets_printf("{PO}");
+      ets_printf("%c", C);
       break;
 
     // CONIN	The next console character is read into register A, and the
@@ -343,7 +326,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		character is ready, wait until a character is typed before
     //		returning.
     case CONIN:
-      if (DBG & 8) os_printf("{CI}");
+      if (DBG & 8) ets_printf("{CI}");
       m->state.registers.byte[Z80_A] = GetKey(true);
       break;
 
@@ -352,7 +335,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		character is ready to read and 00H in register A if no
     //		console characters are ready.
     case CONST:
-      if (DBG & 8) os_printf("{CS}");
+      if (DBG & 8) ets_printf("{CS}");
       if (GetRxCnt() == 0) {
         m->state.registers.byte[Z80_A] = 0x00;
       } else {
@@ -368,7 +351,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     // value should be returned if LIST status is not implemented
     //
     case LISTST:
-      if (DBG & 8) os_printf("{LS}");
+      if (DBG & 8) ets_printf("{LS}");
       m->state.registers.byte[Z80_A] = 0x00;
       break;
 
@@ -379,7 +362,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     // ASCII CTRL-Z(1AH).
     //
     case READER:
-      if (DBG & 8) os_printf("{RI}");
+      if (DBG & 8) ets_printf("{RI}");
       m->state.registers.byte[Z80_A] = 0x1A;
       break;
 
@@ -396,7 +379,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		at the selected DMA address for the memory buffer during
     //		the subsequent read or write operations.
     case SETDMA:
-      if (DBG & 8) os_printf("{SD}");
+      if (DBG & 8) ets_printf("{SD}");
       z80_dma = BC;
       break;
 
@@ -410,7 +393,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		standard floppy disk drives and 0- 65535 for nonstandard
     //		disk subsystems.
     case SETTRK:
-      if (DBG & 8) os_printf("{ST}");
+      if (DBG & 8) ets_printf("{ST}");
       z80_trk = BC & 0xFF;
       break;
 
@@ -421,7 +404,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		information to the controller at this point or delay sector
     //		selection until a read or write operation occurs.
     case SETSEC:
-      if (DBG & 8) os_printf("{SS}");
+      if (DBG & 8) ets_printf("{SS}");
       z80_sec = BC - 1;
       break;
 
@@ -432,7 +415,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		controller does not support this feature, the HOME call is
     //		translated into a call to SETTRK with a parameter of 0.
     case HOME:
-      if (DBG & 8) os_printf("{HO}");
+      if (DBG & 8) ets_printf("{HO}");
       z80_trk = 0;
       break;
 
@@ -460,7 +443,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		if this is the first occurrence of the drive select since
     //		the last cold or warm start
     case SELDSK:
-      if (DBG & 8) os_printf("{SD}");
+      if (DBG & 8) ets_printf("{SD}");
       z80_dsk = C & 0x0F;
       break;
 
@@ -483,7 +466,7 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		SECTOR. The operator then has the option of pressing a
     //		carriage return to ignore the error, or CTRL-C to abort.
     case READ:
-      if (DBG & 8) os_printf("{RD}");
+      if (DBG & 8) ets_printf("{RD}");
       ReadDiskBlock(z80_dma, z80_sec, z80_trk, z80_dsk);
       m->state.registers.byte[Z80_A] = 0x00;
 
@@ -496,25 +479,24 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		codes given in the READ command are returned in register A,
     //		with error recovery attempts as described above.
     case WRITE:
-      if (DBG & 8) os_printf("{WR}");
+      if (DBG & 8) ets_printf("{WR}");
       WriteDiskBlock(z80_dma, z80_sec, z80_trk, z80_dsk);
       m->state.registers.byte[Z80_A] = 0x00;
       break;
 
     case CYCLES:
-      os_printf("{CYCLES:%u}",cycles);
+      ets_printf("\r\n{CYCLES:%u}\r\n",cycles);
       break;
 
     case HALT:
-      os_printf("\n{Exiting}\n");
+      ets_printf("\r\n{Exiting}\r\n");
       machine.is_done = 1;
       break;
 
     default:
-      os_printf("\nINVALID argument to IN/OUT, ARG=0x%02x PC=%04x\n", arg, m->state.pc);
+      ets_printf("\nINVALID argument to IN/OUT, ARG=0x%02x PC=%04x\r\n", arg, m->state.pc);
       machine.is_done = 1;
   }
-  if (DBG & 8) os_printf("\n");
 }
 
 
@@ -527,9 +509,9 @@ void ICACHE_FLASH_ATTR main(void) {
   baud=AutoBaud();
   uart_div_modify(UART0, (PERIPH_FREQ * 1000000) / baud);
 
-  os_printf("\n\ncpm8266 - Z80 Emulator and CP/M 2.2 system version %d.%d\n\n",VERSION/10,VERSION%10);
+  ets_printf("\r\ncpm8266 - Z80 Emulator and CP/M 2.2 system version %d.%d\r\n",VERSION/10,VERSION%10);
   ets_delay_us(250000);
-  FlushUart();
+  EmptyComBuf();
 
   cpm_main();
 }

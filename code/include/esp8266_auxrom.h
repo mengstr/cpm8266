@@ -14,9 +14,7 @@ typedef struct{
 
 extern SpiFlashChip * flashchip; //don't forget: flashchip->chip_size = 0x01000000;
 
-
-
-void ets_delay_us( uint32_t us );
+//void ets_delay_us( uint32_t us );
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -38,7 +36,8 @@ extern volatile uint32_t * IO_BASE;
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void ets_putc( char c );
-void uart_div_modify( int uart, int divisor );
+//void uart_div_modify( int uart, int divisor );
+
 #define putc ets_putc
 #define printf ets_uart_printf
 
