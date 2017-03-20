@@ -57,14 +57,16 @@ export PATH=~/esp-open-sdk/xtensa-lx106-elf/bin:$PATH
 cd ..
 ```
 
-** Install prerequisites for cpm8266 ***
+**Install prerequisites for cpm8266**
 
 ```
 apt-get install z80asm cpmtools zip
 ```
 
 **Install the cpm8266 repo and config your environment**
+
 Instead of setting and exporting these environment variables you could change the settings in the top of the Makefile instead
+
 ```
 git clone https://github.com/SmallRoomLabs/cpm8266.git
 cd cpm8266/code
@@ -78,6 +80,7 @@ export ESPPORT=/dev/ttyUSB0
 ```make full```
 
 **Connect to the emulator and boot into CP/M**
+
 Run any serial terminal emulator set to 8N1 at any standard speed between 300 and 115200 baud. To run any full screen CP/M programs you should have VT100/ANSI terminal emulation.
 
 Just to get started you can install the "screen" package and use that as a serial terminal.
@@ -89,8 +92,6 @@ And then connect with:
 ```screen /dev/ttyUSB0 9600```
 
 Press Enter twice to autobaud to get the EMON:-prompt and then ```B <Enter>``` to Boot into CP/M.
-
-
 
 ### Code folder contents:
 - *CPM22/* The Z80 assembly sources for CP/M 2.2
