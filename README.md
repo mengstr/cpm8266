@@ -2,6 +2,8 @@
 
 ## Z80-CP/M 2.2 emulator running on ESP8266
 
+ ![Screenshot boot](/pic/boot1.png?raw=true "Screenshot of EMON and boot of CP/M")
+ 
 ### What
 
 This is my attempt to run CP/M 2.2 for Z80 softwares on an ESP8266.
