@@ -23,32 +23,76 @@ void ets_update_cpu_frequency(int freqmhz);
   // os_delay_us(250000);
   // gpio16_output_set(1);	
 
+#define procTaskPrio        0
+#define procTaskQueueLen    1
 
+os_event_t    procTaskQueue[procTaskQueueLen];
+static struct espconn *conn=NULL;
 static struct espconn server;
 static esp_tcp tcpconfig;
 
+#define IOBUFSIZE   512
+
+static volatile uint8_t needKickstart=true;
+static volatile uint8_t txBuf[IOBUFSIZE];
+static volatile uint16_t txR = 0;
+static volatile uint16_t txW = 0;
+
+
+
+
+
+static void ICACHE_FLASH_ATTR procTask(os_event_t *events) {
+  system_os_post(procTaskPrio, 0, 0 );
+}
+
+//
+//
+//
+uint16_t ICACHE_FLASH_ATTR GetTxCnt(void) {
+  if (txW == txR) return 0;
+  if (txW > txR) return txW - txR;
+  return (sizeof(txBuf) - txR) + txW;
+}
+
+
+
+//
+//
+//
 static void ICACHE_FLASH_ATTR server_recv_cb(void *arg, char *data, unsigned short len) {
-  struct espconn *conn=(struct espconn *)arg;
-//  ets_printf("recv_cb(len=%d)\r\n",len);
+  struct espconn *co=(struct espconn *)arg;
+  ets_printf("You pressed the key with an ASCII value of [%d].........\r\n",data[0]);
   for (int i=0; i<len; i++) {
     StoreInComBuf(data[i]);
   }
 }
   
 static void ICACHE_FLASH_ATTR server_discon_cb(void *arg) {
-//  ets_printf("discon_cb() heap=%d\r\n",system_get_free_heap_size());
+  conn=NULL;
 }
  
+//
+//
+//
 static void ICACHE_FLASH_ATTR server_sent_cb(void *arg) {
-//  ets_printf("sent_cb()\r\n");
+  char buf[85];
+  char len=0;
+
+  if (txR==txW) needKickstart=1;
+
+  while (txR!=txW && len<83) {
+    txR = (txR + 1) & (sizeof(txBuf) - 1);
+    buf[len++]=txBuf[txR];
+  }
+  if (conn && len) espconn_send(conn,buf,len);
 }
  
-static volatile struct espconn *con;
-
+//
+//
+//
 static void ICACHE_FLASH_ATTR server_connected_cb(void *arg) {
-//  ets_printf("connected_cb() heap=%d\r\n",system_get_free_heap_size());
-  struct espconn *conn=arg;
-  con=conn;
+  conn=arg;
 
   espconn_set_opt(conn, ESPCONN_REUSEADDR );
   espconn_set_opt(conn, ESPCONN_NODELAY);
@@ -71,11 +115,22 @@ static void ICACHE_FLASH_ATTR server_connected_cb(void *arg) {
 	"\377\373\001"    // IAC WILL SUPPRESS-ECHO
 	"\377\375\001";   // IAC DO SUPPRESS-ECHO
   espconn_send(conn,iac,12);
+    os_delay_us(250000);
+  ets_printf("abcdefghijklmnopqrstuvwxyz\r\n");
 }
 
 
-void TcpSend(char c) {
-  espconn_send(con,&c,1);
+void TcpSend(char ch) {
+  if (conn) {
+    if (GetTxCnt() < sizeof(txBuf) - 1) {
+      txW = (txW + 1) & (sizeof(txBuf) - 1);
+      txBuf[txW] = ch;
+    }
+    if (needKickstart) {
+      needKickstart=0;
+      server_sent_cb(NULL);
+    }
+  }
 }
 
 
@@ -115,6 +170,8 @@ void ICACHE_FLASH_ATTR user_init() {
   espconn_regist_connectcb(&server, server_connected_cb);
   espconn_accept(&server);
   espconn_regist_time(&server,3660,0);
+
+  system_os_post(procTaskPrio, 0, 0 );
 }
 
 //
