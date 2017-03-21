@@ -13,25 +13,25 @@ BOOT.bin: BOOT.Z80
 	@echo [Z80ASM] $<
 	@echo "MEM: EQU $(CPMMEMORY)" > SETTINGS.Z80
 	@echo "VERSION: EQU $(VERSION)" >> SETTINGS.Z80
-	@$(ASM) $< -o $@
+	@$(ASM) --list=BOOT.lst $< -o $@
 
 BIOS.bin: BIOS.Z80
 	@echo [Z80ASM] $<
 	@echo "MEM: EQU $(CPMMEMORY)" > SETTINGS.Z80
 	@echo "VERSION: EQU $(VERSION)" >> SETTINGS.Z80
-	@$(ASM) $< -o $@
+	@$(ASM) --list=BIOS.lst $< -o $@ 
 
 BDOS.bin: BDOS.Z80
 	@echo [Z80ASM] $<
 	@echo "MEM: EQU $(CPMMEMORY)" > SETTINGS.Z80
 	@echo "VERSION: EQU $(VERSION)" >> SETTINGS.Z80
-	@$(ASM) $< -o $@
+	@$(ASM) --list=BDOS.lst $< -o $@  
 
 CCP.bin: CCP.Z80
 	@echo [Z80ASM] $<
 	@echo "MEM: EQU $(CPMMEMORY)" > SETTINGS.Z80
 	@echo "VERSION: EQU $(VERSION)" >> SETTINGS.Z80
-	@$(ASM) $< -o $@
+	@$(ASM) --list=CCP.lst $< -o $@ 
 
 clean :
 	@rm -rf *~
