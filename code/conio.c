@@ -40,6 +40,24 @@ uint8_t ICACHE_FLASH_ATTR GetRxChar(void) {
   return rxBuf[rxR];
 }
 
+//
+// Returns the pressed key. This function waits until a key is
+// pressed if "wait" is true. If wait is false and no key is available
+// then 0x00 is returned
+//
+char ICACHE_FLASH_ATTR GetKey(bool wait) {
+  char ch;
+  if (wait) {
+    ch=GetRxChar();
+    return ch;
+  }
+  if (GetRxCnt() == 0) {
+    return 0x00;
+  }
+  ch=GetRxChar();
+  return ch;
+}
+
 
 //
 //
@@ -58,5 +76,3 @@ void StoreInComBuf(uint8_t ch) {
     rxBuf[rxW] = ch;
   }
 }
-
-

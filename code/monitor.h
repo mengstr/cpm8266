@@ -6,7 +6,6 @@
 #define NONUM 0x10000
 #define LOWERNULL 0x20
 
-char ICACHE_FLASH_ATTR GetKey(bool wait);
 char ICACHE_FLASH_ATTR *GetLine(void);
 uint32_t ICACHE_FLASH_ATTR getHexNum(char **p);
 char ICACHE_FLASH_ATTR *getString(char **p);

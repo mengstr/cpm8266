@@ -67,8 +67,8 @@ ifeq (WIFI, $(BUILD))
  LDFLAGS 	= -Teagle.app.v6.ld
 endif
 
-SRCS		=  main.c uart.c conio.c flash.c monitor.c utils.c gpio16.c z80/z80emu.c
-OBJS		=  main.o uart.o conio.o flash.o monitor.o utils.o gpio16.o z80/z80emu.o
+SRCS		=  main.c machine.c uart.c conio.c flash.c monitor.c utils.c gpio16.c z80/z80emu.c
+OBJS		=  main.o machine.o uart.o conio.o flash.o monitor.o utils.o gpio16.o z80/z80emu.o
 
 ifeq (NOSDK, $(BUILD))
  SRCS		:= $(SRCS) nosdk/startup.S nosdk/nosdk8266.c
@@ -104,7 +104,11 @@ bins: $(OBJS)
 	@$(OBJDUMP) -S $(TARGET).elf > $(TARGET).lst
 	@export PATH=$(BINS):$$PATH; $(ESPTOOL) elf2image $(TARGET).elf $(FLASHPARAM) > /dev/null
 
-main.o: main.c z80/z80emu.h z80/z80user.h CPM22/boot.data
+main.o: main.c z80/z80emu.h z80/z80user.h 
+	@echo [CC] $<
+	@$(GCC) $(CFLAGS) -o $@ -c $<
+
+machine.o: machine.c machine.h
 	@echo [CC] $<
 	@$(GCC) $(CFLAGS) -o $@ -c $<
 
@@ -151,9 +155,6 @@ wifi.o: wifi.c
 	@echo [CC] $<
 	@$(GCC) $(CFLAGS) -o $@ -c $<
 endif
-
-CPM22/boot.data: CPM22/BOOT.bin
-	@$(XXD) -i < CPM22/BOOT.bin > CPM22/boot.data
 
 CPM22/BOOT.bin :
 	@$(MAKE) --no-print-directory -C CPM22 BOOT.bin

@@ -19,9 +19,7 @@
 typedef void (*int_handler_t)(void *);
 extern UartDevice UartDev;
 
-#ifdef WIFI
- #define PERIPH_FREQ 160    // TODO
-#endif
+#define PERIPH_FREQ 160
 
 
 //

@@ -3,5 +3,6 @@
 
 uint32_t AutoBaud(void);
 void InitUart(void);
+void UartOutChar(char c);
 
 #endif
