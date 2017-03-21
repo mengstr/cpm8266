@@ -31,9 +31,6 @@ static const char z80code[] RODATA_ATTR = {
 #include "monitor.h"
 #include "utils.h"
 
-// 01=    02=r/w    04=bios/bdos  08=
-const uint8_t DBG = 0x00;
-
 MACHINE machine;
 uint32_t cycles=0;
 
@@ -63,75 +60,6 @@ uint8_t biostrace = 0;
 
 #define BREAKKEY '`'
 
-//
-//
-//
-void ICACHE_FLASH_ATTR DebugBiosBdos() {
-  switch (machine.state.pc) {
-    case 0xF100: ets_printf("(BIOS BOOT)"); break;
-    case 0xF103: ets_printf("(BIOS WBOOT)"); break;
-    case 0xF106: ets_printf("(BIOS CONST)"); break;
-    case 0xF109: ets_printf("(BIOS CONIN)"); break;
-    case 0xF10C: ets_printf("(BIOS CONOUT)"); break;
-    case 0xF10F: ets_printf("(BIOS LIST)"); break;
-    case 0xF112: ets_printf("(BIOS PUNCH)"); break;
-    case 0xF115: ets_printf("(BIOS READER)"); break;
-    case 0xF118: ets_printf("(BIOS HOME)"); break;
-    case 0xF11B: ets_printf("(BIOS SELDSK)"); break;
-    case 0xF11E: ets_printf("(BIOS SETTRK)"); break;
-    case 0xF121: ets_printf("(BIOS SETSEC)"); break;
-    case 0xF124: ets_printf("(BIOS SETDMA)"); break;
-    case 0xF127: ets_printf("(BIOS READ)"); break;
-    case 0xF12A: ets_printf("(BIOS WRITE)"); break;
-    case 0xF12D: ets_printf("(BIOS LISTST)"); break;
-    case 0xF130: ets_printf("(BIOS SECTRN)"); break;
-    case 0xE311:  // BDOS ENTRY POINTS
-      switch (machine.state.registers.byte[Z80_C]) {
-        case 0: ets_printf("(BDOS WBOOT)"); break;
-        case 1: ets_printf("(BDOS GETCON)"); break;
-        case 2: ets_printf("(BDOS OUTCON)"); break;
-        case 3: ets_printf("(BDOS GETRDR)"); break;
-        case 4: ets_printf("(BDOS PUNCH)"); break;
-        case 5: ets_printf("(BDOS LIST)"); break;
-        case 6: ets_printf("(BDOS DIRCIO %02x)", machine.state.registers.byte[Z80_E]); break;
-        case 7: ets_printf("(BDOS GETIOB)"); break;
-        case 8: ets_printf("(BDOS SETIOB)"); break;
-        case 9: ets_printf("(BDOS PRTSTR)"); break;
-        case 10: ets_printf("(BDOS RDBUFF)"); break;
-        case 11: ets_printf("(BDOS GETCSTS)"); break;
-        case 12: ets_printf("(BDOS GETVER)"); break;
-        case 13: ets_printf("(BDOS RSTDSK)"); break;
-        case 14: ets_printf("(BDOS SETDSK)"); break;
-        case 15: ets_printf("(BDOS OPENFIL)"); break;
-        case 16: ets_printf("(BDOS CLOSEFIL)"); break;
-        case 17: ets_printf("(BDOS GETFST)"); break;
-        case 18: ets_printf("(BDOS GETNXT)"); break;
-        case 19: ets_printf("(BDOS DELFILE)"); break;
-        case 20: ets_printf("(BDOS READSEQ)"); break;
-        case 21: ets_printf("(BDOS WRTSEQ)"); break;
-        case 22: ets_printf("(BDOS FCREATE)"); break;
-        case 23: ets_printf("(BDOS RENFILE)"); break;
-        case 24: ets_printf("(BDOS GETLOG)"); break;
-        case 25: ets_printf("(BDOS GETCRNT)"); break;
-        case 26: ets_printf("(BDOS PUTDMA)"); break;
-        case 27: ets_printf("(BDOS GETALOC)"); break;
-        case 28: ets_printf("(BDOS WRTPRTD)"); break;
-        case 29: ets_printf("(BDOS GETROV)"); break;
-        case 30: ets_printf("(BDOS SETATTR)"); break;
-        case 31: ets_printf("(BDOS GETPARM)"); break;
-        case 32: ets_printf("(BDOS GETUSER)"); break;
-        case 33: ets_printf("(BDOS RDRANDOM)"); break;
-        case 34: ets_printf("(BDOS WTRANDOM)"); break;
-        case 35: ets_printf("(BDOS FILESIZE)"); break;
-        case 36: ets_printf("(BDOS SETRAN)"); break;
-        case 37: ets_printf("(BDOS LOGOFF)"); break;
-        case 38: ets_printf("(BDOS RTN)"); break;
-        case 39: ets_printf("(BDOS RTN)"); break;
-        case 40: ets_printf("(BDOS WTSPECL)"); break;
-        default: ets_printf("(BDOS C=%d)", machine.state.registers.byte[Z80_C]); break;
-      }
-  }
-}
 
 
 //
@@ -144,7 +72,6 @@ void Execute(bool canbreak) {
   cycles=0;
   do {
     cycles+=Z80Emulate(&machine.state, 2, &machine);
-    if (DBG & 4) DebugBiosBdos();
 //    if (canbreak && (GetKey(false) == BREAKKEY)) break;
     if ((flushCnt++>2000000)) {
       FlushDisk(true);  // Flush Disk in standalone mode
@@ -302,22 +229,18 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
 
   switch (arg) {
     case EXIT:
-      if (DBG & 8) ets_printf("{EX}");
       machine.is_done = 1;
       break;
 
     case CONOUT:
-      if (DBG & 8) ets_printf("{CO}");
       ets_printf("%c", C);
       break;
 
     case LIST:
-      if (DBG & 8) ets_printf("{LO}");
       ets_printf("%c", C);
       break;
 
     case PUNCH:
-      if (DBG & 8) ets_printf("{PO}");
       ets_printf("%c", C);
       break;
 
@@ -326,7 +249,6 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		character is ready, wait until a character is typed before
     //		returning.
     case CONIN:
-      if (DBG & 8) ets_printf("{CI}");
       m->state.registers.byte[Z80_A] = GetKey(true);
       break;
 
@@ -335,7 +257,6 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		character is ready to read and 00H in register A if no
     //		console characters are ready.
     case CONST:
-      if (DBG & 8) ets_printf("{CS}");
       if (GetRxCnt() == 0) {
         m->state.registers.byte[Z80_A] = 0x00;
       } else {
@@ -351,7 +272,6 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     // value should be returned if LIST status is not implemented
     //
     case LISTST:
-      if (DBG & 8) ets_printf("{LS}");
       m->state.registers.byte[Z80_A] = 0x00;
       break;
 
@@ -362,7 +282,6 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     // ASCII CTRL-Z(1AH).
     //
     case READER:
-      if (DBG & 8) ets_printf("{RI}");
       m->state.registers.byte[Z80_A] = 0x1A;
       break;
 
@@ -379,7 +298,6 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		at the selected DMA address for the memory buffer during
     //		the subsequent read or write operations.
     case SETDMA:
-      if (DBG & 8) ets_printf("{SD}");
       z80_dma = BC;
       break;
 
@@ -393,7 +311,6 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		standard floppy disk drives and 0- 65535 for nonstandard
     //		disk subsystems.
     case SETTRK:
-      if (DBG & 8) ets_printf("{ST}");
       z80_trk = BC & 0xFF;
       break;
 
@@ -404,7 +321,6 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		information to the controller at this point or delay sector
     //		selection until a read or write operation occurs.
     case SETSEC:
-      if (DBG & 8) ets_printf("{SS}");
       z80_sec = BC - 1;
       break;
 
@@ -415,7 +331,6 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		controller does not support this feature, the HOME call is
     //		translated into a call to SETTRK with a parameter of 0.
     case HOME:
-      if (DBG & 8) ets_printf("{HO}");
       z80_trk = 0;
       break;
 
@@ -443,7 +358,6 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		if this is the first occurrence of the drive select since
     //		the last cold or warm start
     case SELDSK:
-      if (DBG & 8) ets_printf("{SD}");
       z80_dsk = C & 0x0F;
       break;
 
@@ -466,7 +380,6 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		SECTOR. The operator then has the option of pressing a
     //		carriage return to ignore the error, or CTRL-C to abort.
     case READ:
-      if (DBG & 8) ets_printf("{RD}");
       ReadDiskBlock(z80_dma, z80_sec, z80_trk, z80_dsk);
       m->state.registers.byte[Z80_A] = 0x00;
 
@@ -479,7 +392,6 @@ void ICACHE_FLASH_ATTR SystemCall(MACHINE *m, int opcode, int val, int instr) {
     //		codes given in the READ command are returned in register A,
     //		with error recovery attempts as described above.
     case WRITE:
-      if (DBG & 8) ets_printf("{WR}");
       WriteDiskBlock(z80_dma, z80_sec, z80_trk, z80_dsk);
       m->state.registers.byte[Z80_A] = 0x00;
       break;
