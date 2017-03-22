@@ -25,6 +25,9 @@ But not all hope is lost for those who want wifi and telnet - I'm currently
 patching in an option to compile a version with about 36K RAM, wifi and one
 less floppy disk.
 
+ ![Screenshot wifi/telnet](/pic/wifi36k.png?raw=true "Connected over telnet")
+
+The 36K RAM wifi/telnet option works kinda ok, but it only leaves about 5.9K free memory in MBASIC. And it is also too small run Turbo Pascal or the classic Ladder game.
 
 ### Installing, Compiling and Running
 
@@ -94,6 +97,16 @@ And then connect with:
 ```screen /dev/ttyUSB0 9600```
 
 Press Enter twice to autobaud to get the EMON:-prompt and then ```B <Enter>``` to Boot into CP/M.
+
+**To compile with the wifi option enabled**
+
+Either do a 
+```BUILD=WIFI make full```
+
+or change the BUILD option in the Makefile.
+
+After the full re-compile and upload of all disks you can connect via telnet port 23 (the default telnet port) after the red led (on the NodeMCU board) goes off. The led is lit as long as the wifi has not received the ip address via DHCP.
+
 
 ### Code folder contents:
 - *CPM22/* The Z80 assembly sources for CP/M 2.2

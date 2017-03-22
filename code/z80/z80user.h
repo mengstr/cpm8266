@@ -90,9 +90,9 @@ extern "C" {
 //#endif
 
 typedef struct MACHINE {
+  int is_done;
   Z80_STATE state;
   unsigned char memory[CPMMEMORY];
-  int is_done;
 } MACHINE;
 
 extern void SystemCall(MACHINE *m, int opcode, int val, int inst);
