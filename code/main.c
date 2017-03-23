@@ -196,8 +196,8 @@ void ICACHE_FLASH_ATTR main(void) {
 //  cpm_main();
   InitMachine();
   LoadBootSector();
-  for (;;) {
-    RunMachine(1);
+  for (;;) {          
+    RunMachine(1);  // 400MC takes 32 seconds
   }
 }
 #endif

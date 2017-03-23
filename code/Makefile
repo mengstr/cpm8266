@@ -30,7 +30,7 @@ ifeq (WIFI, $(BUILD))
  export CPMMEMORY =  1024*38
 endif
 
-export VERSION	 =  02
+export VERSION	 =  03
 
 TARGET	 	=  image
 FW0 		=  $(TARGET).elf-0x00000.bin

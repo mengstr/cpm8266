@@ -48,7 +48,8 @@ static volatile uint32_t cnt;
 //
 static void ICACHE_FLASH_ATTR procTask(os_event_t *events) {
   system_os_post(procTaskPrio, 0, 0 );
-  RunMachine(1);
+  //  RunMachine(1);  // 400MC takes 77 seconds
+  for (uint8_t i=0; i<250; i++) RunMachine(1);  // 400MC takes 38 seconds
 }
 
 //
