@@ -22,10 +22,6 @@ uint32_t system_get_time(void);
 void *ets_memcpy(void *dest, const void *src, size_t n);
 void ets_update_cpu_frequency(int freqmhz);
 
-  // gpio16_output_set(0);	
-  // os_delay_us(250000);
-  // gpio16_output_set(1);	
-
 #define procTaskPrio        0
 #define procTaskQueueLen    1
 static os_event_t    procTaskQueue[procTaskQueueLen];
