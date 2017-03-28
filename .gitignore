@@ -20,6 +20,7 @@
 private/
 tmp/
 sed80/
+xmodem80/
 
 # Created by the Makefile
 Makefile.tmp
