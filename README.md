@@ -99,7 +99,7 @@ And then connect with:
 
 ```screen /dev/ttyUSB0 9600```
 
-Press Enter twice to autobaud to get the EMON:-prompt and then ```B <Enter>``` to Boot into CP/M.
+Press Enter twice to autobaud and boot into the CP/M.
 
 **To compile with the wifi option enabled**
 
