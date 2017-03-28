@@ -65,8 +65,11 @@ cd ..
 **Install prerequisites for cpm8266**
 
 ```
-apt-get install z80asm cpmtools zip
+apt-get install z80asm cpmtools zip vim-common
 ```
+
+The vim-common is to get the xxd utility that some distros don't install by
+default. Thank you @drawkula for reporting this.
 
 **Clone the cpm8266 repo and config your environment**
 
