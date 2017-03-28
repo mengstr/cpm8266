@@ -134,6 +134,7 @@ void ICACHE_FLASH_ATTR WriteDiskBlock(uint16_t msrc, uint8_t sectorNo,
 #endif
 
   ets_memcpy(&flashBuf[fl], &machine.memory[msrc],  SECTORSIZE);
+  gpio16_output_set(0);
   dirty=true;
 }
 
@@ -145,10 +146,8 @@ void ICACHE_FLASH_ATTR FlushDisk(bool standalone) {
   if (!dirty) return;
 
 #ifdef WIFI
-  gpio16_output_set(0);
   spi_flash_erase_sector(flashSectorNo);
   spi_flash_write(flashSectorNo * FLASHBLOCKSIZE, (uint32_t *)flashBuf, FLASHBLOCKSIZE);
-  gpio16_output_set(1);
 #endif
 
 #ifdef NOSDK
@@ -156,15 +155,14 @@ void ICACHE_FLASH_ATTR FlushDisk(bool standalone) {
     Cache_Read_Disable();
     SPIUnlock();
   }
-  gpio16_output_set(0);
   SPIEraseSector(flashSectorNo);
   SPIWrite(flashSectorNo * FLASHBLOCKSIZE, (uint32_t *)flashBuf, FLASHBLOCKSIZE);
-  gpio16_output_set(1);
   if (standalone) {
    Cache_Read_Enable(0, 0, 1);
   }
 #endif
 
+  gpio16_output_set(1);
   dirty=false;
 }
 
