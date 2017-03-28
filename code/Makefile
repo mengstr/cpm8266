@@ -17,6 +17,7 @@ EMULATIONBAUD	=  9600
 PORT 		=  23
 
 DISKSIZE	=  0x3E900  # 256256 bytes (IMB 8-inch 26sec, 77trk, SS)
+DISKPITCH	=  0x3F000  # esptool1.2 won't write at non-sector boundries
 
 ifeq (NOSDK, $(BUILD))
  DISKS		=  A B C D E F G H I J K L M N O
@@ -222,8 +223,8 @@ readdisk$(1) :
 endef
 
 $(foreach DSK,$(DISKS), \
-	$(eval $(call WRITEDISK,$(DSK), $(DISKSIZE), $(DISKSIZE), $(DISKADDR) )); \
-	$(eval $(call  READDISK,$(DSK), $(DISKSIZE), $(DISKSIZE), $(DISKADDR) )); \
+	$(eval $(call WRITEDISK,$(DSK), $(DISKPITCH), $(DISKSIZE), $(DISKADDR) )); \
+	$(eval $(call  READDISK,$(DSK), $(DISKPITCH), $(DISKSIZE), $(DISKADDR) )); \
 )
 
 WRITEDISKTARGETS=$(foreach DSK,$(DISKS), writedisk$(DSK) )
