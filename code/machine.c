@@ -55,8 +55,13 @@ static int adjustpc=0;
 //`
 //
 void RunMachine(int cycles) {
+  static uint32_t flushCnt;
   machine.state.pc+=adjustpc;
   adjustpc=0;
+  if (flushCnt++>1000000) {
+    FlushDisk(1); 
+    flushCnt=0;
+  }
   if (!machine.is_done) Z80Emulate(&machine.state, cycles, &machine);
 }
 

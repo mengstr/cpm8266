@@ -1,9 +1,8 @@
 TL;DR - Quick Start
 -------------------
   esptool.py write_flash 0 cpm8266_VERSION.bin -ff 80m -fm dout
-  Connect to serial at 9600 baud
-  Press <enter> 
-  Start CP/M with B <enter>
+  Connect to serial with any standard speed between 300 and 115200 baud
+  Press <enter> twice to autobaud
 
 INTRODUCTION
 ------------
@@ -23,10 +22,10 @@ Change PORT to the serial/USB port your ESP is connected to and also change
 VERSION to whatever version is indicated in the binary file.
 
 Example for Windows:
-esptool.py -p COM2 write_flash 0 cpm8266_01.bin -ff 80m -fm dout
+esptool.py -p COM2 write_flash 0 cpm8266_04.bin -ff 80m -fm dout
 
 On Linux:
-esptool.py -p /dev/ttyUSB0 write_flash 0 cpm8266_01.bin -ff 80m -fm dout
+esptool.py -p /dev/ttyUSB0 write_flash 0 cpm8266_04.bin -ff 80m -fm dout
 
 You might want to add "-b 921600" to the command to increase the speed of 
 the upload or it will take about 5 minutes to upload all of the 4MB using
@@ -45,30 +44,27 @@ Screen is not really a terminal emulator, but is easy to use as one. Start
 it as "screen /dev/ttyUSB0 9600" and you can type away. It can be exited by
 ctrl-A backslash.
 
-Connect to the ESP with 9600 baud, 8 bits, 1 stopbit, no parity. 
+Connect to the ESP with any standard speed between 300 and 115200  baud having
+8 bits, 1 stopbit, no parity. 
 
-After pressing Enter once you should be greeted by the EMON: -prompt
-indicating that you have contact with a monitor in the Z80 emulator. To see
-available commands type ? and press Enter.
-
-To boot the CP/M emulator type B and press Enter.  The machine will boot and
-you will be in the simulated A-drive of a CP/M 2.2 maching with 64K RAM and
-a Z80 processor.
+After pressing Enter twice to let the emulator detect your baudrate 
+youy will be greeted by the a> -prompt of CP/M.
 
 There are 15 pcs of 256KB 8" drives emulated named from A: to O:, currently
-some of them have pre-populate files.
+some of them have pre-populated files.
 
 "SCREENSHOT"
 ------------
-EMON:B
-Starting excution at 0x0000
+cpm8266 - Z80 Emulator and CP/M 2.2 system version 0.4
 
-62K CP/M v2.2 [cpm8266 v0.1 - SmallRoomLabs]
+62K CP/M v2.2 [cpm8266 v0.4 - SmallRoomLabs]
 
 a>dir
-A: ASM      COM : DDT      COM : DDTZ     COM : DUMP     COM
-A: ED       COM : LOAD     COM : PIP      COM : STAT     COM
-A: SUBMIT   COM : XSUB     COM
+A: ASM      COM : CRC      COM : CRC      MAC : DDT      COM
+A: DDTZ     COM : DUMP     COM : ED       COM : FILES    TXT
+A: LOAD     COM : PIP      COM : STAT     COM : SUBMIT   COM
+A: XR       COM : XS       COM : XSUB     COM : FREE     SUB
+A: ZDE      COM
 a>
 
 FINAL WORDS
