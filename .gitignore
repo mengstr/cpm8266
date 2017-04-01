@@ -16,11 +16,15 @@
 *.cap
 *.log
 
+# We currently don't want the DSK images stored in the repo 
+*.DSK
+
 # Some private folders
 private/
 tmp/
 sed80/
 xmodem80/
+RunCPM/
 
 # Created by the Makefile
 Makefile.tmp
