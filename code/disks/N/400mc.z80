@@ -1,0 +1,400 @@
+BDOS	EQU	5h	; BDOS Entry vector
+PRINTST EQU 	09h	; BDOS function code
+CR 	EQU	13
+LF 	EQU	10
+
+cnt1	EQU	0FFh
+cnt2	EQU	0FEh
+
+	ORG	0100h
+
+Start:	
+	ld 	C, PRINTST 
+	ld 	DE, msg1 
+	call 	BDOS 
+
+	ld A,0
+	ld (cnt1),A
+	ld (cnt2),A
+Loop:
+	PUSH AF		;F5
+	POP AF		;F1
+	PUSH BC		;C5
+	POP BC		;C1
+	PUSH IX		;DDE5
+	POP IX		;DDE1
+	PUSH IY		;FDE5
+	POP IY		;FDE1
+
+	ld HL,1000h
+	ld IX,1000h
+	ld IY,1000h
+	ADC A,(HL)	;8E
+	ADC A,(IX+0)	;DD8E d
+	ADC A,(IY+1)	;FD8E d
+	ADC A,B		;88
+	ADC A,55h	;CE n
+	ADC HL,BC	;ED4A
+	ADC HL,DE	;ED5A
+	ADC HL,HL	;ED6A
+
+	ld HL,1000h
+	ADD A,(HL)	;86
+	ADD A,(IX+0)	;DD86 d
+	ADD A,(IY+1)	;FD86 d
+	ADD A,A		;87
+	ADD A,B		;83
+	ADD A,55h	;C6 n
+	ADD HL,BC	;09
+	ADD HL,DE	;19
+	ADD HL,HL	;29
+	ADD IX,BC	;DD09
+	ADD IX,DE	;DD19
+	ADD IX,IX	;DD29
+	ADD IY,BC	;FD09
+	ADD IY,DE	;FD19
+	ADD IY,IY	;FD29
+
+	ld HL,1000h
+	ld IX,1000h
+	ld IY,1000h
+	AND (HL)	;A6
+	AND (IX+0)	;DDA6 d
+	AND (IY+1)	;FDA6 d
+	AND A		;A7
+	AND B		;A0
+	AND 55h		;E6 n
+
+	ld HL,1000h
+	ld IX,1000h
+	ld IY,1000h
+	BIT 0,(HL)	;CB46
+	BIT 0,(IX+0)	;DDCB d 46
+	BIT 0,(IY+1)	;FDCB d 46
+	BIT 0,A		;CB47
+	BIT 0,B		;CB40
+
+	CALL Return
+	CALL C,Return	;DC n n
+	CALL M,Return	;FC n n
+	CALL NC,Return	;D4 n n
+	CALL NZ,Return	;C4 n n
+	CALL P,Return	;F4 n n
+	CALL PE,Return	;EC n n
+	CALL PO,Return	;E4 n n
+	CALL Z,Return	;CC n n
+
+	CCF		;3F
+
+	CP (HL)		;BE
+	CP (IX+0)	;DDBE d
+	CP (IY+1)	;FDBE d
+	CP A		;BF
+	CP B		;B8
+	CP 55h		;FE n
+
+	CPD		;EDA9
+;	CPDR		;EDB9
+	CPI		;EDA1
+;	CPIR		;EDB1
+	CPL		;2F
+
+	DAA		;27
+
+	ld HL,1000h
+	ld IX,1000h
+	ld IY,1000h
+	DEC (HL)	;35
+	DEC (IX+0)	;DD35 d
+	DEC (IY+1)	;FD35 d
+	DEC A		;3D
+	DEC B		;05
+	DEC BC		;0B
+	DEC HL		;2B
+	DEC IX		;DD2B
+	DEC IY		;FD2B
+
+;	DI		;F3
+	ld	B,64
+djnz_	DJNZ djnz_	;10 e
+;	EI		;FB
+
+	EX (SP),HL	;E3
+	EX (SP),HL	;E3
+	EX (SP),IX	;DDE3
+	EX (SP),IX	;DDE3
+	EX AF,AF'	;08
+	EX DE,HL	;EB
+	EXX		;D9
+
+;	HALT		;76
+;	IM 0		;ED46
+;	IM 1		;ED56
+;	IM 2		;ED5E
+;	IN A,(C)	;ED78
+;	IN A,(n)	;DB n
+;	IN B,(C)	;ED40
+;	IN C,(C)	;ED48
+;	IN D,(C)	;ED50
+;	IN E,(C)	;ED58
+;	IN H,(C)	;ED60
+;	IN L,(C)	;ED68
+
+	ld HL,1000h
+	ld IX,1000h
+	ld IY,1000h
+	INC (HL)	;34
+	INC (IX+0)	;DD34 d
+	INC (IY+1)	;FD34 d
+	INC A		;3C
+	INC B		;04
+	INC BC		;03
+	INC HL		;23
+	INC IX		;DD23
+	INC IY		;FD23
+
+;	IND		;EDAA
+;	INDR		;EDBA
+;	INI		;EDA2
+;	INIR		;EDB2
+
+	ld hl,jpi1
+	ld ix,jpi2
+	ld iy,jpi3
+	JP (HL)		;E9
+jpi1	JP (IX)		;DDE9
+jpi2	JP (IY)		;FDE9
+jpi3	JP nn1		;C3 n n
+nn1	JP C,nn2	;DA n n
+nn2	JP M,nn3	;FA n n
+nn3	JP NC,nn4	;D2 n n
+nn4	JP NZ,nn5	;C2 n n
+nn5	JP P,nn6	;F2 n n
+nn6	JP PE,nn7	;EA n n
+nn7	JP PO,nn8	;E2 n n
+nn8	JP Z,nn9	;CA n n
+nn9	JR nn10		;18 e
+nn10	JR C,nn11	;38 e
+nn11	JR NC,nn12	;30 e
+nn12	JR NZ,nn13	;20 e
+nn13	JR Z,nn14	;28 e
+nn14	nop
+
+	ld bc,1000h
+	ld de,1000h
+	ld hl,1000h
+	ld ix,1000h
+	ld iy,1000h
+	LD (BC),A	;02
+	LD (DE),A	;12
+	LD (HL),A	;77
+	LD (HL),B	;70
+	LD (HL),55h	;36 n
+	LD (IX+0),A	;DD77 d
+	LD (IX+0),55h	;DD36 d n
+	LD (IY+1),A	;FD77 d
+	LD (IY+1),55h	;FD36 d n
+
+	LD (1000h),A	;32 n n
+	LD (1000h),BC	;ED43 n n
+	LD (1000h),DE	;ED53 n n
+	LD (1000h),HL	;22 n n
+	LD (1000h),HL	;ED63 n n
+	LD (1000h),IX	;DD22 n n
+	LD (1000h),IY	;FD22 n n
+	LD (1000h),SP	;ED73 n n
+	LD A,(BC)	;0A
+	LD A,(HL)	;7E
+	LD A,(IX+0)	;DD7E d
+	LD A,(IY+1)	;FD7E d
+	LD A,(1000h)	;3A n n
+	LD A,A		;7F
+	LD A,B		;78
+	LD A,55h	;3E n
+	LD A,R		;ED5F
+	LD BC,(1000h)	;ED4B n n
+	LD BC,1000h	;01 n n
+	LD IX,(1000h)	;DD2A n n
+	LD IX,1000h	;DD21 n n
+	LD IY,(1000h)	;FD2A n n
+	LD IY,1000h	;FD21 n n
+
+;	LDD		;EDA8
+
+	ld de,1100h
+	ld hl,1101h
+	ld bc,48
+	LDDR		;EDB8
+
+;	LDI		;EDA0
+
+	ld de,1000h
+	ld hl,1001h
+	ld bc,49
+	LDIR		;EDB0
+
+	NEG		;ED44
+
+	ld HL,1000h
+	ld IX,1000h
+	ld IY,1000h
+	OR (HL)		;B6
+	OR (IX+0)	;DDB6 d
+	OR (IY+1)	;FDB6 d
+	OR A		;B7
+	OR B		;B0
+	OR 55h		;F6 n
+
+;	OTDR		;EDBB
+;	OTIR		;EDB3
+;	OUT (C),A	;ED79
+;	OUT (C),B	;ED41
+;	OUT (C),C	;ED49
+;	OUT (C),D	;ED51
+;	OUT (C),E	;ED59
+;	OUT (C),H	;ED61
+;	OUT (C),L	;ED69
+;	OUT (n),A	;D3 n
+;	OUTD		;EDAB
+;	OUTI		;EDA3
+
+	RES 0,(HL)	;CB86
+	RES 0,(IX+0)	;DDCB d 86
+	RES 0,(IY+1)	;FDCB d 86
+	RES 0,A		;CB87
+	RES 0,B		;CB80
+
+;	RET		;C9
+;	RET C		;D8
+;	RET M		;F8
+;	RET NC		;D0
+;	RET NZ		;C0
+;	RET P		;F0
+;	RET PE		;E8
+;	RET PO		;E0
+;	RET Z		;C8
+;	RETI		;ED4D
+;	RETN		;ED45
+
+	RL (HL)		;CB16
+	RL (IX+0)	;DDCB d 16
+	RL (IY+1)	;FDCB d 16
+	RL A		;CB17
+	RL B		;CB10
+	RLA		;17
+
+	RLC (HL)	;CB06
+	RLC (IX+0)	;DDCB d 06
+	RLC (IY+1)	;FDCB d 06
+	RLC A		;CB07
+	RLC B		;CB00
+	RLCA		;07
+	RLD		;ED6F
+
+	RR (HL)		;CB1E
+	RR (IX+0)	;DDCB d 1E
+	RR (IY+1)	;FDCB d 1E
+	RR A		;CB1F
+	RR B		;CB18
+	RRA		;1F
+
+	RRC (HL)	;CB0E
+	RRC (IX+0)	;DDCB d 0E
+	RRC (IY+1)	;FDCB d 0E
+	RRC A		;CB0F
+	RRC B		;CB08
+	RRCA		;0F
+	RRD		;ED67
+
+;	RST 0H		;C7
+;	RST 10H		;D7
+;	RST 18H		;DF
+;	RST 20H		;E7
+;	RST 28H		;EF
+;	RST 30H		;F7
+;	RST 38H		;FF
+;	RST 8H		;CF
+
+	SBC A,(HL)	;9E
+	SBC A,(IX+0)	;DD9E d
+	SBC A,(IY+1)	;FD9E d
+	SBC A,A		;9F
+	SBC A,B		;98
+	SBC A,55h	;DE n
+	SBC HL,BC	;ED42
+	SBC HL,DE	;ED52
+
+	SCF		;37
+
+	ld HL,1000h
+	ld IX,1000h
+	ld IY,1000h
+	SET 0,(HL)	;CBC6
+	SET 0,(IX+0)	;DDCB d C6
+	SET 0,(IY+1)	;FDCB d C6
+	SET 0,A		;CBC7
+	SET 0,B		;CBC0
+
+	ld HL,1000h
+	ld IX,1000h
+	ld IY,1000h
+	SLA (HL)	;CB26
+	SLA (IX+0)	;DDCB d 26
+	SLA (IY+1)	;FDCB d 26
+	SLA A		;CB27
+	SLA B		;CB20
+
+	SRA (HL)	;CB2E
+	SRA (IX+0)	;DDCB d 2E
+	SRA (IY+1)	;FDCB d 2E
+	SRA A		;CB2F
+	SRA B		;CB28
+
+	SRL (HL)	;CB3E
+	SRL (IX+0)	;DDCB d 3E
+	SRL (IY+1)	;FDCB d 3E
+	SRL A		;CB3F
+	SRL B		;CB38
+
+	SUB (HL)	;96
+	SUB (IX+0)	;DD96 d
+	SUB (IY+1)	;FD96 d
+	SUB A		;97
+	SUB B		;90
+	SUB 55h		;D6 n
+
+	XOR (HL)	;AE
+	XOR (IX+0)	;DDAE d
+	XOR (IY+1)	;FDAE d
+	XOR A		;AF
+	XOR B		;A8
+	XOR 55h		;EE n
+
+	nop
+	ld a,(cnt1)
+	inc a
+	ld (cnt1),a
+	cp a,0
+	jp nz,Loop
+
+	ld	B,65
+adjust	djnz adjust
+
+	ld a,(cnt2)
+	inc a
+	ld (cnt2),a
+	cp a,0
+	jp nz,Loop
+
+	ld 	C, PRINTST 
+	ld 	DE, msg2
+	call 	BDOS 
+
+	jp 0000h
+
+Return:	ret
+
+msg1	DB 'Executing mixed instructions to reach 400 000 000 T-cycles...$'
+msg2	DB 'Done.',CR,LF,'Takes 100 seconds on a 4MHz Z80',CR,LF,'$'
+
+	END

@@ -1,0 +1,8 @@
+EMU_CYCLES EQU 0FEh
+
+	ORG 100h
+
+	out	(EMU_CYCLES),A
+	ret
+
+	END

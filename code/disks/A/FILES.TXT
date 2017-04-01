@@ -1,0 +1,15 @@
+A: System utilities
+B: Assemblers & BASIC
+C: Turbo Pascal 3.0
+D: Wordstar
+E:
+F:
+G: Games
+H:
+I:
+J:
+K:
+L:
+M:
+N:Misc Assembly sources
+O:Empty in NOSDK, Linked as N: in WIFI mode

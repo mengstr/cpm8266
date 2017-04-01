@@ -1,0 +1,9 @@
+EMU_EXIT EQU 0FFh
+
+	ORG 100h
+
+	out	(EMU_EXIT),A
+	ret
+
+	END
+	
